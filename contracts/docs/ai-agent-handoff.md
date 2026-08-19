@@ -15,7 +15,8 @@ README + this handoff. No Python package yet ([PROTO-001](../../docs/issues.yml)
 - Identity fields are decided in [SYS-003](../../docs/issues.yml): UUID plus DOI / arXiv / OpenAlex / patent / content hash.
 - Category schemes: `openalex_topic` and `cpc` ([SYS-008](../../docs/issues.yml)).
 - PathRequest.kind: `research_path` or `patent_whitespace` ([SYS-007](../../docs/issues.yml)).
+- Extraction covers title, authors, keywords, bibliography, and body text. Neighborhood modes are `citation`, `content`, and `union` ([SYS-010](../../docs/issues.yml)).
 
 ## Suggested next work
 
-PROTO-001-T1: package skeleton and batch-check models.
+PROTO-001-T1: package skeleton plus identity, extraction, and neighborhood models.

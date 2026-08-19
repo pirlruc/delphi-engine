@@ -36,7 +36,7 @@ queries ([SYS-008](issues.yml)) are how a 2D-code question avoids drowning in LL
 | --- | --- | --- |
 | Unbounded computer vision | Ingest becomes ImageNet/detection/medical/AV and blows the budget | Bound `computer_vision` to topics that intersect representation learning, document/camera capture, and machine-readable marks — not driving, not radiology unless later named |
 | Transformers drown the niche | Embeddings and “next path” ignore QR/stego | Hard cap per subcategory; generate **requires** category/subcategory; never query the union unlabeled |
-| Four slices, weak edges | Stego papers do not cite FM papers, neighborhoods look empty | Allow semantic neighbors later (PROD-003); for Phase 1, evaluate **inside** a subcategory first |
+| Four slices, weak edges | Stego papers do not cite FM papers, citation neighborhoods look empty | Content-graph k-NN against **other papers** in the slice ([SYS-010](issues.yml), [PROTO-009](issues.yml)); generate still **requires** a subcategory so FM papers do not dominate QR/stego |
 | FM patent noise | CPC `G06N` is huge and messy | Prefer `G06K 7/` / `G06K 19/` (readers and record carriers) and watermarking/security codes; add `G06N` only with keyword intersection (transformer, vision transformer, foundation model) |
 | LLM look-ahead on famous FM papers | Hindcast scores are fake | Held-out set prefers codes/stego/CV; record model name on EvalRun ([SYS-006](issues.yml)) |
 
@@ -63,7 +63,7 @@ Numeric caps land in Daedalus config during PROTO-003 (suggested starting cap: t
 
 - OpenAlex works + citation edges + topic assignments for the four subcategories.
 - Matching PatentsView/USPTO rows under the CPC/keyword bounds above.
-- User PDFs consented for upload, classified into these four (plus `other` if the extractor is unsure — `other` is not a generate target until confirmed).
+- User PDFs consented for upload, classified into these four (plus `other` if the extractor is unsure — `other` is not a generate target until confirmed). Extracted metadata and both graphs: [`docs/prototype-graphs.md`](prototype-graphs.md).
 
 Not: all of arXiv, all of USPTO, medical CV, or a second scientific domain.
 

@@ -6,11 +6,11 @@ Treat this folder as if it were a standalone repository (`pirlruc/daedalus`). De
 
 ## Role
 
-Turn external records and uploaded PDFs into Work nodes, citation edges, extractions, and categories.
+Turn external records and uploaded PDFs into Work nodes, `cites` edges, `similar_to` edges, embeddings, and categories.
 
-Phase 1: public metadata for the **named** field — OpenAlex papers plus a matching PatentsView/CPC slice ([PROTO-003](../docs/issues.yml), blocked on [SYS-009](../docs/issues.yml)) — and PDF extraction via the SYS-006 provider (Fake / cloud / local OpenAI-compatible such as Ollama or vLLM) ([PROTO-008](../docs/issues.yml)).
+Phase 1: public metadata for the SYS-009 slice — OpenAlex papers plus a matching PatentsView/CPC extract ([PROTO-003](../docs/issues.yml)); PDF extraction of title, authors, keywords, bibliography, and body ([PROTO-008](../docs/issues.yml)); embeddings of catalog abstracts and uploaded text so the content graph includes **other papers** ([PROTO-009](../docs/issues.yml)). LLM calls use the SYS-006 provider (Fake / cloud / local OpenAI-compatible such as Ollama or vLLM).
 
-Phase 2: wider patent coverage ([PROD-001](../docs/issues.yml)), queued extraction with DLQ ([PROD-002](../docs/issues.yml)), embeddings ([PROD-003](../docs/issues.yml)).
+Phase 2: wider patent coverage ([PROD-001](../docs/issues.yml)), queued extraction with DLQ ([PROD-002](../docs/issues.yml)), richer catalog text for re-embed ([PROD-003](../docs/issues.yml)).
 
 Phase 3: workers at throughput ([SCALE-002](../docs/issues.yml)).
 

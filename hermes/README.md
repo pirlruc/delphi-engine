@@ -12,7 +12,8 @@ Let a scientist or patent searcher overlay a document they have on the global ca
 
 - Batch-check identifiers without uploading a file.
 - Prompt for **consent** (destination named), then upload one PDF.
-- Show extracted categories/subcategories; allow override.
+- Show extracted **title, authors, keywords**, bibliography matches, suggested subcategory.
+- Show **citation** and **content** neighborhoods (content = similar other papers, not the PDF in isolation).
 - Query `research_path` or `patent_whitespace` for those categories.
 
 **Phase 2 ([PROD-004](../docs/issues.yml)):** Tauri + React desktop. First reference manager is local Zotero SQLite. Reuse the same consent rule. Quality follows [`docs/proposal/guardrails/typescript/`](../docs/proposal/guardrails/typescript/) until that pack is upstreamed. Qiqqa and Mendeley wait until Zotero works.

@@ -6,7 +6,7 @@ Treat this folder as if it were a standalone repository (`pirlruc/prometheus`). 
 
 ## Role
 
-Given a seed (catalog work or extracted PDF) and a past-only neighborhood filtered by category/subcategory, propose ranked next steps.
+Given a seed (catalog work or extracted PDF) and a past-only neighborhood filtered by category/subcategory, propose ranked next steps. The neighborhood includes **citation** neighbors and **content** neighbors (other papers with similar text), tagged by edge kind.
 
 `PathRequest.kind` is `research_path` or `patent_whitespace`. This is the product brain. Epimetheus scores it; Hermes displays it.
 

@@ -6,9 +6,9 @@ Treat this folder as if it were a standalone repository (`pirlruc/delphi`). Depe
 
 ## Role
 
-Serve batch identifier checks, consented PDF accept, and dated citation neighborhoods. Expose generate (`research_path` or `patent_whitespace`) filtered by category/subcategory. Delphi is **not** the ingest pipeline, **not** the path generator, and **not** the judge.
+Serve batch identifier checks, consented PDF accept, and dual neighborhoods: **citation** (`cites`) and **content** (`similar_to` from embeddings of this work versus other works). Expose generate (`research_path` or `patent_whitespace`) filtered by category/subcategory. Delphi is **not** the ingest pipeline, **not** the path generator, and **not** the judge.
 
-Prototype persistence is Postgres 16 + pgvector behind repository interfaces ([SYS-002](../docs/issues.yml)). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
+Prototype persistence is Postgres 16 + pgvector behind repository interfaces ([SYS-002](../docs/issues.yml), [SYS-010](../docs/issues.yml)). Graph rules: [`docs/prototype-graphs.md`](../docs/prototype-graphs.md). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
 
 ## Layout (target, PROTO-002)
 

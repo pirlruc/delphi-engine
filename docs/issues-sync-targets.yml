@@ -21,7 +21,7 @@ milestones:
   - name: Tooling — Analog & methodology
     description: Guardrails, github-scaffold, github-issue-adr
   - name: Phase 0 — System decisions
-    description: Component map, identity, privacy, prototype store
+    description: Component map, identity, dual graphs, prototype store
   - name: Phase 1 — Prototype
     description: PDF extract-then-query plus hindcast on one named field
   - name: Phase 2 — Product slice

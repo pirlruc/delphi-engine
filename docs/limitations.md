@@ -17,6 +17,10 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 
 - Four subcategories: transformers/FMs (capped), bounded computer vision, steganography, 2D codes. Not a global corpus. See [`docs/prototype-corpus.md`](prototype-corpus.md).
 - Consented single-PDF upload (not bulk Zotero sync).
+- Dual graphs: directed `cites` plus top-k `similar_to`. See [`docs/prototype-graphs.md`](prototype-graphs.md).
+- Catalog works in the content graph use **title + abstract**, not licensed full text, unless the user uploaded that paper. Richer re-embed is [PROD-003](issues.yml).
+- Content-graph edges are nearest-neighbor similarities, not a full pairwise matrix of the slice.
+- Patent coverage is OpenAlex-adjacent plus PatentsView for the four SYS-009 subcategories, not the full CPC tree. CPC is a category scheme ([SYS-008](issues.yml)), not exhaustive patent ingest.
 - LLM adapters: Fake in tests; cloud or local in live runs ([SYS-006](issues.yml)).
 - No GraphQL, no distributed graph or vector databases.
 - Hermes Phase 1 is a CLI; Tauri is [PROD-004](issues.yml).

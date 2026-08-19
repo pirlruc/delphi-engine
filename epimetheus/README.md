@@ -7,7 +7,7 @@ Treat this folder as if it were a standalone repository (`pirlruc/epimetheus`). 
 ## Role
 
 1. Pick a historical work.
-2. Build a temporal mask: drop that work, every later work, and the downstream citation closure.
+2. Build a temporal mask: drop that work, every later work, its **citation descendants**, and **content-graph neighbors that only exist because of later papers**.
 3. Ask Prometheus to propose the next step from the remaining past.
 4. Score the proposal against the held-out work (LLM-as-judge plus embedding similarity).
    The judge uses the SYS-006 provider (Fake in tests; cloud or local OpenAI-compatible

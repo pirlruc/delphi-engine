@@ -232,12 +232,12 @@ milestones:
             Milvus/Qdrant at billions of nodes before any eval loop exists.
             That locks schema and ops cost to an unproven thesis.
           goal: >-
-            In the context of serving a dated citation graph and embeddings,
-            facing an unproven hindcasting thesis, we decided that Phase 1
-            uses one Postgres instance with pgvector and a citation-edge
-            table, to achieve a working prototype on a single field,
-            accepting that Phase 3 will replace the store when corpus size
-            or query shape demands it.
+            In the context of serving a dated citation graph and a content
+            similarity graph, facing an unproven hindcasting thesis, we
+            decided that Phase 1 uses one Postgres instance with pgvector,
+            a cites edge table, and a similar_to edge table, to achieve
+            both graphs without a second database, accepting that Phase 3
+            will replace the store when corpus size or query shape demands it.
         architecture:
           target: Prototype store behind the Delphi API, not leaked into clients
           modules:
@@ -246,7 +246,7 @@ milestones:
             - contracts
         acceptance_criteria:
           - Phase 1 persistence is Postgres 16 plus pgvector, started from Compose
-          - Citation edges and work records share one transactional store
+          - Work records, cites edges, similar_to edges, and embeddings share one store
           - No Neptune, TigerGraph, Neo4j, or clustered Milvus in Phase 1
           - Delphi owns the repository interfaces so SCALE-001 can swap engines
         guardrail_refs:
@@ -327,7 +327,7 @@ milestones:
           - PDF bytes are accepted only after a consent prompt that names Delphi as destination
           - Batch-check of identifiers still does not require a PDF
           - Extraction output is stored as structured fields, not as a second anonymous blob store
-          - A working prototype demo is upload → extract → category query (SYS-008, PROTO-008, PROTO-006)
+          - A working prototype demo is upload → extract metadata → dual graphs → category query (SYS-008, SYS-010, PROTO-008, PROTO-006)
         guardrail_refs:
           - PY-SEC-001
           - TS-SEC-004
@@ -383,7 +383,7 @@ milestones:
         acceptance_criteria:
           - contracts owns Pydantic models and the OpenAPI document
           - delphi is the query/sync API and catalog, not an ingest/eval orchestrator
-          - daedalus writes works, citation edges, and extraction jobs
+          - daedalus writes works, citation edges, similar_to edges, embeddings, and extraction jobs
           - prometheus generates research paths and patent-whitespace hypotheses from a masked neighborhood
           - epimetheus is a batch eval harness with temporal masking, not a required runtime for queries
           - hermes is the user-facing client (CLI with PDF upload in Phase 1, Tauri desktop in Phase 2)
@@ -576,6 +576,55 @@ milestones:
               - rg -n 'G06K' docs/prototype-corpus.md
               - rg -n 'Named' docs/prototype-corpus.md
 
+      - id: SYS-010
+        status: open
+        title: Prototype builds citation and content graphs including other papers
+        overview:
+          problem: >-
+            An uploaded PDF is useless as an isolated document. Citation
+            links miss related work that never cites. A content graph of
+            only the uploaded file has nothing to connect to.
+          goal: >-
+            In the context of extract-then-query, facing both bibliographic
+            and semantic relatedness, we decided that Phase 1 extracts
+            title, authors, keywords, and bibliography from the PDF, writes
+            directed cites edges (PDF bibliography plus catalog citations),
+            and writes similar_to edges from embeddings of this paper's
+            text against embeddings of other works in the slice, to achieve
+            dual neighborhoods for generate, accepting catalog-side text is
+            title-plus-abstract until licensed full text exists.
+        architecture:
+          target: Dual graph in Delphi; extraction in Daedalus; see docs/prototype-graphs.md
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - prometheus
+            - epimetheus
+            - hermes
+            - docs/prototype-graphs.md
+        acceptance_criteria:
+          - Extracted metadata includes title, authors, keywords, and bibliography
+          - Citation graph includes catalog cites and PDF-extracted cites matched by identity
+          - Content graph k-NN includes the uploaded work and other ingested works
+          - Neighborhood API supports citation, content, and union modes
+          - Temporal masks drop future nodes on both graphs
+        guardrail_refs:
+          - PY-API-001
+          - PY-PERF-001
+        tasks:
+          - id: SYS-010-T1
+            status: done
+            title: Document dual-graph behavior in prototype-graphs.md
+            instructions:
+              files:
+                - docs/prototype-graphs.md
+                - README.md
+                - delphi/README.md
+            verification:
+              - rg -n 'similar_to|cites' docs/prototype-graphs.md
+              - rg -n 'content graph' README.md
+
   - name: Phase 1 — Prototype
     epics:
       - id: PROTO-001
@@ -595,7 +644,7 @@ milestones:
             - contracts
         acceptance_criteria:
           - contracts/pyproject.toml targets Python 3.13 and uv.lock is committed
-          - Models cover Work, Identity, Category, BatchCheck, PdfUpload, Extraction, PathRequest (kind research_path or patent_whitespace), EvalRun
+          - Models cover Work, Identity, Category, BatchCheck, PdfUpload, Extraction (title, authors, keywords, bibliography, body text), Neighborhood (citation, content, union), PathRequest (kind research_path or patent_whitespace), EvalRun
           - OpenAPI is generated from the models and checked in
           - Package tests meet pinned PY-TEST-002 floors or a recorded deviation exists
         guardrail_refs:
@@ -637,7 +686,7 @@ milestones:
         acceptance_criteria:
           - POST /v1/works:batch-check returns known/unknown for a list of identifiers
           - POST /v1/generate accepts kind, category, subcategory, and a seed work or extraction id
-          - GET neighborhood by work id returns citing/cited works with publication dates
+          - GET neighborhood supports mode citation, content, or union and returns dated neighbors tagged by edge kind
           - Repository interfaces hide SQL so SCALE-001 can swap the engine
           - Compose stack brings up API plus Postgres locally
         guardrail_refs:
@@ -680,6 +729,7 @@ milestones:
           - Ingest respects SYS-009 subcategory caps and exclusions
           - Re-running ingest does not duplicate works or edges
           - Paper and patent connectors are separate modules
+          - Catalog works store title, authors, keywords/topics, abstract, and source citation edges
           - Failure of a page/batch is retried; poison records are skipped with a log
         guardrail_refs:
           - PY-SEC-001
@@ -716,6 +766,7 @@ milestones:
             - contracts
         acceptance_criteria:
           - Generator accepts a MaskedContext object; it cannot fetch the catalog itself
+          - MaskedContext includes citation neighbors and content neighbors tagged by edge kind
           - kind is research_path or patent_whitespace
           - Output is structured (claims, rationale, cited context ids, categories) not free prose only
           - LLM access uses the SYS-006 provider interface with a deterministic Fake for tests
@@ -745,9 +796,10 @@ milestones:
             cannot be tested.
           goal: >-
             Select a historical work, delete it plus all works with later
-            dates plus its downstream citation closure from the context,
-            call Prometheus, and score the proposal against the held-out
-            work with LLM-as-judge plus embedding similarity.
+            dates plus its downstream citation closure plus later
+            content-graph neighbors from the context, call Prometheus,
+            and score the proposal against the held-out work with
+            LLM-as-judge plus embedding similarity.
         architecture:
           target: epimetheus/ batch harness
           modules:
@@ -757,7 +809,7 @@ milestones:
             - contracts
         acceptance_criteria:
           - Mask construction is unit-tested against a fixture graph with known leak cases
-          - Context passed to Prometheus contains no held-out id, no later publication date, no descendant
+          - Context passed to Prometheus contains no held-out id, no later publication date, no citation descendant, and no later content-graph neighbor
           - Judge scores novelty, relevance, and accuracy on a documented rubric
           - A run writes metrics (judge scores, embedding similarity) to a JSON artifact
           - HITL UI is out of scope (PROD-006)
@@ -775,7 +827,7 @@ milestones:
                 - epimetheus/tests
             verification:
               - cd epimetheus && uv run pytest
-              - Leak fixtures (future paper, descendant, same-year-after) all fail closed
+              - Leak fixtures (future paper, citation descendant, later similar_to neighbor, same-year-after) all fail closed
           - id: PROTO-005-T2
             status: open
             title: Implement LLM-as-judge scoring and metrics artifact
@@ -806,7 +858,8 @@ milestones:
             - contracts
         acceptance_criteria:
           - CLI refuses upload unless a consent flag or interactive yes names the destination
-          - CLI can batch-check identifiers without a PDF
+          - CLI prints extracted title, authors, keywords, and bibliography match counts
+          - CLI can show citation and content neighborhoods for the uploaded work
           - CLI can generate research_path and patent_whitespace filtered by category/subcategory
           - Local SQLite caches returned works and extractions for offline reprint
         guardrail_refs:
@@ -833,10 +886,11 @@ milestones:
             Shipping ingest and APIs without a user demo or a hindcasting
             result would recreate the original RTFC trap.
           goal: >-
-            A working prototype is both (1) upload PDF → extract → query
-            research_path and patent_whitespace by category, and (2)
-            Epimetheus numbers on the ingested slice. Phase 2 starts only
-            when this epic closes with that evidence.
+            A working prototype is (1) upload PDF → extract metadata →
+            attach citation and content graphs against other papers →
+            query research_path and patent_whitespace by category, and
+            (2) Epimetheus numbers on the ingested slice. Phase 2 starts
+            only when this epic closes with that evidence.
         architecture:
           target: docs plus hermes demo plus epimetheus run artifacts
           modules:
@@ -845,6 +899,7 @@ milestones:
             - docs
         acceptance_criteria:
           - Documented commands cover the PDF demo and a hindcast run
+          - The PDF demo shows extracted metadata plus citation and content neighbors
           - Metrics include trial count, mean judge scores, embedding similarity
           - Both query kinds are exercised on the extracted PDF
           - Known limitations of the slice are listed in docs/limitations.md
@@ -866,17 +921,18 @@ milestones:
 
       - id: PROTO-008
         status: open
-        title: PDF extraction worker for the prototype
+        title: PDF extraction of metadata, bibliography, and body text
         overview:
           problem: >-
             Metadata ingest does not read a user PDF. Without extraction,
-            categories and claims never appear and generate has nothing new
-            to condition on.
+            the upload has no title, authors, keywords, cites, or text to
+            embed against other papers.
           goal: >-
-            Daedalus extracts text and structured fields (title, abstract,
-            methods, claims-like statements, suggested categories) from a
-            consented PDF using the SYS-006 provider, with retries. Queue
-            depth and DLQ at product scale remain PROD-002.
+            Daedalus extracts bibliographic metadata (title, authors,
+            keywords, dates, identifiers), bibliography entries, and body
+            text from a consented PDF using the SYS-006 provider, with
+            retries. Bibliography rows are batch-checked into cites edges
+            (SYS-010). Queue depth and DLQ at product scale remain PROD-002.
         architecture:
           target: daedalus extraction path behind Delphi upload
           modules:
@@ -885,7 +941,8 @@ milestones:
             - contracts
         acceptance_criteria:
           - Extraction is idempotent on content hash
-          - Suggested categories use SYS-008 schemes
+          - Output includes title, authors, keywords, bibliography, body text, suggested categories
+          - Bibliography identities are submitted to batch-check; unmatched cites are stored unresolved
           - Fake provider covers tests; cloud or local is config
           - Failed extraction is retried then recorded as failed, not silent
         guardrail_refs:
@@ -901,6 +958,46 @@ milestones:
                 - daedalus/tests
             verification:
               - cd daedalus && uv run pytest
+
+      - id: PROTO-009
+        status: open
+        title: Content graph from embeddings of the upload and other papers
+        overview:
+          problem: >-
+            Citation edges miss related work that never cites. Embedding
+            only the uploaded PDF cannot place it among other papers.
+          goal: >-
+            Embed catalog works (title plus abstract) and the uploaded
+            PDF (extracted body) with the same model, write similar_to
+            top-k edges, and expose content and union neighborhoods.
+            Distributed vector databases remain SCALE-001.
+        architecture:
+          target: daedalus embed job plus Delphi k-NN / similar_to table
+          modules:
+            - daedalus
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - Catalog ingest produces embeddings for works with abstracts
+          - PDF extraction triggers an embed of the new work and refreshes its similar_to edges
+          - Neighbors are other works in the slice, not self-loops
+          - GET neighborhood mode=content returns dated similar_to neighbors
+          - Embeddings are idempotent on (work id, model id)
+        guardrail_refs:
+          - PY-PERF-001
+          - PY-API-001
+        tasks:
+          - id: PROTO-009-T1
+            status: open
+            title: Embed catalog and uploaded works and store similar_to edges
+            instructions:
+              files:
+                - daedalus/src
+                - delphi/src
+                - delphi/tests
+            verification:
+              - cd daedalus && uv run pytest
+              - cd delphi && uv run pytest
 
   - name: Phase 2 — Product slice
     epics:
@@ -977,16 +1074,16 @@ milestones:
 
       - id: PROD-003
         status: open
-        title: Semantic neighborhood via embeddings in the prototype store
+        title: Improve content-graph text beyond title-plus-abstract
         overview:
           problem: >-
-            Citation paths miss conceptually close work that does not cite.
-            The original dual-graph idea is correct; a second database is
-            not required yet.
+            Phase 1 content edges use catalog abstracts. Licensed full text
+            or extracted claims would change k-NN quality once the prototype
+            loop works.
           goal: >-
-            Embed abstracts (or extracted claims) into pgvector and expose
-            k-NN alongside citation neighborhood, still behind Delphi
-            interfaces.
+            Re-embed catalog works when better text is available (claims,
+            sections) without changing the neighborhood API. First content
+            graph remains PROTO-009.
         architecture:
           target: delphi vector repository on pgvector
           modules:
@@ -994,16 +1091,16 @@ milestones:
             - daedalus
             - prometheus
         acceptance_criteria:
-          - Neighborhood query can request citation, semantic, or union mode
-          - Embeddings are batch-generated and idempotent
-          - Prometheus can consume semantic neighbors that pass the temporal mask
+          - Re-embed is idempotent on (work id, model id, text version)
+          - Neighborhood API is unchanged
+          - Prometheus still receives temporally masked content neighbors
         guardrail_refs:
           - PY-PERF-001
           - PY-API-001
         tasks:
           - id: PROD-003-T1
             status: open
-            title: Add embedding generation and k-NN neighborhood
+            title: Re-embed catalog works when richer text is available
             instructions:
               files:
                 - delphi/src

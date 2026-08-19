@@ -10,7 +10,8 @@ README + this handoff. No generator yet ([PROTO-004](../../docs/issues.yml)).
 
 ## Constraints
 
-- Input is `MaskedContext`. Tests must fail if future work ids are present.
+- Must not fetch from Delphi. Input is `MaskedContext` built by Epimetheus (or by Delphi for live queries). That context includes **both** citation and content neighborhoods ([SYS-010](../../docs/issues.yml)).
+- Tests must fail if future work ids are present.
 - LLM provider is SYS-006 (Fake / cloud / local OpenAI-compatible). Tests must not need a GPU or API key.
 - Output kind is `research_path` or `patent_whitespace`.
 - Prompts must instruct the model not to use knowledge after the mask date; that is necessary but not sufficient — the mask itself is the control.
