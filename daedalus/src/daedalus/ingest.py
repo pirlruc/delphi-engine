@@ -71,11 +71,17 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
         stored.append((work, [str(item) for item in record.get("cites", [])]))
         counts[subcategory] = counts.get(subcategory, 0) + 1
     check_caps(counts)
+    known = {work.id for work, _cites in stored}
     for work, _cites in stored:
         catalog.upsert_work(work)
     for work, cites in stored:
         for target in cites:
-            catalog.add_edge(Edge(from_work=work.id, to_work=UUID(target), kind=EdgeKind.CITES))
+            try:
+                other = UUID(str(target))
+            except ValueError:
+                continue
+            if other in known:
+                catalog.add_edge(Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES))
     return len(stored)
 
 
@@ -91,7 +97,7 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
     subcategory = str(record["subcategory"])
     parsed = SubcategoryId(subcategory)
     scheme = CategoryScheme.CPC if record["kind"] == "patent" else CategoryScheme.OPENALEX_TOPIC
-    identity = _identity(record)
+    identity = _identities(record)
     return Work(
         id=UUID(str(record["id"])),
         kind=WorkKind(str(record["kind"])),
@@ -100,7 +106,7 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
         keywords=tuple(str(item) for item in record.get("keywords", ())),
         abstract=str(record.get("abstract", "")),
         published_on=date.fromisoformat(str(record["published_on"])),
-        identities=(identity,),
+        identities=identity,
         categories=(
             Category(
                 scheme=scheme,
@@ -112,21 +118,33 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
     )
 
 
-def _identity(record: dict[str, Any]) -> Identity:
-    """Pick DOI, patent, or OpenAlex identity.
+def _identities(record: dict[str, Any]) -> tuple[Identity, ...]:
+    """Collect DOI, patent, OpenAlex, and arXiv identities.
 
     Args:
-        record: Fixture row.
+        record: Fixture or connector row.
 
     Returns:
-        Primary identity.
+        One or more identities; content hash when none are present.
     """
     mapping = (
         ("doi", IdentityKind.DOI),
         ("patent", IdentityKind.PATENT),
         ("openalex", IdentityKind.OPENALEX),
+        ("arxiv", IdentityKind.ARXIV),
     )
+    rows: list[Identity] = []
+    seen: set[tuple[str, str]] = set()
     for key, kind in mapping:
-        if key in record:
-            return Identity(kind=kind, value=str(record[key]))
-    return Identity(kind=IdentityKind.CONTENT_HASH, value=str(record["id"]))
+        value = record.get(key)
+        if not value:
+            continue
+        text = str(value)
+        pair = (kind.value, text)
+        if pair in seen:
+            continue
+        seen.add(pair)
+        rows.append(Identity(kind=kind, value=text))
+    if rows:
+        return tuple(rows)
+    return (Identity(kind=IdentityKind.CONTENT_HASH, value=str(record["id"])),)

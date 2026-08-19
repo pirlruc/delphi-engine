@@ -23,6 +23,21 @@ Long-running API (in-memory catalog, SYS-009 fixture, Fake LLM):
 bash scripts/serve-prototype.sh
 ```
 
+Postgres 16 + API (Compose). Sets `DELPHI_DATABASE_URL` and still defaults to Fake LLM:
+
+```bash
+docker compose up --build
+curl -s http://127.0.0.1:8000/health
+```
+
+Live OpenAlex pages for the four subcategories (small cap, not tens of thousands):
+
+```bash
+cd daedalus
+uv run daedalus --live --per-subcategory 5 --output /tmp/oa-slice.json
+# then: bash scripts/serve-prototype.sh --records /tmp/oa-slice.json
+```
+
 In another terminal (fixture seed `11111111-1111-1111-1111-111111111111`):
 
 ```bash
@@ -42,10 +57,10 @@ uv run epimetheus --output evalrun.json
 uv run epimetheus --works-json ../daedalus/src/daedalus/fixtures/slice.json --output docs/prototype-eval.json
 ```
 
-Optional Postgres 16 + pgvector (not used by the default serve path):
+Optional Postgres 16 + pgvector with the API (Compose). Unit tests use `DELPHI_TEST_DATABASE_URL` when a local server is up:
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
 ## Methodology

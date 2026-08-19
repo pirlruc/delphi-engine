@@ -15,7 +15,7 @@ from delphi_contracts.llm import cosine
 from delphi_contracts.neighborhood import Neighbor, Neighborhood
 from delphi_contracts.work import Work
 
-__all__ = ["Catalog", "MemoryCatalog", "has_subcategory"]
+__all__ = ["Catalog", "MemoryCatalog", "has_subcategory", "scored_neighbors"]
 
 
 class Catalog(Protocol):
@@ -360,7 +360,7 @@ class MemoryCatalog:
             if edge.kind is not EdgeKind.SIMILAR_TO
             or (edge.from_work != work_id and edge.to_work != work_id)
         ]
-        scored = _scored_neighbors(work_id, source, self._embeddings)
+        scored = scored_neighbors(work_id, source, self._embeddings)
         for other_id, score in scored[:k]:
             self.add_edge(
                 Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
@@ -517,7 +517,7 @@ def _edge_neighbor(edge: Edge, seed_id: UUID, works: dict[UUID, Work]) -> Neighb
     return Neighbor(work=other, edge_kind=edge.kind, direction=direction, score=edge.score)
 
 
-def _scored_neighbors(
+def scored_neighbors(
     work_id: UUID,
     source: tuple[float, ...],
     embeddings: dict[UUID, tuple[float, ...]],

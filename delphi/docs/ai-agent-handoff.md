@@ -6,9 +6,9 @@ Catalog and query service. Hide SQL behind repository interfaces so SCALE-001 ca
 
 ## Current slice
 
-Walking skeleton ([PROTO-002](../../docs/issues.yml)). FastAPI app with `MemoryCatalog`: `POST /v1/works:batch-check`, `GET /v1/works/{id}/neighborhood`, `POST /v1/uploads`, `POST /v1/generate`. Extractor/embedder/generator are ports so this package does not import siblings. Default `scripts/serve_prototype.py` wires Daedalus + Prometheus at the composition root.
+Walking skeleton ([PROTO-002](../../docs/issues.yml)). FastAPI app with `MemoryCatalog` or `PostgresCatalog`: `POST /v1/works:batch-check`, `GET /v1/works/{id}/neighborhood`, `POST /v1/uploads`, `POST /v1/generate`, `GET /health`. Extractor/embedder/generator are ports so this package does not import siblings. Default `scripts/serve_prototype.py` wires Daedalus + Prometheus at the composition root. Set `DELPHI_DATABASE_URL` (Compose does) to persist in Postgres.
 
-Postgres/pgvector is in root `docker-compose.yml` and is **not** the default serve backend yet.
+Postgres/pgvector image is in root `docker-compose.yml`; k-NN is still in-process cosine on stored vectors.
 
 ## Constraints
 
@@ -22,4 +22,4 @@ Postgres/pgvector is in root `docker-compose.yml` and is **not** the default ser
 
 ## Suggested next work
 
-Wire `MemoryCatalog` to Postgres/pgvector without changing the REST contract ([PROTO-002](../../docs/issues.yml) remaining acceptance, [SYS-002](../../docs/issues.yml)).
+Confirm Compose on a Docker host. pgvector operators for k-NN when the slice is large enough to measure ([SCALE-001](../../docs/issues.yml)).

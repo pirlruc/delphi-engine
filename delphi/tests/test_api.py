@@ -379,3 +379,7 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
     assert catalog.list_works()
     assert catalog.edges()
     create_app()
+    health = TestClient(create_app()).get("/health")
+    assert health.status_code == 200
+    assert health.json()["status"] == "ok"
+    assert health.json()["catalog"] == "MemoryCatalog"

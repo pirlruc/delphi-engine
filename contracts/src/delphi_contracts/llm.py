@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
+from collections.abc import Mapping
 from typing import Any, Protocol, runtime_checkable
 
 import httpx
@@ -26,6 +28,7 @@ __all__ = [
     "ProviderSettings",
     "build_provider",
     "hash_embed",
+    "provider_settings_from_env",
 ]
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -352,6 +355,33 @@ class OpenAICompatibleProvider:
         response.raise_for_status()
         parsed = response.json()
         return dict(parsed) if isinstance(parsed, dict) else {}
+
+
+def provider_settings_from_env(environ: Mapping[str, str] | None = None) -> ProviderSettings:
+    """Build provider settings from DELPHI_LLM_* environment variables.
+
+    Args:
+        environ: Mapping to read. Defaults to os.environ.
+
+    Returns:
+        Settings for build_provider. Missing vars keep Fake defaults.
+    """
+    env = os.environ if environ is None else environ
+    raw_kind = env.get("DELPHI_LLM_KIND", ProviderKind.FAKE.value)
+    kind = ProviderKind(raw_kind)
+    defaults = {
+        ProviderKind.FAKE: ("fake", "fake-hash", "https://api.openai.com/v1"),
+        ProviderKind.CLOUD: ("gpt-4o-mini", "text-embedding-3-small", "https://api.openai.com/v1"),
+        ProviderKind.LOCAL: ("llama3", "nomic-embed-text", "http://127.0.0.1:11434/v1"),
+    }
+    model, embedding, base = defaults[kind]
+    return ProviderSettings(
+        kind=kind,
+        model=env.get("DELPHI_LLM_MODEL", model),
+        embedding_model=env.get("DELPHI_LLM_EMBEDDING_MODEL", embedding),
+        base_url=env.get("DELPHI_LLM_BASE_URL", base),
+        api_key=env.get("DELPHI_LLM_API_KEY", ""),
+    )
 
 
 def build_provider(

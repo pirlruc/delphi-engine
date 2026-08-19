@@ -2,5 +2,12 @@
 
 from delphi.app import create_app
 from delphi.catalog import Catalog, MemoryCatalog
+from delphi.postgres import PostgresCatalog, catalog_from_url
 
-__all__ = ["Catalog", "MemoryCatalog", "create_app"]
+__all__ = [
+    "Catalog",
+    "MemoryCatalog",
+    "PostgresCatalog",
+    "catalog_from_url",
+    "create_app",
+]

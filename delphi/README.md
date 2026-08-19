@@ -8,7 +8,7 @@ Treat this folder as if it were a standalone repository (`pirlruc/delphi`). Depe
 
 Serve batch identifier checks, consented PDF accept, and dual neighborhoods: **citation** (`cites`) and **content** (`similar_to` from embeddings of this work versus other works). Expose generate (`research_path` or `patent_whitespace`) filtered by category/subcategory. Delphi is **not** the ingest pipeline, **not** the path generator, and **not** the judge.
 
-Prototype persistence in unit tests and `scripts/serve_prototype.py` is an in-memory catalog. Postgres 16 + pgvector is in the root `docker-compose.yml` ([SYS-002](../docs/issues.yml)) and is not wired into the default serve path yet. Graph rules: [`docs/prototype-graphs.md`](../docs/prototype-graphs.md). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
+Prototype persistence is `MemoryCatalog` unless `DELPHI_DATABASE_URL` is set, which selects `PostgresCatalog` (works, identities, cites, similar_to, embeddings, extractions in one Postgres 16 database). Compose starts API plus Postgres ([SYS-002](../docs/issues.yml)). Graph rules: [`docs/prototype-graphs.md`](../docs/prototype-graphs.md). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
 
 ## Layout
 
@@ -39,4 +39,5 @@ Run the composition root from the workspace:
 
 ```bash
 bash scripts/serve-prototype.sh
+# or: docker compose up --build
 ```

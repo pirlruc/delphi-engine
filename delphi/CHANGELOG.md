@@ -9,6 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- FastAPI walking skeleton: batch-check, neighborhood (citation/content/union), consented PDF upload, and generate.
-- In-memory catalog with `cites` and `similar_to` edges. Postgres/pgvector remains compose-only until SCALE-001.
+- FastAPI walking skeleton: batch-check, neighborhood (citation/content/union), consented PDF upload, generate, and `/health`.
+- In-memory catalog plus `PostgresCatalog` (DSN via `DELPHI_DATABASE_URL` / Compose).
 - PDF upload is idempotent on content hash.

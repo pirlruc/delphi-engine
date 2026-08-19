@@ -158,6 +158,22 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         }
         return JSONResponse(body)
 
+    @app.get("/health")
+    def health(deps: Annotated[AppContainer, Depends(get_state)]) -> dict[str, object]:
+        """Liveness plus catalog size for Compose.
+
+        Args:
+            deps: Container.
+
+        Returns:
+            Status payload.
+        """
+        return {
+            "status": "ok",
+            "catalog": type(deps.catalog).__name__,
+            "works": len(deps.catalog.list_works()),
+        }
+
     @app.post("/v1/generate")
     def post_generate(
         request: PathRequest,

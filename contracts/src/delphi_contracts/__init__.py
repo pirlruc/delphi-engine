@@ -26,6 +26,7 @@ from delphi_contracts.llm import (
     build_provider,
     cosine,
     hash_embed,
+    provider_settings_from_env,
 )
 from delphi_contracts.neighborhood import Neighbor, Neighborhood, NeighborhoodMode
 from delphi_contracts.openapi import build_openapi, openapi_path
@@ -81,4 +82,5 @@ __all__ = [
     "cosine",
     "hash_embed",
     "openapi_path",
+    "provider_settings_from_env",
 ]

@@ -96,6 +96,26 @@ def test_ingest_hash_identity_and_caps_error() -> None:
         ],
     )
     assert hashed == 1
+    dual = ingest_records(
+        catalog,
+        [
+            {
+                "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01",
+                "kind": "paper",
+                "title": "Dual ids",
+                "published_on": "2011-02-01",
+                "subcategory": "steganography",
+                "doi": "10.1/dual",
+                "openalex": "https://openalex.org/W9",
+                "arxiv": "1101.0001",
+                "cites": ["not-a-uuid", "99999999-9999-9999-9999-999999999999"],
+            }
+        ],
+    )
+    assert dual == 1
+    stored = catalog.get_work(UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"))
+    assert stored is not None
+    assert len(stored.identities) == 3
 
 
 def test_connectors_map_records() -> None:
@@ -156,7 +176,7 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     assert ingest_records(catalog2, load_fixture(extra)) == 1
 
 
-def test_sample_pdf_retries_and_fetch(monkeypatch) -> None:
+def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
     from delphi_contracts.enums import ProviderKind
     from delphi_contracts.llm import ChatResponse, EmbedResponse
 
@@ -298,8 +318,121 @@ def test_sample_pdf_retries_and_fetch(monkeypatch) -> None:
         def __exit__(self, *_args):
             return None
 
-    monkeypatch.setattr("daedalus.cli.httpx.Client", lambda: _CM())
+    monkeypatch.setattr("daedalus.cli.httpx.Client", lambda **_k: _CM())
     monkeypatch.setattr("daedalus.cli.fetch_openalex", lambda *_a, **_k: [{}, {}])
     monkeypatch.setattr("daedalus.cli.fetch_patentsview", lambda *_a, **_k: [{}])
+    monkeypatch.setattr("daedalus.cli.fetch_named_slice", lambda *_a, **_k: [{"title": "live"}])
+    monkeypatch.setenv("PATENTSVIEW_API_KEY", "secret")
     assert main(["--openalex-url", "http://x"]) == 0
     assert main(["--patentsview-url", "http://y"]) == 0
+    assert main(["--live"]) == 0
+    written = tmp_path / "live.json"
+    assert main(["--openalex-url", "http://x", "--output", str(written)]) == 0
+    assert written.is_file()
+
+
+def test_live_openalex_mapping_and_slice_pages() -> None:
+    from daedalus.fetch import (
+        fetch_named_slice,
+        fetch_openalex,
+        fetch_patentsview,
+        reconstruct_abstract,
+    )
+
+    assert reconstruct_abstract("plain") == "plain"
+    assert reconstruct_abstract(None) == ""
+    assert reconstruct_abstract({"qr": [0, 2], "codes": [1]}) == "qr codes qr"
+    assert reconstruct_abstract({"qr": "bad"}) == ""
+
+    pages = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        pages["n"] += 1
+        url = str(request.url)
+        if "patents" in url:
+            return httpx.Response(
+                200,
+                json={
+                    "patents": [
+                        {
+                            "patent_number": "US-99",
+                            "patent_title": "Carrier",
+                            "patent_date": "2013-01-01",
+                            "inventors": [
+                                {"inventor_first_name": "Ada", "inventor_last_name": "Lovelace"},
+                                "skip-str-ok",
+                            ],
+                            "cpc_current": [{"cpc_subclass_id": "G06K"}, "G06V"],
+                        }
+                    ]
+                },
+            )
+        if pages["n"] == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "results": [
+                        {
+                            "id": "https://openalex.org/Wlive",
+                            "display_name": "QR overlay",
+                            "publication_year": 2014,
+                            "doi": "https://doi.org/10.1/live",
+                            "abstract_inverted_index": {"color": [0], "qr": [1]},
+                            "authorships": [
+                                {"author": {"display_name": "Ada"}},
+                                {"raw_author_name": "Kim"},
+                                "skip",
+                            ],
+                            "keywords": [{"display_name": "QR"}],
+                            "referenced_works": ["https://openalex.org/Wcited"],
+                            "ids": {"arxiv": "1401.0001"},
+                        },
+                        {
+                            "id": "https://openalex.org/Wmed",
+                            "title": "Radiology medical imaging",
+                            "publication_date": "2015-01-01",
+                            "abstract": "autonomous driving detector",
+                        },
+                    ],
+                    "meta": {"next_cursor": "page2"},
+                },
+            )
+        return httpx.Response(200, json=["not-an-object"])
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    live = fetch_openalex("http://openalex.test/live", "two_d_codes", client)
+    assert live[0]["authors"] == ["Ada", "Kim"]
+    assert live[0]["abstract"] == "color qr"
+    assert live[0]["doi"] == "10.1/live"
+    assert live[0]["arxiv"] == "1401.0001"
+    assert live[0]["cites"]
+    patents = fetch_patentsview("http://patents.test/patents", "two_d_codes", client)
+    assert patents[0]["authors"][0] == "Ada Lovelace"
+    assert "G06K" in patents[0]["keywords"]
+    pages["n"] = 0
+    slice_rows = fetch_named_slice(client, per_subcategory=1, mailto="dev@localhost")
+    assert slice_rows
+
+
+def test_named_slice_drops_blocked_computer_vision() -> None:
+    from daedalus.fetch import fetch_named_slice
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "results": [
+                    {
+                        "id": "https://openalex.org/Wmed",
+                        "title": "Radiology medical imaging",
+                        "publication_date": "2015-01-01",
+                        "abstract": "autonomous driving detector",
+                    }
+                ],
+                "meta": {},
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    rows = fetch_named_slice(client, per_subcategory=5)
+    assert len(rows) == 3

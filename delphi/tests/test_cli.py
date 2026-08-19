@@ -15,3 +15,4 @@ def test_main_invokes_uvicorn(monkeypatch) -> None:
     assert main(["--host", "0.0.0.0", "--port", "9000"]) == 0
     assert captured["host"] == "0.0.0.0"
     assert captured["port"] == 9000
+    assert main(["--database-url", ""]) == 0

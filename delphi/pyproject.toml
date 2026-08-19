@@ -11,6 +11,7 @@ readme = "README.md"
 dependencies = [
     "delphi-contracts",
     "fastapi>=0.115",
+    "psycopg[binary]>=3.2",
     "python-multipart>=0.0.18",
     "uvicorn>=0.34",
 ]

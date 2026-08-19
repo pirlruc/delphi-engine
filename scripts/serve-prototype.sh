@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the in-memory prototype API with fixture ingest and Fake LLM.
+# Run the prototype API (memory catalog unless DELPHI_DATABASE_URL is set).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="${HOME}/.local/bin:${PATH}"

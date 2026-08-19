@@ -31,6 +31,7 @@ from delphi_contracts.llm import (
     build_provider,
     cosine,
     hash_embed,
+    provider_settings_from_env,
 )
 from delphi_contracts.neighborhood import Neighbor, Neighborhood
 from delphi_contracts.openapi import build_openapi, openapi_path, write_openapi
@@ -197,7 +198,24 @@ def test_fake_provider_extract_generate_judge() -> None:
     assert len(embedded.vector) == 32
 
 
-def test_build_provider_fake_default() -> None:
+def test_provider_settings_from_env_defaults_and_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = provider_settings_from_env({})
+    assert fake.kind is ProviderKind.FAKE
+    cloud = provider_settings_from_env({"DELPHI_LLM_KIND": "cloud", "DELPHI_LLM_API_KEY": "sk"})
+    assert cloud.kind is ProviderKind.CLOUD
+    assert cloud.api_key == "sk"
+    local = provider_settings_from_env({
+        "DELPHI_LLM_KIND": "local",
+        "DELPHI_LLM_MODEL": "custom",
+        "DELPHI_LLM_EMBEDDING_MODEL": "emb",
+        "DELPHI_LLM_BASE_URL": "http://ollama/v1",
+    })
+    assert local.model == "custom"
+    assert local.embedding_model == "emb"
+    monkeypatch.setenv("DELPHI_LLM_KIND", "fake")
+    assert provider_settings_from_env().kind is ProviderKind.FAKE
     provider = build_provider()
     assert provider.kind is ProviderKind.FAKE
     assert provider.model_id == "fake"

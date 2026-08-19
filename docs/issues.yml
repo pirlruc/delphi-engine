@@ -705,6 +705,18 @@ milestones:
             verification:
               - cd delphi && uv run pytest
               - batch-check is covered for mixed known/unknown identifier lists
+          - id: PROTO-002-T2
+            status: done
+            title: Postgres catalog behind the repository interface
+            instructions:
+              files:
+                - delphi/src/delphi/postgres.py
+                - docker-compose.yml
+                - Dockerfile
+                - scripts/serve_prototype.py
+            verification:
+              - cd delphi && uv run pytest
+              - rg -n 'PostgresCatalog|DELPHI_DATABASE_URL' delphi/src/delphi/postgres.py scripts/serve_prototype.py
 
       - id: PROTO-003
         status: open
@@ -745,6 +757,16 @@ milestones:
             verification:
               - cd daedalus && uv run pytest
               - Fixture ingest creates paper and patent works with dates and categories
+          - id: PROTO-003-T2
+            status: done
+            title: Map live OpenAlex/PatentsView JSON and page the named slice
+            instructions:
+              files:
+                - daedalus/src/daedalus/fetch.py
+                - daedalus/src/daedalus/cli.py
+            verification:
+              - cd daedalus && uv run pytest
+              - rg -n 'fetch_named_slice|authorships|abstract_inverted_index' daedalus/src/daedalus/fetch.py
 
       - id: PROTO-004
         status: done

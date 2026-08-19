@@ -8,7 +8,7 @@ Treat this folder as if it were a standalone repository (`pirlruc/daedalus`). De
 
 Turn external records and uploaded PDFs into Work nodes, `cites` edges, `similar_to` edges, embeddings, and categories.
 
-Phase 1 walking skeleton: packaged SYS-009 fixture (papers + one patent), OpenAlex/PatentsView **mappers**, PDF extraction of title, authors, keywords, bibliography, and body ([PROTO-008](../docs/issues.yml)), and hash embeddings of catalog abstracts and uploaded text so the content graph includes **other papers** ([PROTO-009](../docs/issues.yml)). Live OpenAlex/PatentsView HTTP ingest is still [PROTO-003](../docs/issues.yml). LLM calls use the SYS-006 provider (Fake / cloud / local OpenAI-compatible such as Ollama or vLLM).
+Phase 1 walking skeleton: packaged SYS-009 fixture (papers + one patent), OpenAlex/PatentsView **mappers** (live API shape plus simplified fixtures), PDF extraction of title, authors, keywords, bibliography, and body ([PROTO-008](../docs/issues.yml)), and hash embeddings of catalog abstracts and uploaded text so the content graph includes **other papers** ([PROTO-009](../docs/issues.yml)). Live OpenAlex paging: `uv run daedalus --live --per-subcategory 5`. Tens-of-thousands ingest remains [PROTO-003](../docs/issues.yml). LLM calls use the SYS-006 provider (Fake / cloud / local OpenAI-compatible such as Ollama or vLLM).
 
 Phase 2: wider patent coverage ([PROD-001](../docs/issues.yml)), queued extraction with DLQ ([PROD-002](../docs/issues.yml)), richer catalog text for re-embed ([PROD-003](../docs/issues.yml)).
 
@@ -38,6 +38,8 @@ cd daedalus
 uv sync --frozen --extra dev
 uv run pytest
 uv run daedalus --dry-run
+# Live OpenAlex (four subcategories, small cap):
+# uv run daedalus --live --per-subcategory 5 --output /tmp/oa-slice.json
 # HTTP page fetch (inject URL; retries + poison skip):
 # uv run daedalus --openalex-url 'https://api.openalex.org/works?search=QR&per_page=5'
 ```

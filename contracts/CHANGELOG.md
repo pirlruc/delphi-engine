@@ -11,4 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pydantic models for Work, Identity, Category, graphs, extraction, neighborhoods, PathRequest/Proposal, MaskedContext, and EvalRun.
 - SYS-006 LLM adapters: Fake, plus OpenAI-compatible cloud and local.
+- `provider_settings_from_env` reads `DELPHI_LLM_*`.
 - Generated OpenAPI 3 document at `src/delphi_contracts/openapi.json`.
