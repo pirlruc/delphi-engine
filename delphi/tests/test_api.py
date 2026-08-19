@@ -61,8 +61,10 @@ def _work(title: str, published: date, doi: str | None = None) -> Work:
 class _Extractor:
     def __init__(self, extraction: Extraction) -> None:
         self.extraction = extraction
+        self.calls = 0
 
     def extract(self, pdf_bytes: bytes, filename: str) -> Extraction:
+        self.calls += 1
         digest = content_hash(pdf_bytes)
         return self.extraction.model_copy(update={"content_hash": digest})
 
@@ -185,7 +187,6 @@ def test_upload_consent_and_bibliography_match() -> None:
             BibliographyEntry(raw="Unresolved cite"),
         ),
         body_text="Title: New QR paper\nQR barcode data matrix",
-        suggested_categories=(_category(),),
     )
     extractor = _Extractor(extraction)
     embedder = _Embedder(catalog)
@@ -202,6 +203,18 @@ def test_upload_consent_and_bibliography_match() -> None:
     assert stored.bibliography[1].matched_work_id is None
     assert neighborhood.seed.title == "New QR paper"
     assert has_subcategory(neighborhood.seed, "two_d_codes")
+    again, _neighborhood = upload_pdf(
+        catalog,
+        b"%PDF-1.4 fake",
+        "new.pdf",
+        "delphi",
+        "two_d_codes",
+        extractor,
+        embedder,
+    )
+    assert again.id == stored.id
+    assert extractor.calls == 1
+    assert catalog.get_extraction_by_hash("z" * 64) is None
 
 
 def test_require_consent_rejects_other_destinations() -> None:

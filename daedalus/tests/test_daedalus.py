@@ -1,9 +1,11 @@
 """Daedalus ingest and extraction tests."""
 
+import json
 from io import BytesIO
 from pathlib import Path
 from uuid import UUID
 
+import httpx
 from delphi.catalog import MemoryCatalog
 from delphi_contracts.enums import WorkKind
 from delphi_contracts.llm import FakeProvider
@@ -152,3 +154,152 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     )
     catalog2 = MemoryCatalog()
     assert ingest_records(catalog2, load_fixture(extra)) == 1
+
+
+def test_sample_pdf_retries_and_fetch(monkeypatch) -> None:
+    from delphi_contracts.enums import ProviderKind
+    from delphi_contracts.llm import ChatResponse, EmbedResponse
+
+    from daedalus.extract import ExtractError
+    from daedalus.fetch import FetchError, fetch_openalex, fetch_patentsview
+    from daedalus.fixtures.sample import sample_pdf_bytes, sample_pdf_text
+
+    extraction = PdfExtractor().extract(sample_pdf_bytes(), "sample-qr.pdf")
+    assert "Color QR" in extraction.title
+    assert extraction.bibliography
+    assert extraction.bibliography[0].identity is not None
+    assert "Title:" in sample_pdf_text()
+
+    class _Flaky:
+        kind = ProviderKind.FAKE
+        model_id = "flaky"
+        n = 0
+
+        def chat(self, request):
+            self.n += 1
+            if self.n == 1:
+                return ChatResponse(content="[]", model="flaky", provider=ProviderKind.FAKE)
+            if self.n < 3:
+                return ChatResponse(content="not-json", model="flaky", provider=ProviderKind.FAKE)
+            return FakeProvider().chat(request)
+
+        def embed(self, request):
+            return FakeProvider().embed(request)
+
+    recovered = PdfExtractor(llm=_Flaky()).extract(_blank_pdf(), "x.pdf")
+    assert recovered.title
+
+    class _Payload:
+        kind = ProviderKind.FAKE
+        model_id = "payload"
+
+        def chat(self, request):
+            payload = {
+                "title": "From list bib",
+                "authors": "bad",
+                "keywords": "bad",
+                "bibliography": [
+                    1,
+                    {"raw": "no identifier"},
+                    {"raw": "x", "doi": 1},
+                    {"raw": "see 10.1000/qr-2014."},
+                ],
+            }
+            return ChatResponse(
+                content=json.dumps(payload),
+                model="payload",
+                provider=ProviderKind.FAKE,
+            )
+
+        def embed(self, request):
+            return FakeProvider().embed(request)
+
+    parsed = PdfExtractor(llm=_Payload()).extract(_blank_pdf(), "x.pdf")
+    assert parsed.title == "From list bib"
+    assert any(entry.identity is not None for entry in parsed.bibliography)
+
+    class _Dead:
+        kind = ProviderKind.FAKE
+        model_id = "dead"
+
+        def chat(self, request):
+            return ChatResponse(content="not-json", model="dead", provider=ProviderKind.FAKE)
+
+        def embed(self, request):
+            return EmbedResponse(vector=(), model="dead", provider=ProviderKind.FAKE)
+
+    try:
+        PdfExtractor(llm=_Dead(), attempts=2).extract(_blank_pdf(), "x.pdf")
+    except ExtractError:
+        pass
+    else:
+        raise AssertionError("expected ExtractError")
+
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if "openalex" in str(request.url):
+            if calls["n"] < 2:
+                return httpx.Response(500)
+            return httpx.Response(
+                200,
+                json={
+                    "results": [
+                        "skip-me",
+                        {"id": "https://openalex.org/W1"},
+                        {
+                            "id": "https://openalex.org/W2",
+                            "title": "QR paper",
+                            "publication_date": "2014-01-01",
+                            "doi": "https://doi.org/10.1/x",
+                            "authors": ["Ada"],
+                            "keywords": ["qr"],
+                        },
+                    ]
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "patents": [
+                    "skip-me",
+                    {"nope": True},
+                    {
+                        "patent_id": "US-1",
+                        "patent_title": "Carrier",
+                        "patent_date": "2013-01-01",
+                    },
+                ]
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    papers = fetch_openalex("http://openalex.test/works", "two_d_codes", client)
+    assert len(papers) == 1
+    patents = fetch_patentsview("http://patents.test/patents", "two_d_codes", client)
+    assert len(patents) == 1
+
+    def boom(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    dead = httpx.Client(transport=httpx.MockTransport(boom))
+    try:
+        fetch_openalex("http://openalex.test/fail", "two_d_codes", dead, attempts=2)
+    except FetchError:
+        pass
+    else:
+        raise AssertionError("expected FetchError")
+
+    class _CM:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, *_args):
+            return None
+
+    monkeypatch.setattr("daedalus.cli.httpx.Client", lambda: _CM())
+    monkeypatch.setattr("daedalus.cli.fetch_openalex", lambda *_a, **_k: [{}, {}])
+    monkeypatch.setattr("daedalus.cli.fetch_patentsview", lambda *_a, **_k: [{}])
+    assert main(["--openalex-url", "http://x"]) == 0
+    assert main(["--patentsview-url", "http://y"]) == 0

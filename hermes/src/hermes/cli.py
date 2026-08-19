@@ -101,8 +101,7 @@ def upload(
     finally:
         client.close()
     _cache(cache_path).put("upload", payload)
-    extraction = payload.get("extraction", {})
-    typer.echo(extraction)
+    _print_upload(payload)
 
 
 @app.command()
@@ -128,7 +127,7 @@ def neighborhood(
     finally:
         client.close()
     _cache(cache_path).put("neighborhood", payload)
-    typer.echo(payload)
+    _print_neighborhood(payload)
 
 
 @app.command()
@@ -155,3 +154,61 @@ def generate(
         client.close()
     _cache(cache_path).put("generate", payload)
     typer.echo(payload)
+
+
+@app.command()
+def reprint(
+    name: Annotated[str, typer.Argument()],
+    cache_path: Annotated[Path, typer.Option()] = _DEFAULT_CACHE,
+) -> None:
+    """Print the last cached JSON for a command name.
+
+    Args:
+        name: batch-check, upload, neighborhood, or generate.
+        cache_path: Local SQLite cache.
+    """
+    payload = _cache(cache_path).get(name)
+    if payload is None:
+        raise typer.Exit(code=2)
+    typer.echo(payload)
+
+
+def _print_upload(payload: object) -> None:
+    """Print extracted metadata and bibliography match counts.
+
+    Args:
+        payload: Upload JSON.
+    """
+    if not isinstance(payload, dict):
+        typer.echo(payload)
+        return
+    extraction = payload.get("extraction", {})
+    if not isinstance(extraction, dict):
+        typer.echo(payload)
+        return
+    bibliography = extraction.get("bibliography", [])
+    rows = bibliography if isinstance(bibliography, list) else []
+    matched = sum(1 for row in rows if isinstance(row, dict) and row.get("matched_work_id"))
+    typer.echo(f"title: {extraction.get('title')}")
+    typer.echo(f"authors: {extraction.get('authors')}")
+    typer.echo(f"keywords: {extraction.get('keywords')}")
+    typer.echo(f"bibliography: {matched}/{len(rows)} matched")
+    _print_neighborhood(payload.get("neighborhood"))
+
+
+def _print_neighborhood(payload: object) -> None:
+    """Print citation vs content neighbor counts.
+
+    Args:
+        payload: Neighborhood JSON.
+    """
+    if not isinstance(payload, dict):
+        typer.echo(payload)
+        return
+    neighbors = payload.get("neighbors", [])
+    rows = neighbors if isinstance(neighbors, list) else []
+    cites = sum(1 for row in rows if isinstance(row, dict) and row.get("edge_kind") == "cites")
+    similar = sum(
+        1 for row in rows if isinstance(row, dict) and row.get("edge_kind") == "similar_to"
+    )
+    typer.echo(f"neighbors: {cites} cites, {similar} similar_to ({len(rows)} total)")

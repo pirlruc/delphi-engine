@@ -11,7 +11,7 @@
 
 ## Current slice
 
-Walking-skeleton prototype. Six Python packages, in-memory catalog, Fake LLM, fixture SYS-009 slice, dual graphs (`cites` + `similar_to`), consented PDF upload, Hermes CLI, Epimetheus fixture hindcast. Postgres/pgvector is compose-only and not the default serve backend. Live OpenAlex/PatentsView HTTP ingest is not wired. Corpus is named ([SYS-009](issues.yml)): transformers/FMs, bounded computer vision, steganography, 2D codes. Dual graphs are locked ([SYS-010](issues.yml), `docs/prototype-graphs.md`).
+Walking-skeleton prototype. Six Python packages, in-memory catalog, Fake LLM, fixture SYS-009 slice, dual graphs (`cites` + `similar_to`), consented PDF upload, Hermes CLI, Epimetheus slice hindcast. `bash scripts/demo-prototype.sh` writes `docs/prototype-demo.json`. Postgres/pgvector is compose-only. Live OpenAlex HTTP fetch exists but is not the default ingest.
 
 | Folder | Path | Notes |
 | --- | --- | --- |
@@ -69,9 +69,9 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 
 ## Suggested next work
 
-1. Live OpenAlex/PatentsView ingest ([PROTO-003](issues.yml) remaining).
-2. Postgres/pgvector behind the catalog protocol ([PROTO-002](issues.yml) remaining, [SYS-002](issues.yml)).
-3. PROTO-007 go/no-go: run the PDF demo and a slice hindcast, record mean scores.
+1. Wire MemoryCatalog to Postgres/pgvector when Docker is available ([PROTO-002](issues.yml), [SYS-002](issues.yml)).
+2. Live OpenAlex/PatentsView page ingest of the named slice ([PROTO-003](issues.yml)).
+3. Non-Fake LLM for a live hindcast once a provider is configured ([SYS-006](issues.yml)).
 
 ## Known pitfalls
 

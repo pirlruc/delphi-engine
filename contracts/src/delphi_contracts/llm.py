@@ -481,5 +481,10 @@ def _bibliography(blob: str) -> list[dict[str, str]]:
     """
     rows: list[dict[str, str]] = []
     for match in re.finditer(r"^\s*\d+[.)]\s+(.+)$", blob, flags=re.MULTILINE):
-        rows.append({"raw": match.group(1).strip()})
+        raw = match.group(1).strip()
+        row = {"raw": raw}
+        doi = re.search(r"10\.\d{4,}/[^\s]+", raw)
+        if doi is not None:
+            row["doi"] = doi.group(0).rstrip(".,;")
+        rows.append(row)
     return rows

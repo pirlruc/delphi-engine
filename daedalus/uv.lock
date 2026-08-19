@@ -229,6 +229,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "delphi-contracts" },
+    { name = "httpx" },
     { name = "pypdf" },
 ]
 
@@ -249,6 +250,7 @@ requires-dist = [
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.13.5" },
     { name = "delphi", marker = "extra == 'dev'", editable = "../delphi" },
     { name = "delphi-contracts", editable = "../contracts" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "interrogate", marker = "extra == 'dev'", specifier = ">=1.7" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.20.2" },
     { name = "pypdf", specifier = ">=5.0" },

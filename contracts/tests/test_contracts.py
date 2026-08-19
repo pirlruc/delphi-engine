@@ -165,6 +165,17 @@ def test_fake_provider_extract_generate_judge() -> None:
         )
     )
     assert "QR for widgets" in extract.content
+    numbered = provider.chat(
+        ChatRequest(
+            messages=(
+                ChatMessage(
+                    role="user",
+                    content="Extract bibliographic metadata\n1. Kim. QR. doi:10.1000/qr-2014\n",
+                ),
+            )
+        )
+    )
+    assert "10.1000/qr-2014" in numbered.content
     generate = provider.chat(
         ChatRequest(
             messages=(

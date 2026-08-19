@@ -114,6 +114,16 @@ class Catalog(Protocol):
             Extraction or None.
         """
 
+    def get_extraction_by_hash(self, content_hash: str) -> Extraction | None:
+        """Return an extraction by PDF content hash.
+
+        Args:
+            content_hash: SHA-256 hex of the PDF bytes.
+
+        Returns:
+            Extraction or None.
+        """
+
     def neighborhood(
         self,
         seed_id: UUID,
@@ -286,6 +296,20 @@ class MemoryCatalog:
             Extraction or None.
         """
         return self._extractions.get(extraction_id)
+
+    def get_extraction_by_hash(self, content_hash: str) -> Extraction | None:
+        """Return an extraction by PDF content hash.
+
+        Args:
+            content_hash: SHA-256 hex of the PDF bytes.
+
+        Returns:
+            Extraction or None.
+        """
+        for extraction in self._extractions.values():
+            if extraction.content_hash == content_hash:
+                return extraction
+        return None
 
     def neighborhood(
         self,

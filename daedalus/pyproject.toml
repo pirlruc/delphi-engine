@@ -10,6 +10,7 @@ description = "Delphi ingest, PDF extraction, and embeddings."
 readme = "README.md"
 dependencies = [
     "delphi-contracts",
+    "httpx>=0.28",
     "pypdf>=5.0",
 ]
 

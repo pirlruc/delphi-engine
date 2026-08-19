@@ -10,10 +10,16 @@ This repository currently holds every component as an **isolated folder**. GitHu
 
 ## How to run the prototype
 
-In-memory catalog, SYS-009 fixture slice, Fake LLM:
+One-shot go/no-go (sample PDF → dual graphs → both generate kinds → slice hindcast). Writes [`docs/prototype-demo.json`](docs/prototype-demo.json):
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
+bash scripts/demo-prototype.sh
+```
+
+Long-running API (in-memory catalog, SYS-009 fixture, Fake LLM):
+
+```bash
 bash scripts/serve-prototype.sh
 ```
 
@@ -33,6 +39,7 @@ Hindcast artifact (Fake judge):
 ```bash
 cd epimetheus
 uv run epimetheus --output evalrun.json
+uv run epimetheus --works-json ../daedalus/src/daedalus/fixtures/slice.json --output docs/prototype-eval.json
 ```
 
 Optional Postgres 16 + pgvector (not used by the default serve path):
@@ -111,6 +118,8 @@ Python package gates (ruff, mypy, interrogate, pytest with 95% coverage) run as 
 
 - [`docs/prototype-corpus.md`](docs/prototype-corpus.md) — four subcategories and ingest bounds
 - [`docs/prototype-graphs.md`](docs/prototype-graphs.md) — citation graph and content graph
+- [`docs/eval-rubric.md`](docs/eval-rubric.md) — judge scores
+- [`docs/prototype-demo.json`](docs/prototype-demo.json) — last Fake-LLM demo artifact
 - [`docs/proposal/guardrails/`](docs/proposal/guardrails/) — proposed TS-* pack
 - [`docs/ai-agent-handoff.md`](docs/ai-agent-handoff.md)
 - [`docs/issues.yml`](docs/issues.yml)

@@ -1,8 +1,9 @@
-"""Epimetheus CLI: run one hindcast against a leak-proof fixture graph."""
+"""Epimetheus CLI: run hindcast trials and write a metrics artifact."""
 
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import date
 from pathlib import Path
 from uuid import uuid4
@@ -21,12 +22,13 @@ from delphi_contracts.neighborhood import Neighbor
 from delphi_contracts.work import Work
 
 from epimetheus.run import run_hindcast
+from epimetheus.trials import summarize_runs, trials_from_payload
 
 __all__ = ["main"]
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the fixture hindcast and write an EvalRun JSON artifact.
+    """Run fixture or slice hindcasts and write JSON metrics.
 
     Args:
         argv: Optional CLI args.
@@ -36,13 +38,19 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(description="Epimetheus hindcast")
     parser.add_argument("--output", type=Path, default=Path("evalrun.json"))
+    parser.add_argument("--works-json", type=Path, default=None)
     args = parser.parse_args(argv)
-    run = run_hindcast(*_fixture_trial())
+    if args.works_json is not None:
+        payload = json.loads(args.works_json.read_text(encoding="utf-8"))
+        summary = summarize_runs(trials_from_payload(payload))
+        args.output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        return 0
+    run = run_hindcast(*_builtin_trial())
     args.output.write_text(run.model_dump_json(indent=2), encoding="utf-8")
     return 0
 
 
-def _fixture_trial() -> tuple[
+def _builtin_trial() -> tuple[
     Work,
     Work,
     tuple[Work, ...],

@@ -49,8 +49,16 @@ class _Http:
                     "title": "Uploaded",
                     "authors": ["Ada"],
                     "keywords": ["qr"],
+                    "bibliography": [
+                        {"raw": "Prior", "matched_work_id": "11111111-1111-1111-1111-111111111111"}
+                    ],
                 },
-                "neighborhood": {"neighbors": []},
+                "neighborhood": {
+                    "neighbors": [
+                        {"edge_kind": "cites"},
+                        {"edge_kind": "similar_to"},
+                    ]
+                },
             })
         if url.endswith("generate"):
             return _Response([{"title": "Next path", "kind": "research_path"}])
@@ -150,9 +158,27 @@ def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
         ],
     )
     assert generated.exit_code == 0
+    reprinted = runner.invoke(app, ["reprint", "upload", "--cache-path", str(cache)])
+    assert reprinted.exit_code == 0
+    missing = runner.invoke(app, ["reprint", "nope", "--cache-path", str(cache)])
+    assert missing.exit_code == 2
+
+
+def test_print_helpers_non_objects(capsys) -> None:
+    from hermes.cli import _print_neighborhood, _print_upload
+
+    _print_upload("raw")
+    _print_upload({"extraction": "nope"})
+    _print_neighborhood("raw")
+    captured = capsys.readouterr().out
+    assert "raw" in captured
+    assert "nope" in captured
 
 
 def test_batch_check_requires_identifier() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["batch-check"])
+    assert result.exit_code != 0
     runner = CliRunner()
     result = runner.invoke(app, ["batch-check"])
     assert result.exit_code != 0

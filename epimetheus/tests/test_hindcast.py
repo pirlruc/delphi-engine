@@ -124,6 +124,79 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
     artifact = json.loads(output.read_text(encoding="utf-8"))
     assert artifact["kind"] == "research_path"
     assert artifact["scores"]["novelty"] >= 1
+    slice_json = tmp_path / "slice.json"
+    slice_json.write_text(
+        json.dumps({
+            "works": [
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "kind": "paper",
+                    "title": "Early",
+                    "abstract": "qr",
+                    "published_on": "2014-01-01",
+                    "subcategory": "two_d_codes",
+                    "cites": [],
+                },
+                {
+                    "id": "88888888-8888-8888-8888-888888888888",
+                    "kind": "paper",
+                    "title": "Late",
+                    "abstract": "qr watermark",
+                    "published_on": "2020-01-01",
+                    "subcategory": "two_d_codes",
+                    "cites": ["11111111-1111-1111-1111-111111111111"],
+                },
+                {
+                    "id": "22222222-2222-2222-2222-222222222222",
+                    "kind": "paper",
+                    "title": "Cites seed later",
+                    "abstract": "qr",
+                    "published_on": "2015-01-01",
+                    "subcategory": "two_d_codes",
+                    "cites": ["11111111-1111-1111-1111-111111111111"],
+                },
+                {
+                    "id": "33333333-3333-3333-3333-333333333333",
+                    "kind": "paper",
+                    "title": "Same day a",
+                    "published_on": "2016-01-01",
+                    "subcategory": "steganography",
+                    "cites": ["11111111-1111-1111-1111-111111111111"],
+                },
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "kind": "paper",
+                    "title": "Same day b",
+                    "published_on": "2016-01-01",
+                    "subcategory": "steganography",
+                    "cites": [],
+                },
+            ]
+        })
+    )
+    summary_path = tmp_path / "summary.json"
+    assert main(["--works-json", str(slice_json), "--output", str(summary_path)]) == 0
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["trial_count"] == 1
+    assert summary["mean_novelty"] >= 1
+    one = tmp_path / "one.json"
+    one.write_text(
+        json.dumps({
+            "works": [
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "kind": "paper",
+                    "title": "Only",
+                    "published_on": "2014-01-01",
+                    "subcategory": "two_d_codes",
+                    "cites": [],
+                }
+            ]
+        })
+    )
+    empty_path = tmp_path / "empty.json"
+    assert main(["--works-json", str(one), "--output", str(empty_path)]) == 0
+    assert json.loads(empty_path.read_text(encoding="utf-8"))["trial_count"] == 0
 
 
 def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:

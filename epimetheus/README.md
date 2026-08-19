@@ -43,6 +43,9 @@ cd epimetheus
 uv sync --frozen --extra dev
 uv run pytest
 uv run epimetheus --output evalrun.json
+uv run epimetheus --works-json ../daedalus/src/daedalus/fixtures/slice.json --output eval-summary.json
 ```
+
+`--works-json` runs one earliest-vs-latest trial per subcategory and writes trial count plus mean novelty/relevance/accuracy/embedding similarity.
 
 The artifact is an `EvalRun` JSON object: judge scores (novelty, relevance, accuracy) plus embedding similarity.

@@ -38,4 +38,6 @@ cd daedalus
 uv sync --frozen --extra dev
 uv run pytest
 uv run daedalus --dry-run
+# HTTP page fetch (inject URL; retries + poison skip):
+# uv run daedalus --openalex-url 'https://api.openalex.org/works?search=QR&per_page=5'
 ```

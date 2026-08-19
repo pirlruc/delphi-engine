@@ -9,8 +9,8 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 
 ## Walking skeleton (not product scale)
 
-- Default serve path is an **in-memory catalog** plus the Fake LLM. Postgres 16 + pgvector is in `docker-compose.yml` and is not wired into `scripts/serve_prototype.py` yet ([SYS-002](issues.yml), [PROTO-002](issues.yml)).
-- Catalog ingest for the demo is the eight-work fixture in `daedalus/src/daedalus/fixtures/slice.json`. OpenAlex/PatentsView **HTTP** page fetch is not live ([PROTO-003](issues.yml)).
+- Default serve path is an **in-memory catalog** plus the Fake LLM. Postgres 16 + pgvector is in `docker-compose.yml` and is not wired into `scripts/serve_prototype.py` yet ([SYS-002](issues.yml), [PROTO-002](issues.yml)). This environment does not run Docker, so the SQL catalog was not verified here.
+- Catalog ingest for the demo is the eight-work fixture. OpenAlex/PatentsView **HTTP** fetch with retries exists (`daedalus.fetch`); live tens-of-thousands ingest is not the default ([PROTO-003](issues.yml)).
 - Embeddings are deterministic hash bag-of-words, not a hosted embedding model.
 - No GitHub labels/milestones until `scripts/setup-issue-scaffold.sh` is run with Issues write permission.
 - `docs/issues.yml` is authored locally; GitHub Issues are not published until a gated live sync.
@@ -26,14 +26,13 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 - LLM adapters: Fake in tests and in the default serve path; cloud or local in live runs ([SYS-006](issues.yml)).
 - No GraphQL, no distributed graph or vector databases.
 - Hermes Phase 1 is a CLI; Tauri is [PROD-004](issues.yml).
-- PROTO-007 go/no-go still needs a recorded PDF demo plus mean hindcast scores on the ingested slice, not only the tiny CLI fixture.
+- Judge rubric: [`docs/eval-rubric.md`](eval-rubric.md). Demo artifact: [`docs/prototype-demo.json`](prototype-demo.json).
 
 ## Guardrails
 
 - Pinned language pack is Python 3.13 at `docs/guardrails/` @ 1.3.0.
 - TypeScript/Tauri gates live in [`docs/proposal/guardrails/`](proposal/guardrails/README.md) until TOOL-002 is upstreamed. Do not copy them into `docs/guardrails/` (that path is a submodule).
 - Org Python floors are 95% statement and branch coverage.
-- This prototype PR exceeds the PY-DELIV-001 soft limit of 500 lines because it lands six packages at once.
 
 ## Environment
 

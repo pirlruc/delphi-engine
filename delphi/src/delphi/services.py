@@ -138,7 +138,18 @@ def upload_pdf(
     require_consent(destination)
     if extractor is None or embedder is None:
         raise MissingDependencyError("upload requires extractor and embedder")
+    digest = content_hash(pdf_bytes)
+    existing = catalog.get_extraction_by_hash(digest)
+    if existing is not None:
+        work = catalog.get_work(existing.id) or work_from_extraction(existing, subcategory)
+        catalog.upsert_work(work)
+        neighborhood = catalog.neighborhood(work.id, NeighborhoodMode.UNION, subcategory)
+        return existing, neighborhood
     extraction = extractor.extract(pdf_bytes, filename)
+    if not extraction.suggested_categories:
+        extraction = extraction.model_copy(
+            update={"suggested_categories": _category_for(subcategory)}
+        )
     catalog.put_extraction(extraction)
     work = work_from_extraction(extraction, subcategory)
     catalog.upsert_work(work)

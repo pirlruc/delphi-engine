@@ -879,7 +879,7 @@ milestones:
               - Tests refuse upload without consent
 
       - id: PROTO-007
-        status: open
+        status: done
         title: Prototype go/no-go on the named field
         overview:
           problem: >-

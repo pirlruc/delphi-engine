@@ -1,0 +1,67 @@
+{
+  "extraction": {
+    "title": "Color QR overlay on packaging",
+    "authors": [
+      "Ada Lovelace",
+      "Alan Turing"
+    ],
+    "keywords": [
+      "qr",
+      "watermarking"
+    ],
+    "bibliography_matched": 1,
+    "bibliography_total": 1
+  },
+  "union_neighbors": 9,
+  "citation_neighbors": 1,
+  "content_neighbors": 8,
+  "research_path": "Next step in the masked neighborhood",
+  "patent_whitespace": "Next step in the masked neighborhood",
+  "seed_work_id": "11111111-1111-1111-1111-111111111111",
+  "uploaded_work_id": "54cf3cc3-e2cb-50c2-a31d-6ac34ab90c2c",
+  "hindcast": {
+    "trial_count": 2,
+    "mean_novelty": 4.0,
+    "mean_relevance": 4.0,
+    "mean_accuracy": 4.0,
+    "mean_embedding_similarity": 0.38686983383415896,
+    "runs": [
+      {
+        "id": "8c16f426-e7fd-4ea3-a613-89926bec57da",
+        "held_out_id": "55555555-5555-5555-5555-555555555555",
+        "seed_id": "44444444-4444-4444-4444-444444444444",
+        "kind": "research_path",
+        "subcategory": "steganography",
+        "provider": "fake",
+        "model_id": "fake",
+        "scores": {
+          "novelty": 4.0,
+          "relevance": 4.0,
+          "accuracy": 4.0,
+          "embedding_similarity": 0.3118047822311618
+        },
+        "created_at": "2026-08-19T18:08:07.553221Z",
+        "seed_title": "Spatial steganography in print",
+        "held_out_title": "Steganalysis of print-scan watermarks"
+      },
+      {
+        "id": "18f75d9c-9a45-4f70-b1ab-e168647df63d",
+        "held_out_id": "88888888-8888-8888-8888-888888888888",
+        "seed_id": "33333333-3333-3333-3333-333333333333",
+        "kind": "research_path",
+        "subcategory": "two_d_codes",
+        "provider": "fake",
+        "model_id": "fake",
+        "scores": {
+          "novelty": 4.0,
+          "relevance": 4.0,
+          "accuracy": 4.0,
+          "embedding_similarity": 0.4619348854371561
+        },
+        "created_at": "2026-08-19T18:08:07.553377Z",
+        "seed_title": "Record carrier with two-dimensional code",
+        "held_out_title": "Color QR watermarks for packaging"
+      }
+    ]
+  }
+}

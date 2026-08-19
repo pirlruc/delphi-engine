@@ -1,0 +1,45 @@
+{
+  "trial_count": 2,
+  "mean_novelty": 4.0,
+  "mean_relevance": 4.0,
+  "mean_accuracy": 4.0,
+  "mean_embedding_similarity": 0.38686983383415896,
+  "runs": [
+    {
+      "id": "29864f29-2290-4e7b-82ce-93926ac79a8b",
+      "held_out_id": "55555555-5555-5555-5555-555555555555",
+      "seed_id": "44444444-4444-4444-4444-444444444444",
+      "kind": "research_path",
+      "subcategory": "steganography",
+      "provider": "fake",
+      "model_id": "fake",
+      "scores": {
+        "novelty": 4.0,
+        "relevance": 4.0,
+        "accuracy": 4.0,
+        "embedding_similarity": 0.3118047822311618
+      },
+      "created_at": "2026-08-19T18:08:07.741761Z",
+      "seed_title": "Spatial steganography in print",
+      "held_out_title": "Steganalysis of print-scan watermarks"
+    },
+    {
+      "id": "d4fa3be4-628d-4065-afb4-430e5b8f931c",
+      "held_out_id": "88888888-8888-8888-8888-888888888888",
+      "seed_id": "33333333-3333-3333-3333-333333333333",
+      "kind": "research_path",
+      "subcategory": "two_d_codes",
+      "provider": "fake",
+      "model_id": "fake",
+      "scores": {
+        "novelty": 4.0,
+        "relevance": 4.0,
+        "accuracy": 4.0,
+        "embedding_similarity": 0.4619348854371561
+      },
+      "created_at": "2026-08-19T18:08:07.741932Z",
+      "seed_title": "Record carrier with two-dimensional code",
+      "held_out_title": "Color QR watermarks for packaging"
+    }
+  ]
+}
