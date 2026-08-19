@@ -11,7 +11,8 @@ README + this handoff. No generator yet ([PROTO-004](../../docs/issues.yml)).
 ## Constraints
 
 - Input is `MaskedContext`. Tests must fail if future work ids are present.
-- LLM provider is an interface with a deterministic fake ([PY-PERF-002](https://github.com/pirlruc/guardrails/blob/1.3.0/python/guardrails.md)).
+- LLM provider is SYS-006 (Fake / cloud / local OpenAI-compatible). Tests must not need a GPU or API key.
+- Output kind is `research_path` or `patent_whitespace`.
 - Prompts must instruct the model not to use knowledge after the mask date; that is necessary but not sufficient — the mask itself is the control.
 
 ## Suggested next work

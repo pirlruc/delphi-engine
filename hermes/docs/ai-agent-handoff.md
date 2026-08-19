@@ -1,6 +1,6 @@
 # AI Agent Handoff — hermes
 
-Client only. Existence checks send identifiers, never file bytes, in Phase 1.
+Client only. Identifier batch-check never requires file bytes. PDF upload requires consent that names Delphi as destination.
 
 **Last updated:** 2026-08-19
 
@@ -11,9 +11,10 @@ README + this handoff. No CLI yet ([PROTO-006](../../docs/issues.yml)).
 ## Constraints
 
 - Phase 1 is a Python CLI so PY-* gates apply.
-- Zotero is the first desktop integration; not in Phase 1.
-- PDF consent is mandatory before any upload in PROD-004.
+- Upload without consent must fail tests.
+- Generate kinds: `research_path` and `patent_whitespace`, filtered by category/subcategory.
+- Zotero/Tauri is [PROD-004](../../docs/issues.yml); follow `docs/proposal/guardrails/typescript/`.
 
 ## Suggested next work
 
-PROTO-006-T1 after Delphi batch-check exists.
+PROTO-006-T1 after Delphi accepts consented PDFs and generate-by-category.

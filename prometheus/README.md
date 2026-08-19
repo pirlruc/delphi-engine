@@ -6,7 +6,11 @@ Treat this folder as if it were a standalone repository (`pirlruc/prometheus`). 
 
 ## Role
 
-Given a seed and a past-only neighborhood, propose ranked next steps (methods, combinations, gaps) that cite only context works. This is the product brain. Epimetheus scores it; Hermes displays it; Delphi does not call an LLM on every query unless a caller asks.
+Given a seed (catalog work or extracted PDF) and a past-only neighborhood filtered by category/subcategory, propose ranked next steps.
+
+`PathRequest.kind` is `research_path` or `patent_whitespace`. This is the product brain. Epimetheus scores it; Hermes displays it.
+
+LLM calls go through the SYS-006 provider: Fake in tests, cloud or local OpenAI-compatible (Ollama, vLLM) in live runs. Switching adapter is config, not a rewrite.
 
 The name pairs with Epimetheus: forethought versus hindsight.
 

@@ -6,7 +6,7 @@ Treat this folder as if it were a standalone repository (`pirlruc/delphi-contrac
 
 ## Role
 
-Owns Pydantic models and the generated OpenAPI document for Work identity, batch existence checks, neighborhood queries, generated paths, and eval runs. Delphi implements the HTTP API; everyone else speaks this contract.
+Owns Pydantic models and the generated OpenAPI document for Work identity, Category (`scheme`: `openalex_topic` or `cpc`, plus subcategory parent links), batch existence checks, consented PdfUpload, Extraction, neighborhood queries, PathRequest (`kind`: `research_path` or `patent_whitespace`), and eval runs. Delphi implements the HTTP API; everyone else speaks this contract.
 
 ## Layout (target, PROTO-001)
 

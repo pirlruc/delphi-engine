@@ -1,0 +1,10 @@
+# Proposed numeric gates for TypeScript repositories.
+# After this pack is accepted into pirlruc/guardrails, CI reads the copy there.
+# Until then this file is documentation only.
+
+statement_coverage: 95            # TS-TEST-002
+branch_coverage: 95               # TS-TEST-002
+doc_coverage: 95                  # TS-DOC-001
+max_cyclomatic_complexity: 8      # TS-CPLX-001
+max_function_lines: 80            # TS-CPLX-002
+pr_size_soft_limit_lines: 500     # TS-DELIV-001

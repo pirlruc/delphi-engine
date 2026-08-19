@@ -1,19 +1,19 @@
 # AI Agent Handoff — daedalus
 
-Ingest only. Do not score paths or serve HTTP to Hermes.
+Ingest and extraction only. Do not score paths or serve HTTP to Hermes.
 
 **Last updated:** 2026-08-19
 
 ## Current slice
 
-README + this handoff. No connectors yet ([PROTO-003](../../docs/issues.yml)).
+README + this handoff. Blocked on [SYS-009](../../docs/issues.yml) for catalog ingest. PDF extraction is [PROTO-008](../../docs/issues.yml).
 
 ## Constraints
 
-- Prototype source is OpenAlex metadata. No raw PDF ingest in Phase 1 ([SYS-004](../../docs/issues.yml)).
-- Default slice is computer-science / ML unless the owner names another field.
-- LLM extraction is PROD-002, not a prerequisite for hindcasting.
+- Prototype sources: OpenAlex metadata + CPC patent slice of the named field, plus consented user PDFs ([SYS-004](../../docs/issues.yml)).
+- LLM extraction uses SYS-006 adapters (Fake in tests; cloud or local/Ollama/vLLM in live runs).
+- Suggested categories use `openalex_topic` and `cpc` ([SYS-008](../../docs/issues.yml)).
 
 ## Suggested next work
 
-PROTO-003-T1 after Delphi can upsert works and edges.
+SYS-009 field name, then PROTO-003-T1 and PROTO-008-T1.

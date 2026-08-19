@@ -10,8 +10,12 @@ Treat this folder as if it were a standalone repository (`pirlruc/epimetheus`). 
 2. Build a temporal mask: drop that work, every later work, and the downstream citation closure.
 3. Ask Prometheus to propose the next step from the remaining past.
 4. Score the proposal against the held-out work (LLM-as-judge plus embedding similarity).
+   The judge uses the SYS-006 provider (Fake in tests; cloud or local OpenAI-compatible
+   such as Ollama or vLLM in live runs). EvalRun records which adapter ran.
 
-If a future paper can reach the prompt, the run is invalid. That rule is stricter than model quality.
+Held-out work may be a paper or a patent family ([SYS-007](../docs/issues.yml)).
+
+If a future paper or patent can reach the prompt, the run is invalid. That rule is stricter than model quality.
 
 Phase 1 is a batch CLI plus JSON metrics ([PROTO-005](../docs/issues.yml), [PROTO-007](../docs/issues.yml)). Human review is [PROD-006](../docs/issues.yml), not a second desktop app.
 

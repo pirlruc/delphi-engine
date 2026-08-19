@@ -23,8 +23,8 @@ milestones:
   - name: Phase 0 — System decisions
     description: Component map, identity, privacy, prototype store
   - name: Phase 1 — Prototype
-    description: Walking skeleton that can hindcast one research field
+    description: PDF extract-then-query plus hindcast on one named field
   - name: Phase 2 — Product slice
-    description: Patents, local library, consent, extraction, HITL
+    description: Wider patents, desktop Hermes, scale extraction, HITL
   - name: Phase 3 — Scale-out
     description: Replace the prototype store and split folders into repos
