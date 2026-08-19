@@ -127,6 +127,48 @@ milestones:
               - test -f docs/proposal/guardrails/typescript/guardrails.md
               - rg -n 'TS-RUN-001|TS-TEST-002|TS-DESK-001' docs/proposal/guardrails/typescript/guardrails.md
 
+      - id: GATE-001
+        status: open
+        title: GitHub Actions run only on workflow_dispatch
+        overview:
+          problem: >-
+            The repo is private and Actions minutes are scarce. Default
+            push/PR/schedule workflows would spend quota on every commit.
+          goal: >-
+            In the context of a private prototype repo, facing limited
+            Actions minutes, we decided that CI workflows use
+            workflow_dispatch only, to keep quota for intentional runs,
+            accepting that PRs are not gated on GitHub until quota allows
+            push/PR triggers. Local parity is scripts/check-ci-local.sh
+            (CI-008).
+        architecture:
+          target: .github/workflows/quality.yml
+          modules:
+            - .github/workflows
+            - scripts/check-ci-local.sh
+        acceptance_criteria:
+          - No workflow uses on.push, on.pull_request, or on.schedule
+          - quality.yml uses workflow_dispatch only
+          - Third-party actions are pinned by commit SHA (CI-001)
+          - Top-level permissions are contents: read (CI-025)
+          - bash scripts/check-ci-local.sh matches the workflow checks
+        guardrail_refs:
+          - CI-001
+          - CI-008
+          - CI-025
+        tasks:
+          - id: GATE-001-T1
+            status: done
+            title: Add dispatch-only quality workflow and local parity script
+            instructions:
+              files:
+                - .github/workflows/quality.yml
+                - scripts/check-ci-local.sh
+            verification:
+              - bash scripts/check-ci-local.sh
+              - rg -n 'workflow_dispatch' .github/workflows/quality.yml
+              - "! rg -n '^  (push|pull_request|schedule):' .github/workflows/*.yml"
+
   - name: Phase 0 — System decisions
     epics:
       - id: SYS-001
@@ -481,27 +523,36 @@ milestones:
 
       - id: SYS-009
         status: open
-        title: Owner names the first corpus field before ingest
+        title: First corpus is CV, 2D codes, steganography, and bounded transformers
         overview:
           problem: >-
-            Hindcasting and dual-audience queries need a dense paper-plus-patent
-            neighborhood. Picking computer-science ML by default starves the
-            patent-searcher path. Starting ingest before the owner names a
-            field wastes the first slice.
+            The owner will use the prototype on transformers/foundation
+            models, computer vision, steganography, and 2D codes. A
+            CRISPR-style slice would be denser for patents in isolation but
+            would not get real PDFs from this user. Unbounded cs.CV plus
+            all of foundation-model literature would drown the niche topics.
           goal: >-
-            Leave the field unset until the owner records it on this Epic
-            (name, OpenAlex filter, CPC filter). PROTO-003 must not start
-            before that. Explanation of the choice lives in
-            docs/prototype-corpus.md.
+            In the context of a personal prototype, facing four related CS
+            topics, we decided on one ingest with four subcategories
+            (transformers_foundation_models, computer_vision, steganography,
+            two_d_codes), hard caps so transformers cannot exceed the other
+            three combined, and CPC/keyword bounds that keep 2D-code and
+            watermarking patents in the slice, to achieve a corpus the owner
+            will actually query, accepting weaker FM-only patent signal and
+            the need to hindcast on codes/stego rather than 'Attention Is
+            All You Need'.
         architecture:
-          target: One OpenAlex neighborhood plus matching CPC patent slice
+          target: Four subcategories in one Daedalus ingest; see docs/prototype-corpus.md
           modules:
             - daedalus
+            - contracts
             - docs/prototype-corpus.md
         acceptance_criteria:
-          - This Epic body names the field, OpenAlex concept/topic ids, and CPC prefixes
-          - docs/prototype-corpus.md stays an explanation, not a second decision log
-          - PROTO-003 remains blocked while this Epic is open without a named field
+          - Subcategory ids are transformers_foundation_models, computer_vision, steganography, two_d_codes
+          - computer_vision excludes medical imaging and autonomous driving unless a later Epic adds them
+          - Transformers slice is capped at no more than the sum of the other three
+          - Patent filters start from G06K 7/, G06K 19/, bounded G06V/G06T, keyword-bounded G06N
+          - docs/prototype-corpus.md records the decision and the failure modes
         guardrail_refs:
           - PY-API-002
         tasks:
@@ -512,7 +563,18 @@ milestones:
               files:
                 - docs/prototype-corpus.md
             verification:
-              - rg -n 'CRISPR|PatentsView|SYS-009' docs/prototype-corpus.md
+              - rg -n 'two_d_codes|steganography|transformers_foundation_models' docs/prototype-corpus.md
+          - id: SYS-009-T2
+            status: done
+            title: Record owner-chosen subcategories and ingest bounds
+            instructions:
+              files:
+                - docs/prototype-corpus.md
+                - docs/issues.yml
+                - README.md
+            verification:
+              - rg -n 'G06K' docs/prototype-corpus.md
+              - rg -n 'Named' docs/prototype-corpus.md
 
   - name: Phase 1 — Prototype
     epics:
@@ -604,9 +666,10 @@ milestones:
             edges in both papers and patents. LLM extraction of user PDFs is
             a separate epic (PROTO-008).
           goal: >-
-            After SYS-009 names the field, ingest that OpenAlex slice and a
-            matching PatentsView/CPC slice into Delphi with idempotent
-            upserts. Blocked while SYS-009 has no named field.
+            Ingest the SYS-009 slice (four subcategories: transformers,
+            bounded computer vision, steganography, 2D codes) from OpenAlex
+            and a matching PatentsView/CPC extract, with idempotent upserts.
+            LLM extraction of user PDFs is PROTO-008.
         architecture:
           target: daedalus/ ingest CLI writing through Delphi or the shared store
           modules:
@@ -614,7 +677,7 @@ milestones:
             - delphi
             - contracts
         acceptance_criteria:
-          - Ingest does not start until SYS-009 records field, OpenAlex filter, and CPC filter
+          - Ingest respects SYS-009 subcategory caps and exclusions
           - Re-running ingest does not duplicate works or edges
           - Paper and patent connectors are separate modules
           - Failure of a page/batch is retried; poison records are skipped with a log
@@ -785,7 +848,7 @@ milestones:
           - Metrics include trial count, mean judge scores, embedding similarity
           - Both query kinds are exercised on the extracted PDF
           - Known limitations of the slice are listed in docs/limitations.md
-          - SYS-009 must be named before claiming the demo is on a real field
+          - SYS-009 subcategories are the generate filters for the PDF demo
         guardrail_refs:
           - PY-PERF-001
         tasks:

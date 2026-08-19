@@ -11,7 +11,7 @@
 
 ## Current slice
 
-Planning only. Analog pins and the authored backlog exist. No component `pyproject.toml` yet. **Do not start PROTO-003 until SYS-009 names the corpus field.** Do not start other Phase 1 code until that field is named if the work depends on the slice (ingest, eval). Contracts/Delphi skeletons may be prepared but the owner asked not to advance implementation while SYS-009 is open.
+Planning only. Analog pins and the authored backlog exist. No component `pyproject.toml` yet. Corpus is named ([SYS-009](issues.yml)): transformers/FMs, bounded computer vision, steganography, 2D codes. Phase 1 implementation may start with contracts; ingest must apply the caps in `docs/prototype-corpus.md`.
 
 | Folder | Path | Notes |
 | --- | --- | --- |
@@ -27,6 +27,7 @@ Root owns GitHub templates, Cursor rules, `docs/issues.yml`, analog submodules, 
 ## How to run checks
 
 ```bash
+bash scripts/check-ci-local.sh
 bash scripts/issues-sync.sh --validate-only
 git -C docs/guardrails describe --tags --exact-match HEAD
 git -C .github/scaffold describe --tags --exact-match HEAD
@@ -49,16 +50,14 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Users are **scientists and patent searchers**; query kind is `research_path` or `patent_whitespace` ([SYS-007](issues.yml)).
 - Prototype requires consented PDF upload, extraction, and category/subcategory generate ([SYS-004](issues.yml), [SYS-008](issues.yml)).
 - Hermes desktop is Tauri + React; follow the TS proposal until upstreamed ([TOOL-002](issues.yml), [PROD-004](issues.yml)).
-
-## Open decision (blocks ingest)
-
-- First corpus field is **unnamed**. Explanation and candidates: [`docs/prototype-corpus.md`](prototype-corpus.md). Record the choice on [SYS-009](issues.yml).
+- First corpus subcategories: `transformers_foundation_models`, `computer_vision` (bounded), `steganography`, `two_d_codes` ([SYS-009](issues.yml)).
+- GitHub Actions: `workflow_dispatch` only ([GATE-001](issues.yml)).
 
 ## Suggested next work
 
-1. Owner names the field on SYS-009 (OpenAlex filter + CPC prefixes).
-2. Then PROTO-001 contracts (Category, PdfUpload, PathRequest.kind).
-3. Do not start SCALE-* until PROTO-007 has the PDF demo **and** hindcast numbers.
+1. PROTO-001 contracts (Category ids above, PdfUpload, PathRequest.kind).
+2. PROTO-002 Delphi, then PROTO-003 ingest with SYS-009 caps.
+3. Run `quality` on GitHub only when you choose to spend minutes (`bash scripts/check-ci-local.sh` is free).
 
 ## Known pitfalls
 
@@ -67,4 +66,4 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Creating GitHub issues is a publishing action.
 - Proposal guardrails under `docs/proposal/guardrails/` must not be read as `docs/guardrails/` thresholds.
 
-*Last updated: 2026-08-19 (clarifications: PDF prototype, dual audience, LLM adapters, TS proposal)*
+*Last updated: 2026-08-19 (SYS-009 corpus named; GATE-001 dispatch-only CI)*

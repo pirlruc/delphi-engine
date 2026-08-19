@@ -29,7 +29,7 @@ daedalus/
 
 ## Status
 
-Skeleton only. Do not start field ingest until SYS-009 names the field.
+Skeleton only. Ingest must apply SYS-009 subcategory caps (transformers cannot exceed the other three combined; no medical/AV vision unless a later Epic adds them).
 
 ## Commands (once the package exists)
 

@@ -1,86 +1,72 @@
-# Prototype corpus field
+# Prototype corpus
 
 This is **not** an ADR file. The decision record is Epic [SYS-009](issues.yml).
-Implementation of [PROTO-003](issues.yml) stays blocked until that Epic names a field.
 
-## What “field” means here
+## Decision (owner, 2026-08-19)
 
-It is **not** a form field, a database column, or “computer science vs patents.”
+The first corpus is **one computer-science neighborhood with four subcategories**,
+chosen because the owner will actually use the prototype:
 
-It is the **slice of the world’s literature we download first** so the prototype has a
-dense enough graph to:
+| Subcategory id | Label | Role |
+| --- | --- | --- |
+| `transformers_foundation_models` | Transformers / foundation models | Methods the owner may apply, plus a bounded FM paper/patent slice |
+| `computer_vision` | Computer vision | Visual pipeline around codes and hiding; **not** all of cs.CV |
+| `steganography` | Steganography / watermarking / information hiding | Niche graph; good hindcast target (less memorized than “Attention Is All You Need”) |
+| `two_d_codes` | 2D codes (QR, Data Matrix, Aztec, barcodes) | Strongest patent landscape of the four |
 
-1. Extract a user PDF into categories/subcategories.
-2. Answer “what is the next research path?” and “what is a patent opportunity?”
-   inside those categories.
-3. Hindcast: hide a real historical paper or patent and see if Prometheus
-   reconstructs it from only earlier work.
+Treat these as **filters on one ingest**, not four products. Category/subcategory
+queries ([SYS-008](issues.yml)) are how a 2D-code question avoids drowning in LLM papers.
 
-Catalogs such as OpenAlex nest works roughly as:
+## Why this is a good choice for this prototype
 
-```text
-domain  →  field  →  subfield  →  topic
-example: Health Sciences → Biotechnology → Gene editing → CRISPR-Cas9
-```
+- **You will run it.** A CRISPR slice that nobody uploads PDFs into is a worse prototype.
+- **The three visual topics cohere.** CV + 2D codes + steganography is a real intersection
+  (machine-readable imagery, print/camera pipeline, hiding or authenticating payloads).
+  Foundation models sit beside that as *methods* (“what architecture to try on my decoder”).
+- **Patent-searcher path is not empty.** 2D codes and watermarking/CV have CPC homes
+  (`G06K`, `G06V`, `G06T`). Transformers-alone would have been the weak patent slice;
+  pairing it with codes/stego fixes that.
+- **Hindcasting can avoid the worst leakage.** Do not use “Attention Is All You Need” as
+  the only held-out paper; cloud and local FMs have seen it. Prefer a 2D-code, watermarking,
+  or mid-2010s stego paper/patent family.
 
-Patents nest by CPC (example: C12N 15/11 — genetic engineering).
-The prototype maps both into the same Category/Subcategory query model
-([SYS-008](issues.yml)).
+## Why it can go badly (and the mitigations)
 
-A “field” for us is **one such neighborhood** (OpenAlex field or subfield **plus**
-the CPC classes that patent that neighborhood), not the whole planet.
+| Risk | What happens | Mitigation |
+| --- | --- | --- |
+| Unbounded computer vision | Ingest becomes ImageNet/detection/medical/AV and blows the budget | Bound `computer_vision` to topics that intersect representation learning, document/camera capture, and machine-readable marks — not driving, not radiology unless later named |
+| Transformers drown the niche | Embeddings and “next path” ignore QR/stego | Hard cap per subcategory; generate **requires** category/subcategory; never query the union unlabeled |
+| Four slices, weak edges | Stego papers do not cite FM papers, neighborhoods look empty | Allow semantic neighbors later (PROD-003); for Phase 1, evaluate **inside** a subcategory first |
+| FM patent noise | CPC `G06N` is huge and messy | Prefer `G06K 7/` / `G06K 19/` (readers and record carriers) and watermarking/security codes; add `G06N` only with keyword intersection (transformer, vision transformer, foundation model) |
+| LLM look-ahead on famous FM papers | Hindcast scores are fake | Held-out set prefers codes/stego/CV; record model name on EvalRun ([SYS-006](issues.yml)) |
 
-## Why we cannot ingest “everything” first
+## Starting filters (refine in PROTO-003)
 
-Hindcasting needs **local density**: many papers that cite each other in the
-same area, with dates. A thin random sample of all science produces empty
-neighborhoods and fake scores. Billion-scale ingest is Phase 3
-([SCALE-001](issues.yml)).
+Paper side (OpenAlex / arXiv), **intersection or keyword**, not “all of these cs.* classes”:
 
-The field you pick also decides whether the dual audience works:
+- Transformers / FMs: arXiv `cs.LG`, `cs.CL`, `cs.AI` with topic/keyword transformer, foundation model, vision transformer, LLM. **Cap** so this is not larger than the other three combined.
+- Computer vision: arXiv `cs.CV` **restricted** to topics near document images, camera capture, representation learning for recognition — exclude autonomous driving and medical imaging unless added later.
+- Steganography: keywords steganography, steganalysis, watermarking, information hiding; venues/topics under `cs.CR` / `cs.MM`.
+- 2D codes: keywords QR, “data matrix”, “2D barcode”, Aztec, PDF417, “machine readable code”.
 
-| Audience | Needs from the slice |
-| --- | --- |
-| Working scientist | Recent papers, methods, “what to try next” |
-| Patent searcher | Claims, CPC classes, “where is the whitespace” |
+Patent side (CPC prefixes to start, then keyword AND):
 
-A papers-only ML slice serves scientists and starves patent searchers.
-A patent-only CPC dump does the reverse. The prototype field must have **both**.
+- `G06K 7/` data readers; `G06K 19/` record carriers (QR/Data Matrix/barcodes)
+- `G06V` image recognition (bounded by code/stego/document keywords)
+- `G06T` image processing (same keyword bound)
+- `G06N` only with transformer / foundation-model / ViT keywords
+- Security/hiding: watermark / steganograph* in title/abstract; do not dump all of `G06F 21/` or `H04L 9/`
 
-## What a good first field looks like
+Numeric caps land in Daedalus config during PROTO-003 (suggested starting cap: tens of thousands of works **per subcategory**, transformers not allowed to exceed the sum of the other three).
 
-- Public paper metadata (OpenAlex) **and** public patent metadata (PatentsView/USPTO) exist.
-- There is at least one famous historical leap we can hide for hindcasting
-  (a paper **or** a patent family).
-- Categories/subcategories are meaningful (not one giant “miscellaneous”).
-- A typical user PDF is a paper or an application, not a 400-page textbook.
+## What we ingest
 
-## Candidates (owner picks one)
+- OpenAlex works + citation edges + topic assignments for the four subcategories.
+- Matching PatentsView/USPTO rows under the CPC/keyword bounds above.
+- User PDFs consented for upload, classified into these four (plus `other` if the extractor is unsure — `other` is not a generate target until confirmed).
 
-These are examples, not a ranking. Say which one (or name another).
-
-| Candidate | Why it fits both users | Hindcast hook (illustrative) | Risk |
-| --- | --- | --- | --- |
-| Gene editing / CRISPR | Dense papers **and** famous patent disputes | Hide a foundational Cas9 paper or the associated patent family | Bio jargon; some full texts are paywalled (we still have metadata + the user PDF) |
-| mRNA vaccines / LNPs | Papers plus a thick patent landscape | Hide an early LNP or nucleoside-modification paper/patent | Fast-moving; leakage via the LLM’s prior knowledge is a real eval risk |
-| Lithium-ion / solid-state batteries | Materials papers + CPC H01M | Hide a well-known electrolyte or anode paper | Figures/tables in PDFs are harder to extract |
-| Perovskite photovoltaics | Academic + industrial patenting | Hide an early perovskite solar-cell paper | Smaller graph than CRISPR/ML |
-| Transformer / foundation models | Enormous paper graph | Hide “Attention Is All You Need” or a later scaling paper | Patent coverage is weaker than the paper graph; worse for the patent-searcher path |
-
-Computer-science machine learning was the previous default. It is a **weak** default
-now that the prototype must return **patent** suggestions as well as research paths.
-
-## What we will ingest once you name it
-
-For that one neighborhood only:
-
-- OpenAlex works + citation edges + topic assignments.
-- A matching PatentsView/USPTO slice (CPC classes you confirm).
-- User PDFs you consent to upload, extracted into the same category tree.
-
-Not: all of arXiv, all of USPTO, or a second unrelated domain.
+Not: all of arXiv, all of USPTO, medical CV, or a second scientific domain.
 
 ## Status
 
-**Unresolved.** Do not start [PROTO-003](issues.yml) until [SYS-009](issues.yml)
-records the chosen field name, OpenAlex filter, and CPC (or equivalent) filter.
+**Named.** [PROTO-003](issues.yml) may start against these filters. Caps and exact OpenAlex concept IDs are implementation detail in Daedalus, not a second decision log.

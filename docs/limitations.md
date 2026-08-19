@@ -2,9 +2,10 @@
 
 Known limits that are not GitHub issues. Product gaps that we intend to close live in [`docs/issues.yml`](issues.yml).
 
-## Blocked
+## CI
 
-- [SYS-009](issues.yml) has no named corpus field. [PROTO-003](issues.yml) ingest must not start. See [`docs/prototype-corpus.md`](prototype-corpus.md).
+- Workflows are `workflow_dispatch` only ([GATE-001](issues.yml)). They do not run on push, pull request, or schedule.
+- Local parity: `bash scripts/check-ci-local.sh`.
 
 ## Not yet software
 
@@ -12,9 +13,9 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 - No GitHub labels/milestones until `scripts/setup-issue-scaffold.sh` is run with Issues write permission.
 - `docs/issues.yml` is authored locally; GitHub Issues are not published until a gated live sync.
 
-## Prototype (once unblocked)
+## Prototype (once software exists)
 
-- One named paper neighborhood plus a matching patent CPC slice, not a global corpus.
+- Four subcategories: transformers/FMs (capped), bounded computer vision, steganography, 2D codes. Not a global corpus. See [`docs/prototype-corpus.md`](prototype-corpus.md).
 - Consented single-PDF upload (not bulk Zotero sync).
 - LLM adapters: Fake in tests; cloud or local in live runs ([SYS-006](issues.yml)).
 - No GraphQL, no distributed graph or vector databases.

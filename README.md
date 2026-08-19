@@ -46,9 +46,9 @@ flowchart LR
 
 ## Plan in one page
 
-**Phase 0** — decisions (`SYS-001` … `SYS-009`): folder isolation, Postgres+pgvector, identity, **consented PDF upload in the prototype**, six components, cloud **and** local LLM adapters, dual audience, category query axis. **Corpus field is still unnamed** ([SYS-009](docs/issues.yml), explanation: [`docs/prototype-corpus.md`](docs/prototype-corpus.md)).
+**Phase 0** — decisions (`SYS-001` … `SYS-009`, `GATE-001`): folder isolation, Postgres+pgvector, identity, consented PDF upload, six components, cloud **and** local LLM adapters, dual audience, category query axis. First corpus: **transformers/FMs, bounded computer vision, steganography, 2D codes** ([SYS-009](docs/issues.yml), [`docs/prototype-corpus.md`](docs/prototype-corpus.md)). CI is **manual** (`workflow_dispatch` only).
 
-**Phase 1 — prototype** — contracts, Delphi REST, ingest of the **named** field (papers + patents), PDF extraction, Prometheus generate by kind+category, leak-proof hindcasting, Hermes CLI. Done when `PROTO-007` has both the PDF demo and eval numbers. **PROTO-003 is blocked until SYS-009 names the field.**
+**Phase 1 — prototype** — contracts, Delphi REST, ingest of those four subcategories (papers + patents, with caps), PDF extraction, Prometheus generate by kind+category, leak-proof hindcasting, Hermes CLI. Done when `PROTO-007` has both the PDF demo and eval numbers.
 
 **Phase 2 — product slice** — wider patent coverage, queued extraction at scale, embeddings, Tauri+Zotero, fuzzy matching, HITL.
 
@@ -63,6 +63,14 @@ flowchart LR
 | `pirlruc/methodologies` | Cited by tag (`tree/1.2.1/github-issue-adr`). Not a submodule. |
 
 Private clones need `CURSOR_REPO_READ_TOKEN` (or equivalent) at VM start. `.gitmodules` uses HTTPS URLs without tokens.
+
+## CI
+
+GitHub Actions is **manual** ([GATE-001](docs/issues.yml)): Actions → `quality` → Run workflow. There is no `push` / `pull_request` / `schedule` trigger.
+
+```bash
+bash scripts/check-ci-local.sh
+```
 
 ## Documentation
 
