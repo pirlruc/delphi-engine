@@ -23,10 +23,10 @@ Long-running API (in-memory catalog, SYS-009 fixture, Fake LLM):
 bash scripts/serve-prototype.sh
 ```
 
-Postgres 16 + API (Compose). Sets `DELPHI_DATABASE_URL` and still defaults to Fake LLM:
+Postgres 16 + API on a Docker host (`scripts/compose-up.sh` writes `.env` from `.env.example` if needed):
 
 ```bash
-docker compose up --build
+bash scripts/compose-up.sh
 curl -s http://127.0.0.1:8000/health
 ```
 
@@ -37,6 +37,27 @@ cd daedalus
 uv run daedalus --live --per-subcategory 5 --output /tmp/oa-slice.json
 # then: bash scripts/serve-prototype.sh --records /tmp/oa-slice.json
 ```
+
+Patent offices (EPO OPS, WIPO JSON gateway, PatSnap, Lens.org) when credentials are in `.env`:
+
+```bash
+cd daedalus
+uv run daedalus --live-patents --per-subcategory 5 --output /tmp/patent-slice.json
+```
+
+Sources without keys are skipped. Unit tests mock HTTP; they do not need live keys.
+
+## Live APIs and credentials
+
+| Source | Required to test live | Notes |
+| --- | --- | --- |
+| **OpenAlex** | none | Public REST. Set `DELPHI_MAILTO` so polite-pool requests include a contact. |
+| **PatentsView** | `PATENTSVIEW_API_KEY` | Sent as `X-Api-Key`. Register at patentsview.org. |
+| **Cloud LLM** | `DELPHI_LLM_KIND=cloud`, `DELPHI_LLM_API_KEY` | Optional `DELPHI_LLM_MODEL`, `DELPHI_LLM_BASE_URL`, `DELPHI_LLM_EMBEDDING_MODEL`. Local: `DELPHI_LLM_KIND=local` plus an OpenAI-compatible base URL. Tests stay on Fake. |
+| **EPO OPS** | `EPO_OPS_KEY`, `EPO_OPS_SECRET` | Free developer app at developers.epo.org. Quota/throttle headers apply. |
+| **Lens.org** | `LENS_API_TOKEN` | Request API access on lens.org. Monthly record caps. |
+| **PatSnap** | `PATSNAP_API_KEY` | Commercial Open Platform key. |
+| **WIPO PATENTSCOPE** | `WIPO_API_KEY` plus `WIPO_PATENTSCOPE_URL` | No public REST search; official path is paid SOAP/Java. This client talks to a JSON gateway and does not scrape HTML. |
 
 In another terminal (fixture seed `11111111-1111-1111-1111-111111111111`):
 
@@ -57,10 +78,10 @@ uv run epimetheus --output evalrun.json
 uv run epimetheus --works-json ../daedalus/src/daedalus/fixtures/slice.json --output docs/prototype-eval.json
 ```
 
-Optional Postgres 16 + pgvector with the API (Compose). Unit tests use `DELPHI_TEST_DATABASE_URL` when a local server is up:
+Optional Postgres 16 + pgvector with the API. Unit tests use `DELPHI_TEST_DATABASE_URL` when a local server is up. On a Docker host:
 
 ```bash
-docker compose up --build
+bash scripts/compose-up.sh
 ```
 
 ## Methodology

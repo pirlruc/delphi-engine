@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PDF extraction via SYS-006 (Fake in tests) and hash embeddings that write `similar_to` against other works.
 - Sample demo PDF, LLM extract retries, and OpenAlex/PatentsView HTTP fetch with retry and poison skip.
 - Live OpenAlex paging for the four SYS-009 subcategories (`daedalus --live`); authorships, inverted abstracts, and referenced_works mapping.
+- Patent fetchers for EPO OPS, WIPO JSON, PatSnap, and Lens.org (`daedalus --live-patents`).

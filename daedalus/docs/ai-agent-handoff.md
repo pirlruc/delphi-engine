@@ -6,7 +6,7 @@ Ingest and extraction only. Do not score paths or serve HTTP to Hermes.
 
 ## Current slice
 
-Walking skeleton. Fixture ingest for the SYS-009 slice ([PROTO-003-T1](../../docs/issues.yml)), PDF extraction ([PROTO-008](../../docs/issues.yml)), hash embeddings vs other papers ([PROTO-009](../../docs/issues.yml)). OpenAlex live paging (`fetch_named_slice`, `daedalus --live`) maps authorships, inverted abstracts, and referenced_works. Default ingest remains the fixture. PatentsView needs `PATENTSVIEW_API_KEY` for live HTTP.
+Walking skeleton. Fixture ingest for the SYS-009 slice ([PROTO-003-T1](../../docs/issues.yml)), PDF extraction ([PROTO-008](../../docs/issues.yml)), hash embeddings vs other papers ([PROTO-009](../../docs/issues.yml)). OpenAlex live paging (`fetch_named_slice`, `daedalus --live`) maps authorships, inverted abstracts, and referenced_works. Patent HTTP clients: PatentsView, EPO OPS, WIPO JSON gateway, PatSnap, Lens.org (`daedalus --live-patents`). Default ingest remains the fixture.
 
 Package `src` must not import `delphi`. Tests use `MemoryCatalog` via the dev extra. Composition root is `scripts/serve_prototype.py`.
 
@@ -20,4 +20,4 @@ Package `src` must not import `delphi`. Tests use `MemoryCatalog` via the dev ex
 
 ## Suggested next work
 
-Raise live `--per-subcategory` toward SYS-009 caps; add PatentsView paging when an API key is available ([PROTO-003](../../docs/issues.yml)).
+Raise live `--per-subcategory` toward SYS-009 caps with real API keys; continuation/assignment edges remain [PROD-001](../../docs/issues.yml).

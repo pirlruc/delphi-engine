@@ -11,7 +11,14 @@ from delphi_contracts.enums import CategoryScheme, IdentityKind, SubcategoryId, 
 from delphi_contracts.identity import Identity
 from delphi_contracts.work import Work
 
-__all__ = ["from_openalex", "from_patentsview"]
+__all__ = [
+    "from_epo",
+    "from_lens",
+    "from_openalex",
+    "from_patsnap",
+    "from_patentsview",
+    "from_wipo",
+]
 
 
 def from_openalex(record: dict[str, Any], subcategory: str) -> Work:
@@ -38,6 +45,58 @@ def from_patentsview(record: dict[str, Any], subcategory: str) -> Work:
         Catalog work.
     """
     return _from_common(record, WorkKind.PATENT, IdentityKind.PATENT, "patent_id", subcategory)
+
+
+def from_epo(record: dict[str, Any], subcategory: str) -> Work:
+    """Map an EPO OPS ingest dict to a Work.
+
+    Args:
+        record: Fixture-shaped patent dict.
+        subcategory: SYS-009 id.
+
+    Returns:
+        Catalog work.
+    """
+    return _from_common(record, WorkKind.PATENT, IdentityKind.PATENT, "patent", subcategory)
+
+
+def from_wipo(record: dict[str, Any], subcategory: str) -> Work:
+    """Map a WIPO PATENTSCOPE ingest dict to a Work.
+
+    Args:
+        record: Fixture-shaped patent dict.
+        subcategory: SYS-009 id.
+
+    Returns:
+        Catalog work.
+    """
+    return from_epo(record, subcategory)
+
+
+def from_patsnap(record: dict[str, Any], subcategory: str) -> Work:
+    """Map a PatSnap ingest dict to a Work.
+
+    Args:
+        record: Fixture-shaped patent dict.
+        subcategory: SYS-009 id.
+
+    Returns:
+        Catalog work.
+    """
+    return from_epo(record, subcategory)
+
+
+def from_lens(record: dict[str, Any], subcategory: str) -> Work:
+    """Map a Lens.org ingest dict to a Work.
+
+    Args:
+        record: Fixture-shaped patent dict.
+        subcategory: SYS-009 id.
+
+    Returns:
+        Catalog work.
+    """
+    return from_epo(record, subcategory)
 
 
 def _from_common(
@@ -73,6 +132,7 @@ def _from_common(
         label=subcategory.replace("_", " "),
         subcategory=parsed,
     )
+    published = str(record.get("publication_date") or record.get("published_on") or "")
     return Work(
         id=work_id,
         kind=kind,
@@ -80,7 +140,7 @@ def _from_common(
         authors=authors,
         keywords=keywords,
         abstract=str(record.get("abstract", "")),
-        published_on=date.fromisoformat(str(record["publication_date"])),
+        published_on=date.fromisoformat(published),
         identities=(Identity(kind=identity_kind, value=ident_value),),
         categories=(category,),
     )

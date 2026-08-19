@@ -14,7 +14,7 @@ Path and patent queries use both neighborhoods, filtered by subcategory ([SYS-00
 
 | Source | What we store |
 | --- | --- |
-| OpenAlex / PatentsView ingest | Work nodes plus the citation/continuation edges those APIs provide |
+| OpenAlex / PatentsView / EPO / WIPO / PatSnap / Lens ingest | Work nodes plus the citation/continuation edges those APIs provide |
 | Uploaded PDF | Bibliography entries extracted from the PDF, matched to catalog works via identity (DOI, title+year, …). Unmatched cites stay as unresolved identities |
 
 Edges are directed: `from_work` cites `to_work`. Dates on nodes make hindcasting possible.
@@ -25,7 +25,7 @@ Citation links miss papers that are about the same method but do not cite each o
 
 | Work kind | Text used for the vector |
 | --- | --- |
-| Catalog paper/patent | Title + abstract (OpenAlex / PatentsView). Full text is out of scope unless later licensed |
+| Catalog paper/patent | Title + abstract from the source API. Full text is out of scope unless later licensed |
 | Uploaded PDF | Extracted body (title, abstract, sections, keywords). Richer than catalog abstracts; still the same embedding model |
 
 Each work gets one embedding. The content graph is the **top-k nearest neighbors** among other works in the same prototype slice (and optionally the same subcategory). Those neighbors are stored as `similar_to` edges with a score so Hermes can show them.

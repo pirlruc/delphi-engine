@@ -11,7 +11,7 @@
 
 ## Current slice
 
-Walking-skeleton prototype. Six Python packages, in-memory catalog by default, optional `PostgresCatalog` via `DELPHI_DATABASE_URL`, Fake LLM (override with `DELPHI_LLM_*`), fixture SYS-009 slice, dual graphs (`cites` + `similar_to`), consented PDF upload, Hermes CLI, Epimetheus slice hindcast. `bash scripts/demo-prototype.sh` writes `docs/prototype-demo.json`. Compose brings up API plus Postgres. Live OpenAlex paging: `daedalus --live` (small `--per-subcategory`, not tens of thousands).
+Walking-skeleton prototype. Six Python packages, in-memory catalog by default, optional `PostgresCatalog` via `DELPHI_DATABASE_URL`, Fake LLM (override with `DELPHI_LLM_*`), fixture SYS-009 slice, dual graphs (`cites` + `similar_to`), consented PDF upload, Hermes CLI, Epimetheus slice hindcast. `bash scripts/demo-prototype.sh` writes `docs/prototype-demo.json`. Compose brings up API plus Postgres (`bash scripts/compose-up.sh`). Live OpenAlex paging: `daedalus --live`. Multi-office patents: `daedalus --live-patents` (EPO, WIPO JSON gateway, PatSnap, Lens.org).
 
 | Folder | Path | Notes |
 | --- | --- | --- |
@@ -31,8 +31,9 @@ export PATH="$HOME/.local/bin:$PATH"
 bash scripts/serve-prototype.sh
 # Postgres (when DELPHI_DATABASE_URL is set, e.g. docker compose up --build):
 # bash scripts/serve-prototype.sh --database-url "$DELPHI_DATABASE_URL"
-# Live OpenAlex pages (small cap; writes JSON you can pass to serve --records):
+# Live OpenAlex / patent pages (small cap; pass JSON to serve --records):
 # cd daedalus && uv run daedalus --live --per-subcategory 5 --output /tmp/slice.json
+# cd daedalus && uv run daedalus --live-patents --per-subcategory 5 --output /tmp/patents.json
 # other terminal:
 cd hermes && uv run hermes batch-check --doi 10.1000/qr-2014
 cd hermes && uv run hermes upload paper.pdf --subcategory two_d_codes --consent-destination delphi
@@ -73,8 +74,8 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 
 ## Suggested next work
 
-1. Run Compose (`docker compose up --build`) on a machine with Docker and confirm `/health` plus Hermes against Postgres ([PROTO-002](issues.yml), [SYS-002](issues.yml)).
-2. Raise `--per-subcategory` toward SYS-009 caps once paging is trusted; PatentsView still needs an API key ([PROTO-003](issues.yml)).
+1. Run Compose on a Docker host: `bash scripts/compose-up.sh` and confirm `/health` plus Hermes against Postgres ([PROTO-002](issues.yml), [SYS-002](issues.yml)).
+2. Raise `--per-subcategory` / `--live-patents` toward SYS-009 caps once keys are configured ([PROTO-003](issues.yml), [PROD-001](issues.yml)).
 3. Non-Fake LLM for a live hindcast once a provider is configured (`DELPHI_LLM_KIND=cloud|local`, [SYS-006](issues.yml)).
 
 ## Known pitfalls
@@ -86,4 +87,4 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Path dependencies must be **editable** or `uv sync` will keep a stale copy of `delphi_contracts` in each package venv.
 - Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
 
-*Last updated: 2026-08-19 (Postgres catalog + live OpenAlex mapping)*
+*Last updated: 2026-08-19 (EPO/WIPO/PatSnap/Lens patent clients + Compose)*

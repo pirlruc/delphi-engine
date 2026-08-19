@@ -10,7 +10,7 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 ## Walking skeleton (not product scale)
 
 - Default serve path is an **in-memory catalog** plus the Fake LLM. Postgres 16 is wired behind `Catalog` (`PostgresCatalog`) when `DELPHI_DATABASE_URL` is set (`scripts/serve_prototype.py --database-url`, Compose `delphi` service). k-NN for `similar_to` still uses in-process cosine on stored `double precision[]` vectors; the Compose image is pgvector so SCALE-001 can switch operators later.
-- Catalog ingest for the demo is the eight-work fixture. OpenAlex **live** paging exists (`daedalus --live --per-subcategory N`); default remain the fixture. Tens-of-thousands ingest is not the default ([PROTO-003](issues.yml)). PatentsView live fetch needs `PATENTSVIEW_API_KEY`.
+- Catalog ingest for the demo is the eight-work fixture. OpenAlex **live** paging exists (`daedalus --live --per-subcategory N`); default remains the fixture. Tens-of-thousands ingest is not the default ([PROTO-003](issues.yml)). PatentsView live fetch needs `PATENTSVIEW_API_KEY`. EPO/WIPO/PatSnap/Lens.org clients exist (`daedalus --live-patents`); they skip sources without credentials. Official PATENTSCOPE search is a paid SOAP service — the WIPO client talks to a REST JSON gateway (`WIPO_PATENTSCOPE_URL`).
 - Embeddings use the SYS-006 provider (Fake hash by default; cloud or local when `DELPHI_LLM_KIND` is set).
 - No GitHub labels/milestones until `scripts/setup-issue-scaffold.sh` is run with Issues write permission.
 - `docs/issues.yml` is authored locally; GitHub Issues are not published until a gated live sync.

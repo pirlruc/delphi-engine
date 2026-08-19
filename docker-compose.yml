@@ -29,6 +29,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
     environment:
       DELPHI_DATABASE_URL: postgresql://delphi:delphi@postgres:5432/delphi
       DELPHI_LLM_KIND: fake

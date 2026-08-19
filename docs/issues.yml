@@ -1049,7 +1049,7 @@ milestones:
           - PY-SEC-001
         tasks:
           - id: PROD-001-T1
-            status: open
+            status: done
             title: Add a patent connector and identity fields
             instructions:
               files:
@@ -1058,6 +1058,17 @@ milestones:
             verification:
               - cd daedalus && uv run pytest
               - cd contracts && uv run pytest
+          - id: PROD-001-T2
+            status: done
+            title: Add EPO, WIPO, PatSnap, and Lens.org patent fetchers
+            instructions:
+              files:
+                - daedalus/src/daedalus/patents.py
+                - daedalus/src/daedalus/cli.py
+                - daedalus/tests/test_patents.py
+            verification:
+              - cd daedalus && uv run pytest
+              - rg -n 'fetch_epo|fetch_lens|fetch_patsnap|fetch_wipo' daedalus/src/daedalus/patents.py
 
       - id: PROD-002
         status: open

@@ -62,7 +62,7 @@ Numeric caps land in Daedalus config during PROTO-003 (suggested starting cap: t
 ## What we ingest
 
 - OpenAlex works + citation edges + topic assignments for the four subcategories.
-- Matching PatentsView/USPTO rows under the CPC/keyword bounds above.
+- Matching patent rows from PatentsView/USPTO plus optional EPO OPS, WIPO JSON, PatSnap, and Lens.org (`daedalus --live-patents`).
 - User PDFs consented for upload, classified into these four (plus `other` if the extractor is unsure — `other` is not a generate target until confirmed). Extracted metadata and both graphs: [`docs/prototype-graphs.md`](prototype-graphs.md).
 
 Not: all of arXiv, all of USPTO, medical CV, or a second scientific domain.
