@@ -6,7 +6,9 @@ Catalog and query service. Hide SQL behind repository interfaces so SCALE-001 ca
 
 ## Current slice
 
-README + this handoff. No FastAPI app yet ([PROTO-002](../../docs/issues.yml)).
+Walking skeleton ([PROTO-002](../../docs/issues.yml)). FastAPI app with `MemoryCatalog`: `POST /v1/works:batch-check`, `GET /v1/works/{id}/neighborhood`, `POST /v1/uploads`, `POST /v1/generate`. Extractor/embedder/generator are ports so this package does not import siblings. Default `scripts/serve_prototype.py` wires Daedalus + Prometheus at the composition root.
+
+Postgres/pgvector is in root `docker-compose.yml` and is **not** the default serve backend yet.
 
 ## Constraints
 
@@ -16,8 +18,8 @@ README + this handoff. No FastAPI app yet ([PROTO-002](../../docs/issues.yml)).
 - Neighborhood queries return citation, content, or union modes ([SYS-010](../../docs/issues.yml)). Content neighbors are other works, not the PDF in isolation.
 - Must not parse PDFs or call OpenAlex (Daedalus), invent paths from an unmasked catalog (Prometheus), or compute hindcast metrics (Epimetheus).
 - GraphQL is out of scope until SCALE-001 says Hermes query shapes need it.
-- Python 3.13 / uv / PY-* floors once code exists.
+- Python 3.13 / uv / PY-* floors.
 
 ## Suggested next work
 
-PROTO-001 (contracts) then PROTO-002-T1 (batch-check + citation/content neighborhood).
+Wire `MemoryCatalog` to Postgres/pgvector without changing the REST contract ([PROTO-002](../../docs/issues.yml) remaining acceptance, [SYS-002](../../docs/issues.yml)).

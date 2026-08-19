@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Run the in-memory prototype API with fixture ingest and Fake LLM.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="${HOME}/.local/bin:${PATH}"
+cd "$ROOT"
+uv run --project delphi --with "$ROOT/daedalus" --with "$ROOT/prometheus" \
+  python "$ROOT/scripts/serve_prototype.py" "$@"

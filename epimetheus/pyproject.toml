@@ -1,0 +1,87 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=82.0.1", "wheel>=0.47.0"]
+
+[project]
+name = "epimetheus"
+version = "0.1.0"
+requires-python = ">=3.13"
+description = "Hindcasting eval harness for Delphi Engine."
+readme = "README.md"
+dependencies = ["delphi-contracts", "delphi-prometheus"]
+
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]>=7.13.5",
+    "delphi",
+    "interrogate>=1.7",
+    "mypy>=1.20.2",
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "radon>=6.0",
+    "ruff==0.15.12",
+]
+
+[project.scripts]
+epimetheus = "epimetheus.cli:main"
+
+[tool.uv.sources]
+delphi-contracts = { path = "../contracts", editable = true }
+delphi-prometheus = { path = "../prometheus", editable = true }
+delphi = { path = "../delphi", editable = true }
+
+[tool.setuptools.package-data]
+epimetheus = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+mypy_path = ["src"]
+namespace_packages = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+addopts = ["--cov=epimetheus", "--cov-branch", "--cov-fail-under=95", "--cov-report=term-missing"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["epimetheus"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
+
+[tool.interrogate]
+fail-under = 95
+ignore-init-method = true
+ignore-nested-functions = true
+ignore-semiprivate = true
+ignore-private = true
+paths = ["src"]
+
+[tool.ruff]
+line-length = 100
+preview = true
+src = ["src", "tests"]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["B", "C4", "D", "DOC", "E", "F", "I", "SIM", "UP", "W"]
+ignore = ["DOC501", "DOC502"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]

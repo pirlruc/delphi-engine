@@ -7,4 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- FastAPI walking skeleton: batch-check, neighborhood (citation/content/union), consented PDF upload, and generate.
+- In-memory catalog with `cites` and `similar_to` edges. Postgres/pgvector remains compose-only until SCALE-001.

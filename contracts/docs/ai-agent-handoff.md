@@ -6,7 +6,7 @@ Isolated schema package. Do not import sibling component trees.
 
 ## Current slice
 
-README + this handoff. No Python package yet ([PROTO-001](../../docs/issues.yml)).
+Walking skeleton ([PROTO-001](../../docs/issues.yml)). Package `delphi_contracts` exports identity, extraction, neighborhood, path, eval, and SYS-006 LLM models. OpenAPI is at `src/delphi_contracts/openapi.json`.
 
 ## Constraints
 
@@ -16,7 +16,8 @@ README + this handoff. No Python package yet ([PROTO-001](../../docs/issues.yml)
 - Category schemes: `openalex_topic` and `cpc` ([SYS-008](../../docs/issues.yml)).
 - PathRequest.kind: `research_path` or `patent_whitespace` ([SYS-007](../../docs/issues.yml)).
 - Extraction covers title, authors, keywords, bibliography, and body text. Neighborhood modes are `citation`, `content`, and `union` ([SYS-010](../../docs/issues.yml)).
+- `MaskedContext.forbidden_ids()` only flags held-out ids that are **present** in the seed or neighbors, plus neighbors published after `mask_on`.
 
 ## Suggested next work
 
-PROTO-001-T1: package skeleton plus identity, extraction, and neighborhood models.
+Keep models frozen unless a later Epic requires a field. Consumers install this package as an editable path dependency.

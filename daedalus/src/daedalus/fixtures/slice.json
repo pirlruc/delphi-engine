@@ -1,0 +1,100 @@
+{
+  "works": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "kind": "paper",
+      "title": "QR Codes in Industrial Tracking",
+      "authors": ["Kim"],
+      "keywords": ["qr", "barcode"],
+      "abstract": "QR codes for industrial tracking and data matrix readers.",
+      "published_on": "2014-06-01",
+      "doi": "10.1000/qr-2014",
+      "subcategory": "two_d_codes",
+      "cites": []
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222222",
+      "kind": "paper",
+      "title": "Camera Capture of Data Matrix Marks",
+      "authors": ["Lee"],
+      "keywords": ["data matrix", "camera"],
+      "abstract": "Document camera capture of 2D barcodes and QR codes.",
+      "published_on": "2015-03-01",
+      "doi": "10.1000/qr-2015",
+      "subcategory": "two_d_codes",
+      "cites": ["11111111-1111-1111-1111-111111111111"]
+    },
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "kind": "patent",
+      "title": "Record carrier with two-dimensional code",
+      "authors": ["Inventor"],
+      "keywords": ["qr", "g06k"],
+      "abstract": "A record carrier encoding a QR or Data Matrix symbol.",
+      "published_on": "2013-01-15",
+      "patent": "US-1234567-A",
+      "subcategory": "two_d_codes",
+      "cites": []
+    },
+    {
+      "id": "44444444-4444-4444-4444-444444444444",
+      "kind": "paper",
+      "title": "Spatial steganography in print",
+      "authors": ["Chen"],
+      "keywords": ["steganography", "watermarking"],
+      "abstract": "Information hiding and watermarking in printed images.",
+      "published_on": "2016-04-01",
+      "doi": "10.1000/stego-2016",
+      "subcategory": "steganography",
+      "cites": []
+    },
+    {
+      "id": "55555555-5555-5555-5555-555555555555",
+      "kind": "paper",
+      "title": "Steganalysis of print-scan watermarks",
+      "authors": ["Nguyen"],
+      "keywords": ["steganalysis", "watermarking"],
+      "abstract": "Detecting information hiding after print and camera capture.",
+      "published_on": "2017-09-01",
+      "doi": "10.1000/stego-2017",
+      "subcategory": "steganography",
+      "cites": ["44444444-4444-4444-4444-444444444444"]
+    },
+    {
+      "id": "66666666-6666-6666-6666-666666666666",
+      "kind": "paper",
+      "title": "Representation learning for document images",
+      "authors": ["Patel"],
+      "keywords": ["document", "representation"],
+      "abstract": "Representation learning for document and camera-captured text.",
+      "published_on": "2015-08-01",
+      "doi": "10.1000/cv-2015",
+      "subcategory": "computer_vision",
+      "cites": []
+    },
+    {
+      "id": "77777777-7777-7777-7777-777777777777",
+      "kind": "paper",
+      "title": "Attention for sequence models",
+      "authors": ["Researcher"],
+      "keywords": ["transformer", "attention"],
+      "abstract": "Transformer attention for language and vision tokens.",
+      "published_on": "2017-06-01",
+      "doi": "10.1000/fm-2017",
+      "subcategory": "transformers_foundation_models",
+      "cites": []
+    },
+    {
+      "id": "88888888-8888-8888-8888-888888888888",
+      "kind": "paper",
+      "title": "Color QR watermarks for packaging",
+      "authors": ["Held"],
+      "keywords": ["qr", "watermarking"],
+      "abstract": "Color QR codes that watermark packaging using data matrix lessons.",
+      "published_on": "2020-02-01",
+      "doi": "10.1000/qr-2020",
+      "subcategory": "two_d_codes",
+      "cites": ["11111111-1111-1111-1111-111111111111"]
+    }
+  ]
+}

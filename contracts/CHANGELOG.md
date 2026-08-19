@@ -7,4 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- Pydantic models for Work, Identity, Category, graphs, extraction, neighborhoods, PathRequest/Proposal, MaskedContext, and EvalRun.
+- SYS-006 LLM adapters: Fake, plus OpenAI-compatible cloud and local.
+- Generated OpenAPI 3 document at `src/delphi_contracts/openapi.json`.

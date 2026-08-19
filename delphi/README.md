@@ -8,9 +8,9 @@ Treat this folder as if it were a standalone repository (`pirlruc/delphi`). Depe
 
 Serve batch identifier checks, consented PDF accept, and dual neighborhoods: **citation** (`cites`) and **content** (`similar_to` from embeddings of this work versus other works). Expose generate (`research_path` or `patent_whitespace`) filtered by category/subcategory. Delphi is **not** the ingest pipeline, **not** the path generator, and **not** the judge.
 
-Prototype persistence is Postgres 16 + pgvector behind repository interfaces ([SYS-002](../docs/issues.yml), [SYS-010](../docs/issues.yml)). Graph rules: [`docs/prototype-graphs.md`](../docs/prototype-graphs.md). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
+Prototype persistence in unit tests and `scripts/serve_prototype.py` is an in-memory catalog. Postgres 16 + pgvector is in the root `docker-compose.yml` ([SYS-002](../docs/issues.yml)) and is not wired into the default serve path yet. Graph rules: [`docs/prototype-graphs.md`](../docs/prototype-graphs.md). Distributed graph and vector engines wait for [SCALE-001](../docs/issues.yml).
 
-## Layout (target, PROTO-002)
+## Layout
 
 ```
 delphi/
@@ -25,12 +25,18 @@ delphi/
 
 ## Status
 
-Skeleton only. Implementation is [PROTO-002](../docs/issues.yml). REST only in Phase 1.
+Walking skeleton ([PROTO-002](../docs/issues.yml)). REST only. Collaborators (extractor, embedder, generator) are injected so this package does not import siblings.
 
-## Commands (once the package exists)
+## Commands
 
 ```bash
 cd delphi
 uv sync --frozen --extra dev
 uv run pytest
+```
+
+Run the composition root from the workspace:
+
+```bash
+bash scripts/serve-prototype.sh
 ```

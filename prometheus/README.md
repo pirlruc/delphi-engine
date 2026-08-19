@@ -14,7 +14,9 @@ LLM calls go through the SYS-006 provider: Fake in tests, cloud or local OpenAI-
 
 The name pairs with Epimetheus: forethought versus hindsight.
 
-## Layout (target, PROTO-004)
+The Python import name is `delphi_prometheus` so it does not clash with the Prometheus metrics client.
+
+## Layout
 
 ```
 prometheus/
@@ -22,18 +24,16 @@ prometheus/
   CHANGELOG.md
   pyproject.toml
   uv.lock
-  src/prometheus/
+  src/delphi_prometheus/
   tests/
   docs/ai-agent-handoff.md
 ```
 
-Package import name may be `delphi_prometheus` if `prometheus` clashes with the metrics client. Decide in PROTO-004-T1.
-
 ## Status
 
-Skeleton only.
+Walking skeleton ([PROTO-004](../docs/issues.yml)). `PathGenerator.generate` refuses a context whose **present** works include a held-out or future id.
 
-## Commands (once the package exists)
+## Commands
 
 ```bash
 cd prometheus

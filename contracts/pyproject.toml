@@ -1,0 +1,111 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=82.0.1", "wheel>=0.47.0"]
+
+[project]
+name = "delphi-contracts"
+version = "0.1.0"
+requires-python = ">=3.13"
+description = "Shared Pydantic models and OpenAPI for Delphi Engine."
+readme = "README.md"
+authors = [{ name = "pirlruc" }]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]>=7.13.5",
+    "interrogate>=1.7",
+    "mypy>=1.20.2",
+    "pydoclint>=0.6",
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "radon>=6.0",
+    "ruff==0.15.12",
+]
+
+[project.urls]
+Issues = "https://github.com/pirlruc/delphi-engine/issues"
+Repository = "https://github.com/pirlruc/delphi-engine"
+
+[tool.setuptools.package-data]
+delphi_contracts = ["py.typed", "openapi.json"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+mypy_path = ["src"]
+namespace_packages = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+show_error_codes = true
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = "tests.*"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=delphi_contracts",
+    "--cov-branch",
+    "--cov-fail-under=95",
+    "--cov-report=term-missing",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["delphi_contracts"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+
+[tool.interrogate]
+fail-under = 95
+ignore-init-method = true
+ignore-module = false
+ignore-nested-functions = true
+ignore-semiprivate = true
+ignore-private = true
+quiet = false
+paths = ["src"]
+
+[tool.ruff]
+line-length = 100
+preview = true
+src = ["src", "tests"]
+target-version = "py313"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["B", "C4", "D", "DOC", "E", "F", "I", "SIM", "UP", "W"]
+ignore = ["DOC501", "DOC502"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]

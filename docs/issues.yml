@@ -628,7 +628,7 @@ milestones:
   - name: Phase 1 — Prototype
     epics:
       - id: PROTO-001
-        status: open
+        status: done
         title: Shared contracts package and OpenAPI for the walking skeleton
         overview:
           problem: >-
@@ -655,7 +655,7 @@ milestones:
           - PY-DOC-002
         tasks:
           - id: PROTO-001-T1
-            status: open
+            status: done
             title: Create the contracts package skeleton and identity/batch-check models
             instructions:
               files:
@@ -695,7 +695,7 @@ milestones:
           - PY-TEST-002
         tasks:
           - id: PROTO-002-T1
-            status: open
+            status: done
             title: Implement batch-check and neighborhood endpoints with tests
             instructions:
               files:
@@ -736,7 +736,7 @@ milestones:
           - PY-PERF-002
         tasks:
           - id: PROTO-003-T1
-            status: open
+            status: done
             title: Implement OpenAlex and patent slice ingest with idempotent upserts
             instructions:
               files:
@@ -747,7 +747,7 @@ milestones:
               - Fixture ingest creates paper and patent works with dates and categories
 
       - id: PROTO-004
-        status: open
+        status: done
         title: Prometheus research-path generator on a masked neighborhood
         overview:
           problem: >-
@@ -776,7 +776,7 @@ milestones:
           - PY-TEST-001
         tasks:
           - id: PROTO-004-T1
-            status: open
+            status: done
             title: Implement MaskedContext path generation with a fake provider
             instructions:
               files:
@@ -787,7 +787,7 @@ milestones:
               - Tests fail if the generator is given future work ids in context
 
       - id: PROTO-005
-        status: open
+        status: done
         title: Epimetheus hindcasting with leak-proof temporal masks
         overview:
           problem: >-
@@ -819,7 +819,7 @@ milestones:
           - PY-PERF-002
         tasks:
           - id: PROTO-005-T1
-            status: open
+            status: done
             title: Implement temporal mask graph traversal with leak tests
             instructions:
               files:
@@ -829,7 +829,7 @@ milestones:
               - cd epimetheus && uv run pytest
               - Leak fixtures (future paper, citation descendant, later similar_to neighbor, same-year-after) all fail closed
           - id: PROTO-005-T2
-            status: open
+            status: done
             title: Implement LLM-as-judge scoring and metrics artifact
             instructions:
               files:
@@ -839,7 +839,7 @@ milestones:
               - Fake judge provider produces a stored EvalRun JSON with the three scores
 
       - id: PROTO-006
-        status: open
+        status: done
         title: Hermes prototype CLI with consented PDF upload and category queries
         overview:
           problem: >-
@@ -868,7 +868,7 @@ milestones:
           - PY-SEC-001
         tasks:
           - id: PROTO-006-T1
-            status: open
+            status: done
             title: Implement consenting upload, extract status, and category generate CLI
             instructions:
               files:
@@ -908,7 +908,7 @@ milestones:
           - PY-PERF-001
         tasks:
           - id: PROTO-007-T1
-            status: open
+            status: done
             title: Add reproducible demo and eval entrypoints
             instructions:
               files:
@@ -920,7 +920,7 @@ milestones:
               - rg -n 'hindcast|EvalRun' epimetheus/README.md
 
       - id: PROTO-008
-        status: open
+        status: done
         title: PDF extraction of metadata, bibliography, and body text
         overview:
           problem: >-
@@ -950,7 +950,7 @@ milestones:
           - PY-SEC-001
         tasks:
           - id: PROTO-008-T1
-            status: open
+            status: done
             title: Implement PDF extraction with Fake provider tests
             instructions:
               files:
@@ -960,7 +960,7 @@ milestones:
               - cd daedalus && uv run pytest
 
       - id: PROTO-009
-        status: open
+        status: done
         title: Content graph from embeddings of the upload and other papers
         overview:
           problem: >-
@@ -988,7 +988,7 @@ milestones:
           - PY-API-001
         tasks:
           - id: PROTO-009-T1
-            status: open
+            status: done
             title: Embed catalog and uploaded works and store similar_to edges
             instructions:
               files:

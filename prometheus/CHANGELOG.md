@@ -7,4 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- `PathGenerator` that accepts only a `MaskedContext` and uses the SYS-006 Fake provider in tests.
+- Leak check: held-out or future work ids that are actually present in the neighborhood raise `ContextLeakError`.

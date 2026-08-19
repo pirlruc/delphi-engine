@@ -5,6 +5,8 @@
 # Analog: github-scaffold templates/ci-quality.yml dispatch-only default.
 #
 # Local parity (CI-008): bash scripts/check-ci-local.sh
+# Python package gates (ruff/mypy/pytest): bash scripts/python-gates.sh
+# Python gates stay local unless quota allows a dispatch job (GATE-001).
 
 name: quality
 

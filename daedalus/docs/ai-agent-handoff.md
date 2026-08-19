@@ -6,7 +6,9 @@ Ingest and extraction only. Do not score paths or serve HTTP to Hermes.
 
 ## Current slice
 
-README + this handoff. Catalog ingest is [PROTO-003](../../docs/issues.yml) against [SYS-009](../../docs/issues.yml) filters. PDF extraction is [PROTO-008](../../docs/issues.yml). Content-graph embeddings vs other papers are [PROTO-009](../../docs/issues.yml).
+Walking skeleton. Fixture ingest for the SYS-009 slice ([PROTO-003-T1](../../docs/issues.yml)), PDF extraction ([PROTO-008](../../docs/issues.yml)), hash embeddings vs other papers ([PROTO-009](../../docs/issues.yml)). OpenAlex/PatentsView **HTTP** ingest is not live yet; mappers exist in `connectors.py`.
+
+Package `src` must not import `delphi`. Tests use `MemoryCatalog` via the dev extra. Composition root is `scripts/serve_prototype.py`.
 
 ## Constraints
 
@@ -18,4 +20,4 @@ README + this handoff. Catalog ingest is [PROTO-003](../../docs/issues.yml) agai
 
 ## Suggested next work
 
-SYS-009 filters are locked. PROTO-003-T1, PROTO-008-T1, then PROTO-009-T1 after Delphi can upsert.
+Live OpenAlex/PatentsView page fetch with retries ([PROTO-003](../../docs/issues.yml) remaining).

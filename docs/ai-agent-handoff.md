@@ -11,27 +11,41 @@
 
 ## Current slice
 
-Planning only. Analog pins and the authored backlog exist. No component `pyproject.toml` yet. Corpus is named ([SYS-009](issues.yml)): transformers/FMs, bounded computer vision, steganography, 2D codes. Dual graphs (citation + content vs other papers) are locked ([SYS-010](issues.yml), `docs/prototype-graphs.md`). Phase 1 implementation may start with contracts; ingest must apply the caps in `docs/prototype-corpus.md`.
+Walking-skeleton prototype. Six Python packages, in-memory catalog, Fake LLM, fixture SYS-009 slice, dual graphs (`cites` + `similar_to`), consented PDF upload, Hermes CLI, Epimetheus fixture hindcast. Postgres/pgvector is compose-only and not the default serve backend. Live OpenAlex/PatentsView HTTP ingest is not wired. Corpus is named ([SYS-009](issues.yml)): transformers/FMs, bounded computer vision, steganography, 2D codes. Dual graphs are locked ([SYS-010](issues.yml), `docs/prototype-graphs.md`).
 
 | Folder | Path | Notes |
 | --- | --- | --- |
-| contracts | `contracts/` | Schema including Category, PdfUpload, PathRequest.kind. |
-| delphi | `delphi/` | Catalog API. `cites` + `similar_to` + pgvector ([SYS-002](issues.yml), [SYS-010](issues.yml)). |
-| daedalus | `daedalus/` | Ingest, PDF metadata/bibliography/body, embeddings vs other papers ([PROTO-008](issues.yml), [PROTO-009](issues.yml)). |
-| prometheus | `prometheus/` | `research_path` or `patent_whitespace`. MaskedContext only. SYS-006 provider. |
-| epimetheus | `epimetheus/` | Hindcasting. Leak-proof temporal masks. |
-| hermes | `hermes/` | Phase 1 CLI with consented PDF upload ([PROTO-006](issues.yml)); Phase 2 Tauri ([PROD-004](issues.yml)). |
+| contracts | `contracts/` | `delphi_contracts` models + OpenAPI. |
+| delphi | `delphi/` | FastAPI. `MemoryCatalog`. Ports for extractor/embedder/generator. |
+| daedalus | `daedalus/` | Fixture ingest, PDF extract, hash embeddings vs other papers. |
+| prometheus | `prometheus/` | Import `delphi_prometheus`. MaskedContext only. |
+| epimetheus | `epimetheus/` | Dual-graph temporal masks + Fake judge artifact. |
+| hermes | `hermes/` | CLI: batch-check, consented upload, neighborhood, generate. |
 
-Root owns GitHub templates, Cursor rules, `docs/issues.yml`, analog submodules, and `docs/proposal/guardrails/`.
+Root owns GitHub templates, Cursor rules, `docs/issues.yml`, analog submodules, `scripts/serve_prototype.py`, and `docs/proposal/guardrails/`. Sibling imports except contracts are forbidden in package **src**. Tests and `scripts/serve_prototype.py` may wire siblings.
+
+## How to run
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+bash scripts/serve-prototype.sh
+# other terminal:
+cd hermes && uv run hermes batch-check --doi 10.1000/qr-2014
+cd hermes && uv run hermes upload paper.pdf --subcategory two_d_codes --consent-destination delphi
+cd epimetheus && uv run epimetheus --output evalrun.json
+```
 
 ## How to run checks
 
 ```bash
 bash scripts/check-ci-local.sh
+bash scripts/python-gates.sh
 bash scripts/issues-sync.sh --validate-only
 git -C docs/guardrails describe --tags --exact-match HEAD
 git -C .github/scaffold describe --tags --exact-match HEAD
 ```
+
+System Python may be 3.12. Packages require **uv + CPython 3.13**.
 
 ## Analog pins (TOOL-001)
 
@@ -55,9 +69,9 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 
 ## Suggested next work
 
-1. PROTO-001 contracts (Extraction metadata, Neighborhood modes, PathRequest.kind).
-2. PROTO-002 Delphi neighborhoods, PROTO-003 ingest, PROTO-008 extract, PROTO-009 content graph.
-3. Run `quality` on GitHub only when you choose to spend minutes (`bash scripts/check-ci-local.sh` is free).
+1. Live OpenAlex/PatentsView ingest ([PROTO-003](issues.yml) remaining).
+2. Postgres/pgvector behind the catalog protocol ([PROTO-002](issues.yml) remaining, [SYS-002](issues.yml)).
+3. PROTO-007 go/no-go: run the PDF demo and a slice hindcast, record mean scores.
 
 ## Known pitfalls
 
@@ -65,5 +79,7 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - `git remote -v` may display rewritten `x-access-token` URLs from a global `insteadOf`.
 - Creating GitHub issues is a publishing action.
 - Proposal guardrails under `docs/proposal/guardrails/` must not be read as `docs/guardrails/` thresholds.
+- Path dependencies must be **editable** or `uv sync` will keep a stale copy of `delphi_contracts` in each package venv.
+- Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
 
-*Last updated: 2026-08-19 (SYS-010 dual citation and content graphs)*
+*Last updated: 2026-08-19 (walking-skeleton prototype)*

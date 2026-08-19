@@ -8,6 +8,39 @@ A **working prototype** is: the user consents to upload a PDF; the system extrac
 
 This repository currently holds every component as an **isolated folder**. GitHub Issues, CI, and analog pins live at the workspace root. Each folder is shaped like a standalone pirlruc package so it can become its own git repository later ([SCALE-003](docs/issues.yml)).
 
+## How to run the prototype
+
+In-memory catalog, SYS-009 fixture slice, Fake LLM:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+bash scripts/serve-prototype.sh
+```
+
+In another terminal (fixture seed `11111111-1111-1111-1111-111111111111`):
+
+```bash
+cd hermes
+uv run hermes batch-check --doi 10.1000/qr-2014
+uv run hermes upload paper.pdf --subcategory two_d_codes --consent-destination delphi
+uv run hermes neighborhood 11111111-1111-1111-1111-111111111111 --subcategory two_d_codes --mode union
+uv run hermes generate research_path --subcategory two_d_codes --seed-work-id 11111111-1111-1111-1111-111111111111
+uv run hermes generate patent_whitespace --subcategory two_d_codes --seed-work-id 11111111-1111-1111-1111-111111111111
+```
+
+Hindcast artifact (Fake judge):
+
+```bash
+cd epimetheus
+uv run epimetheus --output evalrun.json
+```
+
+Optional Postgres 16 + pgvector (not used by the default serve path):
+
+```bash
+docker compose up -d
+```
+
 ## Methodology
 
 [GitHub Issue-native ADR](https://github.com/pirlruc/methodologies/tree/1.2.1/github-issue-adr) — Epic = decision record, optional Y-statement, no ADR markdown files. Templates: [pirlruc/github-scaffold](https://github.com/pirlruc/github-scaffold) @ **1.2.0**. Quality: pin [pirlruc/guardrails](https://github.com/pirlruc/guardrails) at `docs/guardrails/` @ **1.3.0**. Applies to **new issues only**.
@@ -71,6 +104,8 @@ GitHub Actions is **manual** ([GATE-001](docs/issues.yml)): Actions → `quality
 ```bash
 bash scripts/check-ci-local.sh
 ```
+
+Python package gates (ruff, mypy, interrogate, pytest with 95% coverage) run as part of that script unless `SKIP_PYTHON_GATES=1`. Directly: `bash scripts/python-gates.sh`.
 
 ## Documentation
 

@@ -2,7 +2,7 @@
 
 Hindcasting evaluation harness.
 
-Treat this folder as if it were a standalone repository (`pirlruc/epimetheus`). Depend on `contracts`. Call Prometheus with a context you built. Read the catalog through Delphi's API, not by importing Delphi internals.
+Treat this folder as if it were a standalone repository (`pirlruc/epimetheus`). Depend on `contracts`. Call Prometheus with a context you built. Read the catalog through Delphi's API, not by importing Delphi internals. The prototype CLI runs a packaged fixture graph so it does not import Delphi.
 
 ## Role
 
@@ -19,7 +19,7 @@ If a future paper or patent can reach the prompt, the run is invalid. That rule 
 
 Phase 1 is a batch CLI plus JSON metrics ([PROTO-005](../docs/issues.yml), [PROTO-007](../docs/issues.yml)). Human review is [PROD-006](../docs/issues.yml), not a second desktop app.
 
-## Layout (target, PROTO-005)
+## Layout
 
 ```
 epimetheus/
@@ -34,12 +34,15 @@ epimetheus/
 
 ## Status
 
-Skeleton only.
+Walking skeleton ([PROTO-005](../docs/issues.yml)). The CLI runs the QR-2014 vs color-QR-2020 fixture hindcast with the Fake judge.
 
-## Commands (once the package exists)
+## Commands
 
 ```bash
 cd epimetheus
 uv sync --frozen --extra dev
 uv run pytest
+uv run epimetheus --output evalrun.json
 ```
+
+The artifact is an `EvalRun` JSON object: judge scores (novelty, relevance, accuracy) plus embedding similarity.

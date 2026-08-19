@@ -7,4 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- Typer CLI: `batch-check`, consented `upload`, `neighborhood`, and `generate`.
+- Local SQLite cache of the last JSON payload per command.

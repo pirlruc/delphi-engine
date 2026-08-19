@@ -7,4 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- Leak-proof temporal masks on both `cites` and `similar_to` (future works, citation descendants, later content neighbors).
+- Fixture hindcast CLI that writes an `EvalRun` JSON artifact (Fake judge + embedding similarity).

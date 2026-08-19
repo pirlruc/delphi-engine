@@ -7,4 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Seeded isolated package skeleton (no runtime yet).
+### Added
+
+- SYS-009 fixture ingest (eight works across four subcategories) with caps and CV blocklist.
+- OpenAlex and PatentsView record mappers.
+- PDF extraction via SYS-006 (Fake in tests) and hash embeddings that write `similar_to` against other works.

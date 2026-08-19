@@ -11,8 +11,8 @@ Let a scientist or patent searcher overlay a document they have on the global ca
 **Phase 1 ([PROTO-006](../docs/issues.yml)):** Python CLI + local SQLite cache.
 
 - Batch-check identifiers without uploading a file.
-- Prompt for **consent** (destination named), then upload one PDF.
-- Show extracted **title, authors, keywords**, bibliography matches, suggested subcategory.
+- Require **consent** (`--consent-destination delphi`), then upload one PDF.
+- Print extracted **title, authors, keywords**, bibliography matches, suggested subcategory.
 - Show **citation** and **content** neighborhoods (content = similar other papers, not the PDF in isolation).
 - Query `research_path` or `patent_whitespace` for those categories.
 
@@ -35,12 +35,19 @@ Desktop files (`src-tauri/`, `src/` UI) land in PROD-004 without deleting the CL
 
 ## Status
 
-Skeleton only. Consented PDF upload is in Phase 1 ([SYS-004](../docs/issues.yml)).
+Walking skeleton. Consented PDF upload is in Phase 1 ([SYS-004](../docs/issues.yml)). Upload without `--consent-destination delphi` exits 2.
 
-## Commands (once the package exists)
+## Commands
+
+Start Delphi first (`bash scripts/serve-prototype.sh` from the workspace root). Fixture seed work id: `11111111-1111-1111-1111-111111111111`.
 
 ```bash
 cd hermes
 uv sync --frozen --extra dev
 uv run pytest
+uv run hermes batch-check --doi 10.1000/qr-2014
+uv run hermes upload paper.pdf --subcategory two_d_codes --consent-destination delphi
+uv run hermes neighborhood 11111111-1111-1111-1111-111111111111 --subcategory two_d_codes --mode union
+uv run hermes generate research_path --subcategory two_d_codes --seed-work-id 11111111-1111-1111-1111-111111111111
+uv run hermes generate patent_whitespace --subcategory two_d_codes --seed-work-id 11111111-1111-1111-1111-111111111111
 ```
