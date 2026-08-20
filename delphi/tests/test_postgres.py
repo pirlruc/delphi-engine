@@ -114,6 +114,7 @@ def test_postgres_works_edges_embeddings_and_neighborhood(catalog: PostgresCatal
     missing = _work("no vec", date(2011, 1, 1), "10.1/none")
     catalog.upsert_work(missing)
     catalog.rebuild_similar_to(missing.id)
+    catalog.rebuild_all_similar_to(k=8)
     assert catalog.edges(EdgeKind.SIMILAR_TO)
 
 

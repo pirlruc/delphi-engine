@@ -156,6 +156,13 @@ class Catalog(Protocol):
             k: Neighbor count.
         """
 
+    def rebuild_all_similar_to(self, k: int = 8) -> None:
+        """Recompute every similar_to edge from current embeddings.
+
+        Args:
+            k: Neighbor count per work.
+        """
+
 
 def has_subcategory(work: Work, subcategory: str) -> bool:
     """Return whether a work is tagged with a subcategory id.
@@ -192,8 +199,15 @@ class MemoryCatalog:
             The stored work.
         """
         self._works[work.id] = work
+        stale = [key for key, owner in self._identities.items() if owner == work.id]
+        for key in stale:
+            del self._identities[key]
         for identity in work.identities:
-            self._identities[(identity.kind.value, identity.value)] = work.id
+            key = (identity.kind.value, identity.value)
+            owner = self._identities.get(key)
+            if owner is not None and owner != work.id:
+                continue
+            self._identities[key] = work.id
         return work
 
     def get_work(self, work_id: UUID) -> Work | None:
@@ -354,14 +368,48 @@ class MemoryCatalog:
         source = self._embeddings.get(work_id)
         if source is None:
             return
+        self._replace_similar_to(
+            work_id,
+            scored_neighbors(
+                work_id, source, self._embeddings, self._models, self._models.get(work_id)
+            ),
+            k,
+        )
+
+    def rebuild_all_similar_to(self, k: int = 8) -> None:
+        """Recompute every similar_to edge from current embeddings.
+
+        Args:
+            k: Neighbor count per work.
+        """
+        self._edges = [edge for edge in self._edges if edge.kind is not EdgeKind.SIMILAR_TO]
+        for work_id, source in self._embeddings.items():
+            ranked = scored_neighbors(
+                work_id, source, self._embeddings, self._models, self._models.get(work_id)
+            )
+            for other_id, score in ranked[:k]:
+                self.add_edge(
+                    Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                )
+                self.add_edge(
+                    Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                )
+
+    def _replace_similar_to(self, work_id: UUID, ranked: list[tuple[UUID, float]], k: int) -> None:
+        """Drop similar_to edges touching one work, then write its top-k pairs.
+
+        Args:
+            work_id: Work to refresh.
+            ranked: Scored neighbors.
+            k: Neighbor count.
+        """
         self._edges = [
             edge
             for edge in self._edges
             if edge.kind is not EdgeKind.SIMILAR_TO
             or (edge.from_work != work_id and edge.to_work != work_id)
         ]
-        scored = scored_neighbors(work_id, source, self._embeddings)
-        for other_id, score in scored[:k]:
+        for other_id, score in ranked[:k]:
             self.add_edge(
                 Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
             )
@@ -521,6 +569,8 @@ def scored_neighbors(
     work_id: UUID,
     source: tuple[float, ...],
     embeddings: dict[UUID, tuple[float, ...]],
+    models: dict[UUID, str] | None = None,
+    model_id: str | None = None,
 ) -> list[tuple[UUID, float]]:
     """Rank other embeddings by cosine similarity.
 
@@ -528,6 +578,8 @@ def scored_neighbors(
         work_id: Query work.
         source: Query vector.
         embeddings: All vectors.
+        models: Optional work id to embedding model id.
+        model_id: When set, only compare vectors from this model.
 
     Returns:
         (id, score) pairs, highest first.
@@ -535,6 +587,10 @@ def scored_neighbors(
     scored: list[tuple[UUID, float]] = []
     for other_id, vector in embeddings.items():
         if other_id == work_id:
+            continue
+        if model_id is not None and models is not None and models.get(other_id) != model_id:
+            continue
+        if len(vector) != len(source):
             continue
         scored.append((other_id, cosine(source, vector)))
     scored.sort(key=lambda item: item[1], reverse=True)

@@ -19,6 +19,7 @@ from delphi_contracts.enums import (
 from delphi_contracts.extraction import CONSENT_DESTINATION, BibliographyEntry, Extraction
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity
+from delphi_contracts.mask import dropped_ids
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.paths import MaskedContext, PathProposal, PathRequest
 from delphi_contracts.work import Work
@@ -36,6 +37,9 @@ __all__ = [
     "upload_pdf",
     "work_from_extraction",
 ]
+
+
+_UNKNOWN_DATE = date(1970, 1, 1)
 
 
 class ConsentError(ValueError):
@@ -67,7 +71,7 @@ def work_from_extraction(extraction: Extraction, subcategory: str) -> Work:
     Returns:
         Work ready to upsert.
     """
-    published = extraction.published_on or date(1970, 1, 1)
+    published = extraction.published_on or _UNKNOWN_DATE
     categories = extraction.suggested_categories or _category_for(subcategory)
     identities = extraction.identities or (
         Identity(kind=IdentityKind.CONTENT_HASH, value=extraction.content_hash),
@@ -143,8 +147,12 @@ def upload_pdf(
     if existing is not None:
         work = catalog.get_work(existing.id) or work_from_extraction(existing, subcategory)
         catalog.upsert_work(work)
+        resolved = attach_bibliography(catalog, work.id, existing.bibliography)
+        extraction = existing.model_copy(update={"bibliography": resolved})
+        catalog.put_extraction(extraction)
+        embedder.embed_and_link(work, extraction.body_text)
         neighborhood = catalog.neighborhood(work.id, NeighborhoodMode.UNION, subcategory)
-        return existing, neighborhood
+        return extraction, neighborhood
     extraction = extractor.extract(pdf_bytes, filename)
     if not extraction.suggested_categories:
         extraction = extraction.model_copy(
@@ -180,8 +188,7 @@ def build_masked_context(
     seed = _seed_work(catalog, request)
     if not has_subcategory(seed, request.subcategory):
         raise ValueError("seed is not in the requested subcategory")
-    mask_on = request.as_of or seed.published_on
-    blocked = frozenset(held_out_ids)
+    mask_on, blocked = _mask_bounds(catalog, request, seed, held_out_ids)
     neighborhood = catalog.neighborhood(
         seed.id,
         NeighborhoodMode.UNION,
@@ -191,7 +198,7 @@ def build_masked_context(
     )
     return MaskedContext(
         seed=seed,
-        mask_on=mask_on,
+        mask_on=mask_on or seed.published_on,
         held_out_ids=held_out_ids,
         neighborhood=neighborhood,
         subcategory=request.subcategory,
@@ -245,6 +252,42 @@ def work_id_for(identity: Identity) -> UUID:
         UUID5.
     """
     return uuid5(NAMESPACE_URL, f"{identity.kind}:{identity.value}")
+
+
+def _mask_bounds(
+    catalog: Catalog,
+    request: PathRequest,
+    seed: Work,
+    held_out_ids: tuple[UUID, ...],
+) -> tuple[date | None, frozenset[UUID]]:
+    """Return the neighborhood date bound and hindcast drop set.
+
+    Args:
+        catalog: Store.
+        request: Generate request.
+        seed: Resolved seed work.
+        held_out_ids: Ids Epimetheus wants hidden.
+
+    Returns:
+        Inclusive ``as_of`` (None means no date filter) and excluded ids.
+    """
+    if held_out_ids:
+        cuts: list[date] = []
+        for hid in held_out_ids:
+            held = catalog.get_work(hid)
+            if held is not None:
+                cuts.append(held.published_on)
+        mask_on = request.as_of or (min(cuts) if cuts else seed.published_on)
+        blocked: set[UUID] = set()
+        for hid in held_out_ids:
+            blocked |= dropped_ids(catalog.list_works(), catalog.edges(), hid, mask_on)
+        blocked.discard(seed.id)
+        return mask_on, frozenset(blocked)
+    if request.as_of is not None:
+        return request.as_of, frozenset()
+    if seed.published_on == _UNKNOWN_DATE:
+        return None, frozenset()
+    return seed.published_on, frozenset()
 
 
 def _seed_work(catalog: Catalog, request: PathRequest) -> Work:

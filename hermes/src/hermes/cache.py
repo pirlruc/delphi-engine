@@ -20,10 +20,14 @@ class ResultCache:
         """
         path.parent.mkdir(parents=True, exist_ok=True)
         self._path = path
-        with sqlite3.connect(self._path) as connection:
+        connection = sqlite3.connect(self._path)
+        try:
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS cache (name TEXT PRIMARY KEY, payload TEXT NOT NULL)"
             )
+            connection.commit()
+        finally:
+            connection.close()
 
     def put(self, name: str, payload: object) -> None:
         """Replace the cached payload for a command.
@@ -33,11 +37,15 @@ class ResultCache:
             payload: JSON-serializable object.
         """
         blob = json.dumps(payload)
-        with sqlite3.connect(self._path) as connection:
+        connection = sqlite3.connect(self._path)
+        try:
             connection.execute(
                 "INSERT OR REPLACE INTO cache(name, payload) VALUES (?, ?)",
                 (name, blob),
             )
+            connection.commit()
+        finally:
+            connection.close()
 
     def get(self, name: str) -> object | None:
         """Return the last payload for a command.
@@ -48,8 +56,11 @@ class ResultCache:
         Returns:
             Parsed JSON or None.
         """
-        with sqlite3.connect(self._path) as connection:
+        connection = sqlite3.connect(self._path)
+        try:
             row = connection.execute("SELECT payload FROM cache WHERE name = ?", (name,)).fetchone()
+        finally:
+            connection.close()
         if row is None:
             return None
         payload: object = json.loads(str(row[0]))

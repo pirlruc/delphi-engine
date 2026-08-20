@@ -110,3 +110,10 @@ def test_proposal_fallbacks() -> None:
     proposal = _proposal({"kind": "nope", "cited_work_ids": "bad"}, PathKind.PATENT_WHITESPACE)
     assert proposal.kind is PathKind.PATENT_WHITESPACE
     assert proposal.claims == ("Next step.",)
+    kept = uuid4()
+    filtered = _proposal(
+        {"cited_work_ids": [str(kept), str(uuid4())]},
+        PathKind.RESEARCH_PATH,
+        {kept},
+    )
+    assert filtered.cited_work_ids == (kept,)

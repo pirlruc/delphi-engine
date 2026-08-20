@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from delphi_contracts.enums import IdentityKind, WorkKind
-from delphi_contracts.llm import EmbedRequest, LlmProvider, build_provider
+from delphi_contracts.llm import EmbedRequest, LlmProvider, build_provider, l2_normalize
 from delphi_contracts.work import Work
 
 from daedalus.ports import CatalogWriter
@@ -163,7 +163,7 @@ class HashEmbedder:
         windows = contextual_windows(work, extra=text)
         vector, model = self._embed_pooled(windows)
         self._catalog.put_embedding(work.id, vector, model)
-        self._catalog.rebuild_similar_to(work.id)
+        self._catalog.rebuild_all_similar_to()
 
     def _embed_pooled(self, windows: list[str]) -> tuple[tuple[float, ...], str]:
         """Embed one window, or mean-pool chunks when over the size cap.
@@ -177,11 +177,12 @@ class HashEmbedder:
         texts = windows or ["empty"]
         if len(texts) == 1:
             response = self._llm.embed(EmbedRequest(text=texts[0]))
-            return response.vector, response.model
+            return l2_normalize(response.vector), response.model
         responses = [self._llm.embed(EmbedRequest(text=window)) for window in texts]
         pooled = mean_pool([item.vector for item in responses])
         model = responses[0].model
-        return pooled or responses[0].vector, model
+        vector = pooled or responses[0].vector
+        return l2_normalize(vector), model
 
 
 def _kind_prefix(work: Work) -> str:

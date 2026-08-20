@@ -27,7 +27,9 @@ __all__ = [
     "ProviderKind",
     "ProviderSettings",
     "build_provider",
+    "cosine",
     "hash_embed",
+    "l2_normalize",
     "provider_settings_from_env",
 ]
 
@@ -162,17 +164,39 @@ def hash_embed(text: str, dim: int = 32) -> tuple[float, ...]:
     return tuple(value / norm for value in counts)
 
 
+def l2_normalize(vector: tuple[float, ...]) -> tuple[float, ...]:
+    """Return a unit-length copy of ``vector``.
+
+    Args:
+        vector: Dense components.
+
+    Returns:
+        Normalized vector, or the original when the norm is zero.
+    """
+    norm = math.sqrt(sum(value * value for value in vector))
+    if norm == 0.0:
+        return vector
+    return tuple(value / norm for value in vector)
+
+
 def cosine(left: tuple[float, ...], right: tuple[float, ...]) -> float:
-    """Return cosine similarity of two equal-length vectors.
+    """Return cosine similarity of two vectors.
 
     Args:
         left: First vector.
         right: Second vector.
 
     Returns:
-        Similarity in ``[0, 1]`` after clamping negatives to 0.
+        Similarity in ``[0, 1]`` after clamping negatives to 0. Mismatched
+        lengths score 0 so mixed embedding models cannot crash k-NN.
     """
-    score = sum(a * b for a, b in zip(left, right, strict=True))
+    if len(left) != len(right):
+        return 0.0
+    left_norm = math.sqrt(sum(value * value for value in left))
+    right_norm = math.sqrt(sum(value * value for value in right))
+    if left_norm == 0.0 or right_norm == 0.0:
+        return 0.0
+    score = sum(a * b for a, b in zip(left, right, strict=True)) / (left_norm * right_norm)
     return max(0.0, min(1.0, score))
 
 

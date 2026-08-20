@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx
 
+from daedalus.caps import CapsError, check_caps
 from daedalus.fetch import fetch_named_slice, fetch_openalex, fetch_patentsview
 from daedalus.ingest import load_fixture
 from daedalus.patents import (
@@ -124,6 +125,15 @@ def _emit(records: list[dict[str, Any]], output: Path | None) -> int:
     Returns:
         Exit code.
     """
+    counts: dict[str, int] = {}
+    for record in records:
+        subcategory = str(record.get("subcategory", ""))
+        counts[subcategory] = counts.get(subcategory, 0) + 1
+    try:
+        check_caps(counts)
+    except CapsError as exc:
+        print(f"caps: {exc}")
+        return 2
     print(len(records))
     if output is not None:
         output.write_text(json.dumps({"works": records}, indent=2) + "\n", encoding="utf-8")

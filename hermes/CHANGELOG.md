@@ -9,5 +9,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Typer CLI: `batch-check`, consented `upload`, `neighborhood`, `generate`, and `reprint`.
+- Typer CLI: `batch-check` (DOI, arXiv, patent), consented `upload`, `neighborhood`, `generate` (`--extraction-id`, `--as-of` as YYYY-MM-DD), and `reprint`.
 - Upload prints title/authors/keywords and bibliography match counts.

@@ -71,7 +71,6 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
         stored.append((work, [str(item) for item in record.get("cites", [])]))
         counts[subcategory] = counts.get(subcategory, 0) + 1
     check_caps(counts)
-    known = {work.id for work, _cites in stored}
     for work, _cites in stored:
         catalog.upsert_work(work)
     for work, cites in stored:
@@ -80,8 +79,9 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
                 other = UUID(str(target))
             except ValueError:
                 continue
-            if other in known:
-                catalog.add_edge(Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES))
+            if other == work.id:
+                continue
+            catalog.add_edge(Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES))
     return len(stored)
 
 

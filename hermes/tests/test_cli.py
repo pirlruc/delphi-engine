@@ -100,7 +100,17 @@ def test_cli_batch_check_and_neighborhood(monkeypatch, tmp_path: Path) -> None:
     cache = tmp_path / "h.sqlite"
     result = runner.invoke(
         app,
-        ["batch-check", "--doi", "10.1/x", "--arxiv", "1605.00000", "--cache-path", str(cache)],
+        [
+            "batch-check",
+            "--doi",
+            "10.1/x",
+            "--arxiv",
+            "1605.00000",
+            "--patent",
+            "US-1",
+            "--cache-path",
+            str(cache),
+        ],
     )
     assert result.exit_code == 0
     work_id = str(uuid4())
@@ -158,6 +168,41 @@ def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
         ],
     )
     assert generated.exit_code == 0
+    extracted = runner.invoke(
+        app,
+        [
+            "generate",
+            "research_path",
+            "--subcategory",
+            "two_d_codes",
+            "--extraction-id",
+            str(uuid4()),
+            "--as-of",
+            "2024-01-15",
+            "--cache-path",
+            str(cache),
+        ],
+    )
+    assert extracted.exit_code == 0
+    missing_seed = runner.invoke(
+        app,
+        ["generate", "research_path", "--subcategory", "two_d_codes"],
+    )
+    assert missing_seed.exit_code == 2
+    bad_date = runner.invoke(
+        app,
+        [
+            "generate",
+            "research_path",
+            "--subcategory",
+            "two_d_codes",
+            "--seed-work-id",
+            str(uuid4()),
+            "--as-of",
+            "not-a-date",
+        ],
+    )
+    assert bad_date.exit_code != 0
     reprinted = runner.invoke(app, ["reprint", "upload", "--cache-path", str(cache)])
     assert reprinted.exit_code == 0
     missing = runner.invoke(app, ["reprint", "nope", "--cache-path", str(cache)])
@@ -193,6 +238,12 @@ def test_client_methods(monkeypatch, tmp_path: Path) -> None:
     pdf.write_bytes(b"%PDF")
     client.upload(pdf, "delphi", "two_d_codes")
     client.generate(PathKind.PATENT_WHITESPACE, "two_d_codes", uuid4())
+    client.generate(
+        PathKind.RESEARCH_PATH,
+        "two_d_codes",
+        extraction_id=uuid4(),
+        as_of="2024-01-15",
+    )
     client.close()
     owned = DelphiClient("http://delphi.local", client=http)
     owned._owns_client = True

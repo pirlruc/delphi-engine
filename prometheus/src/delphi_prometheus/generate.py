@@ -60,15 +60,19 @@ class PathGenerator:
         response = self._llm.chat(ChatRequest(messages=(ChatMessage(role="user", content=prompt),)))
         payload = json.loads(response.content)
         rows = payload.get("proposals", [payload])
-        return tuple(_proposal(row, context.kind) for row in rows)
+        allowed = {context.seed.id, *(item.work.id for item in context.neighborhood.neighbors)}
+        return tuple(_proposal(row, context.kind, allowed) for row in rows)
 
 
-def _proposal(row: dict[str, object], default_kind: PathKind) -> PathProposal:
+def _proposal(
+    row: dict[str, object], default_kind: PathKind, allowed: set[UUID] | None = None
+) -> PathProposal:
     """Parse one proposal dict.
 
     Args:
         row: JSON object.
         default_kind: Request kind fallback.
+        allowed: Context work ids that may be cited. Unknown ids are dropped.
 
     Returns:
         PathProposal.
@@ -76,9 +80,11 @@ def _proposal(row: dict[str, object], default_kind: PathKind) -> PathProposal:
     raw_cited = row.get("cited_work_ids", [])
     cited_values = raw_cited if isinstance(raw_cited, list) else []
     cited = tuple(UUID(str(item)) for item in cited_values)
+    if allowed is not None:
+        cited = tuple(item for item in cited if item in allowed)
     kind_raw = str(row.get("kind", default_kind.value))
-    allowed = {item.value for item in PathKind}
-    kind = PathKind(kind_raw) if kind_raw in allowed else default_kind
+    kinds = {item.value for item in PathKind}
+    kind = PathKind(kind_raw) if kind_raw in kinds else default_kind
     raw_claims = row.get("claims", ["Next step."])
     claim_values = raw_claims if isinstance(raw_claims, list) else ["Next step."]
     claims = tuple(str(item) for item in claim_values)

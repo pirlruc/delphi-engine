@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -48,6 +49,7 @@ def _cache(cache_path: Path) -> ResultCache:
 def batch_check(
     doi: Annotated[str | None, typer.Option()] = None,
     arxiv: Annotated[str | None, typer.Option()] = None,
+    patent: Annotated[str | None, typer.Option()] = None,
     base_url: Annotated[str, typer.Option()] = _DEFAULT_URL,
     cache_path: Annotated[Path, typer.Option()] = _DEFAULT_CACHE,
 ) -> None:
@@ -56,6 +58,7 @@ def batch_check(
     Args:
         doi: Optional DOI.
         arxiv: Optional arXiv id.
+        patent: Optional patent number.
         base_url: Delphi origin.
         cache_path: Local SQLite cache.
     """
@@ -64,6 +67,8 @@ def batch_check(
         identities.append(Identity(kind=IdentityKind.DOI, value=doi))
     if arxiv:
         identities.append(Identity(kind=IdentityKind.ARXIV, value=arxiv))
+    if patent:
+        identities.append(Identity(kind=IdentityKind.PATENT, value=patent))
     if not identities:
         raise typer.Exit(code=2)
     client = _client(base_url)
@@ -134,7 +139,9 @@ def neighborhood(
 def generate(
     kind: Annotated[PathKind, typer.Argument()],
     subcategory: Annotated[str, typer.Option()],
-    seed_work_id: Annotated[UUID, typer.Option()],
+    seed_work_id: Annotated[UUID | None, typer.Option()] = None,
+    extraction_id: Annotated[UUID | None, typer.Option()] = None,
+    as_of: Annotated[str | None, typer.Option()] = None,
     base_url: Annotated[str, typer.Option()] = _DEFAULT_URL,
     cache_path: Annotated[Path, typer.Option()] = _DEFAULT_CACHE,
 ) -> None:
@@ -144,12 +151,23 @@ def generate(
         kind: research_path or patent_whitespace.
         subcategory: Filter.
         seed_work_id: Seed work.
+        extraction_id: Uploaded extraction when the seed is not a catalog id.
+        as_of: Inclusive temporal bound (YYYY-MM-DD).
         base_url: Delphi origin.
         cache_path: Local SQLite cache.
     """
+    if seed_work_id is None and extraction_id is None:
+        raise typer.Exit(code=2)
+    bound = _parse_as_of(as_of)
     client = _client(base_url)
     try:
-        payload = client.generate(kind, subcategory, seed_work_id)
+        payload = client.generate(
+            kind,
+            subcategory,
+            seed_work_id,
+            extraction_id=extraction_id,
+            as_of=bound,
+        )
     finally:
         client.close()
     _cache(cache_path).put("generate", payload)
@@ -171,6 +189,27 @@ def reprint(
     if payload is None:
         raise typer.Exit(code=2)
     typer.echo(payload)
+
+
+def _parse_as_of(value: str | None) -> str | None:
+    """Validate an optional YYYY-MM-DD bound.
+
+    Args:
+        value: CLI ``--as-of`` string.
+
+    Returns:
+        The same string when valid, or None.
+
+    Raises:
+        typer.BadParameter: When the value is not an ISO date.
+    """
+    if value is None:
+        return None
+    try:
+        date.fromisoformat(value)
+    except ValueError as exc:
+        raise typer.BadParameter("as_of must be YYYY-MM-DD") from exc
+    return value
 
 
 def _print_upload(payload: object) -> None:

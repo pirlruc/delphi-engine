@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `provider_settings_from_env` reads `DELPHI_LLM_*`.
 - Generated OpenAPI 3 document at `src/delphi_contracts/openapi.json`.
 - Optional `Work.claims` for patent embedding text.
+- Canonical DOI/patent/arXiv identity values; shared hindcast `dropped_ids`.

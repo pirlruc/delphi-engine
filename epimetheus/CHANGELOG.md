@@ -9,6 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Leak-proof temporal masks on both `cites` and `similar_to` (future works, citation descendants, later content neighbors).
+- Leak-proof temporal masks on both `cites` and `similar_to` (future works, same-day siblings, citation descendants, later content neighbors).
 - Fixture hindcast CLI that writes an `EvalRun` JSON artifact (Fake judge + embedding similarity).
 - `--works-json` slice trials with trial count and mean scores.

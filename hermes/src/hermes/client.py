@@ -90,24 +90,36 @@ class DelphiClient:
         response.raise_for_status()
         return dict(response.json())
 
-    def generate(self, kind: PathKind, subcategory: str, seed_work_id: UUID) -> object:
+    def generate(
+        self,
+        kind: PathKind,
+        subcategory: str,
+        seed_work_id: UUID | None = None,
+        extraction_id: UUID | None = None,
+        as_of: str | None = None,
+    ) -> object:
         """POST /v1/generate.
 
         Args:
             kind: research_path or patent_whitespace.
             subcategory: Filter.
             seed_work_id: Seed work.
+            extraction_id: Extraction seed.
+            as_of: Optional ISO date bound.
 
         Returns:
             Parsed JSON proposals.
         """
+        body: dict[str, object] = {"kind": kind.value, "subcategory": subcategory}
+        if seed_work_id is not None:
+            body["seed_work_id"] = str(seed_work_id)
+        if extraction_id is not None:
+            body["extraction_id"] = str(extraction_id)
+        if as_of is not None:
+            body["as_of"] = str(as_of)
         response = self._client.post(
             f"{self._base}/v1/generate",
-            json={
-                "kind": kind.value,
-                "subcategory": subcategory,
-                "seed_work_id": str(seed_work_id),
-            },
+            json=body,
         )
         response.raise_for_status()
         return response.json()

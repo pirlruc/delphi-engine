@@ -16,3 +16,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Live OpenAlex paging for the four SYS-009 subcategories (`daedalus --live`); authorships, inverted abstracts, and referenced_works mapping.
 - Patent fetchers for EPO OPS, WIPO JSON, PatSnap, and Lens.org (`daedalus --live-patents`).
 - Canonical embed text (title/abstract/ids/CPC, capped claims, contextual chunk mean-pool).
+- HTTP JSON retries with exponential backoff and 429 handling; PatentsView numbers share patent normalization.

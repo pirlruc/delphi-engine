@@ -65,6 +65,9 @@ def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
     assert descendant.id in dropped
     assert same_year_after.id in dropped
     assert seed.id not in dropped
+    sibling = _work("Same day as held-out", date(2016, 3, 1))
+    same_day = dropped_ids((seed, held, sibling), edges, held.id, held.published_on)
+    assert sibling.id in same_day
     assert held.id in citation_descendants(held.id, edges) or descendant.id in citation_descendants(
         held.id, edges
     )

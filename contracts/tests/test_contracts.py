@@ -21,7 +21,8 @@ from delphi_contracts.enums import (
     WorkKind,
 )
 from delphi_contracts.extraction import CONSENT_DESTINATION, PdfUpload
-from delphi_contracts.identity import Identity
+from delphi_contracts.graph import Edge
+from delphi_contracts.identity import Identity, normalize_identity
 from delphi_contracts.llm import (
     ChatMessage,
     ChatRequest,
@@ -31,8 +32,10 @@ from delphi_contracts.llm import (
     build_provider,
     cosine,
     hash_embed,
+    l2_normalize,
     provider_settings_from_env,
 )
+from delphi_contracts.mask import citation_descendants, dropped_ids
 from delphi_contracts.neighborhood import Neighbor, Neighborhood
 from delphi_contracts.openapi import build_openapi, openapi_path, write_openapi
 from delphi_contracts.paths import MaskedContext, PathRequest
@@ -62,6 +65,21 @@ def test_identity_rejects_empty_value() -> None:
         Identity(kind=IdentityKind.DOI, value="")
 
 
+def test_identity_normalizes_doi_and_patent() -> None:
+    doi = Identity(kind=IdentityKind.DOI, value="https://doi.org/10.1000/QR-2014")
+    assert doi.value == "10.1000/qr-2014"
+    patent = Identity(kind=IdentityKind.PATENT, value="US-1234567-A")
+    assert patent.value == "US1234567A"
+    arxiv = Identity(kind=IdentityKind.ARXIV, value="arXiv:1605.00000")
+    assert arxiv.value == "1605.00000"
+    hashed = Identity(kind=IdentityKind.CONTENT_HASH, value=" abc ")
+    assert hashed.value == "abc"
+    assert normalize_identity(IdentityKind.OPENALEX, " W1 ") == "W1"
+    assert Identity._canonicalize("raw") == "raw"
+    assert Identity._canonicalize({"kind": "nope", "value": "x"}) == {"kind": "nope", "value": "x"}
+    assert Identity._canonicalize({"kind": "doi", "value": 12}) == {"kind": "doi", "value": 12}
+
+
 def test_batch_check_request_requires_rows() -> None:
     with pytest.raises(ValidationError):
         BatchCheckRequest(identities=())
@@ -84,8 +102,14 @@ def test_pdf_upload_consent_constant() -> None:
 
 
 def test_path_request_kinds() -> None:
-    request = PathRequest(kind=PathKind.PATENT_WHITESPACE, subcategory="two_d_codes")
+    request = PathRequest(
+        kind=PathKind.PATENT_WHITESPACE,
+        subcategory="two_d_codes",
+        seed_work_id=uuid4(),
+    )
     assert request.kind is PathKind.PATENT_WHITESPACE
+    with pytest.raises(ValidationError):
+        PathRequest(kind=PathKind.PATENT_WHITESPACE, subcategory="two_d_codes")
 
 
 def test_masked_context_forbidden_ignores_absent_held_out() -> None:
@@ -140,6 +164,30 @@ def test_cosine_clamps_and_matches_self() -> None:
     vector = hash_embed("steganography watermark")
     assert cosine(vector, vector) == pytest.approx(1.0)
     assert cosine(vector, tuple(-value for value in vector)) == 0.0
+    scaled = tuple(value * 4 for value in vector)
+    assert cosine(vector, scaled) == pytest.approx(1.0)
+    assert cosine((1.0, 0.0), (1.0, 0.0, 0.0)) == 0.0
+    zeros = (0.0, 0.0)
+    assert l2_normalize(zeros) == zeros
+    assert l2_normalize((3.0, 4.0)) == pytest.approx((0.6, 0.8))
+    assert cosine(zeros, (1.0, 0.0)) == 0.0
+
+
+def test_dropped_ids_includes_same_day_siblings() -> None:
+    seed = _work("seed", date(2014, 1, 1))
+    held = _work("held", date(2016, 3, 1))
+    sibling = _work("sib", date(2016, 3, 1))
+    citer = _work("citer", date(2016, 4, 1))
+    edges = (Edge(from_work=citer.id, to_work=held.id, kind=EdgeKind.CITES),)
+    dropped = dropped_ids((seed, held, sibling, citer), edges, held.id, held.published_on)
+    assert held.id in dropped
+    assert sibling.id in dropped
+    assert citer.id in dropped
+    assert seed.id not in dropped
+    assert citer.id in citation_descendants(held.id, edges)
+    assert citation_descendants(uuid4(), edges) == frozenset()
+    cycled = edges + (Edge(from_work=citer.id, to_work=citer.id, kind=EdgeKind.CITES),)
+    assert citer.id in citation_descendants(held.id, cycled)
 
 
 def test_hash_embed_empty_tokens_is_zero() -> None:

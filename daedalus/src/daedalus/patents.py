@@ -12,9 +12,11 @@ from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 from delphi_contracts.enums import SubcategoryId
+from delphi_contracts.identity import normalize_patent
 
 from daedalus.caps import allowed_text
 from daedalus.fetch import FetchError
+from daedalus.retry import request_json
 
 __all__ = [
     "PATENT_SEARCH",
@@ -404,15 +406,12 @@ def _get_json(url: str, client: httpx.Client, attempts: int) -> object:
     Returns:
         Parsed JSON.
     """
-    last: Exception | None = None
-    for _attempt in range(max(attempts, 1)):
-        try:
-            response = client.get(url, timeout=30.0, headers={"Accept": "application/json"})
-            response.raise_for_status()
-            return response.json()
-        except (httpx.HTTPError, ValueError) as exc:
-            last = exc
-    raise FetchError(f"fetch failed after retries: {url}") from last
+    try:
+        return request_json(
+            client, "GET", url, attempts=attempts, headers={"Accept": "application/json"}
+        )
+    except (httpx.HTTPError, ValueError) as exc:
+        raise FetchError(f"fetch failed after retries: {url}") from exc
 
 
 def _post_json(
@@ -432,16 +431,17 @@ def _post_json(
     Returns:
         Parsed JSON.
     """
-    last: Exception | None = None
-    for _attempt in range(max(attempts, 1)):
-        try:
-            headers = {"Accept": "application/json"}
-            response = client.post(url, json=body, timeout=30.0, headers=headers)
-            response.raise_for_status()
-            return response.json()
-        except (httpx.HTTPError, ValueError) as exc:
-            last = exc
-    raise FetchError(f"post failed after retries: {url}") from last
+    try:
+        return request_json(
+            client,
+            "POST",
+            url,
+            attempts=attempts,
+            json_body=body,
+            headers={"Accept": "application/json"},
+        )
+    except (httpx.HTTPError, ValueError) as exc:
+        raise FetchError(f"post failed after retries: {url}") from exc
 
 
 def _map_rows(
@@ -524,7 +524,7 @@ def _normalize_patent(value: str) -> str:
     Returns:
         Stable identity string.
     """
-    return value.upper().replace(" ", "").replace("-", "")
+    return normalize_patent(value)
 
 
 def _epo_items(payload: object) -> list[object]:
@@ -746,7 +746,9 @@ def _lens_record(item: object, subcategory: str) -> dict[str, Any]:
     jurisdiction = str(item.get("jurisdiction") or "")
     doc_number = str(item.get("doc_number") or "")
     composite = f"{jurisdiction}{doc_number}"
-    patent_id = str(item.get("doc_key") or composite or item.get("lens_id") or "")
+    patent_id = str(item.get("doc_key") or composite or "")
+    if not patent_id:
+        raise KeyError("patent_id")
     biblio_raw = item.get("biblio")
     biblio: dict[str, Any] = biblio_raw if isinstance(biblio_raw, dict) else {}
     title = _lens_title(biblio) or str(item.get("title") or "")
@@ -877,9 +879,11 @@ def _ops_date(node: object) -> str:
     raw = _ops_text(node.get("date"))
     if len(raw) == 8 and raw.isdigit():
         return f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
+    if len(raw) == 4 and raw.isdigit():
+        return f"{raw}-01-01"
     if len(raw) >= 10:
         return raw[:10]
-    return raw
+    return ""
 
 
 def _ops_inventors(biblio: dict[str, Any]) -> list[str]:

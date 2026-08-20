@@ -125,8 +125,8 @@ class PostgresCatalog:
         for identity in work.identities:
             self._conn.execute(
                 """
-                INSERT INTO identities (kind, value, work_id) VALUES (%s, %s, %s)
-                ON CONFLICT (kind, value) DO UPDATE SET work_id = EXCLUDED.work_id
+            INSERT INTO identities (kind, value, work_id) VALUES (%s, %s, %s)
+            ON CONFLICT (kind, value) DO NOTHING
                 """,
                 (identity.kind.value, identity.value, work.id),
             )
@@ -325,7 +325,7 @@ class PostgresCatalog:
             work_id: Work to refresh.
             k: Neighbor count.
         """
-        embeddings = self._embedding_map()
+        embeddings, models = self._embedding_state()
         source = embeddings.get(work_id)
         if source is None:
             return
@@ -336,7 +336,7 @@ class PostgresCatalog:
             """,
             (EdgeKind.SIMILAR_TO.value, work_id, work_id),
         )
-        ranked = scored_neighbors(work_id, source, embeddings)
+        ranked = scored_neighbors(work_id, source, embeddings, models, models.get(work_id))
         for other_id, score in ranked[:k]:
             self.add_edge(
                 Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
@@ -344,6 +344,24 @@ class PostgresCatalog:
             self.add_edge(
                 Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
             )
+
+    def rebuild_all_similar_to(self, k: int = 8) -> None:
+        """Recompute every similar_to edge from current embeddings.
+
+        Args:
+            k: Neighbor count per work.
+        """
+        self._conn.execute("DELETE FROM edges WHERE kind = %s", (EdgeKind.SIMILAR_TO.value,))
+        embeddings, models = self._embedding_state()
+        for work_id, source in embeddings.items():
+            ranked = scored_neighbors(work_id, source, embeddings, models, models.get(work_id))
+            for other_id, score in ranked[:k]:
+                self.add_edge(
+                    Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                )
+                self.add_edge(
+                    Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                )
 
     def _check_identity(self, identity: Identity) -> BatchCheckRow:
         """Look up one identity.
@@ -361,14 +379,21 @@ class PostgresCatalog:
         work_id = row[0] if row is not None else None
         return BatchCheckRow(identity=identity, known=work_id is not None, work_id=work_id)
 
-    def _embedding_map(self) -> dict[UUID, tuple[float, ...]]:
-        """Load every stored embedding.
+    def _embedding_state(
+        self,
+    ) -> tuple[dict[UUID, tuple[float, ...]], dict[UUID, str]]:
+        """Load every stored embedding and its model id.
 
         Returns:
-            Work id to vector.
+            Vectors and model ids keyed by work id.
         """
-        result = self._conn.execute("SELECT work_id, vector FROM embeddings")
-        return {row[0]: _vector(row[1]) for row in result.fetchall()}
+        result = self._conn.execute("SELECT work_id, vector, model_id FROM embeddings")
+        vectors: dict[UUID, tuple[float, ...]] = {}
+        models: dict[UUID, str] = {}
+        for row in result.fetchall():
+            vectors[row[0]] = _vector(row[1])
+            models[row[0]] = str(row[2])
+        return vectors, models
 
 
 def _edge_from_row(row: tuple[Any, ...]) -> Edge:

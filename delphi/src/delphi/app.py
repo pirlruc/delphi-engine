@@ -7,7 +7,7 @@ from uuid import UUID
 from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse
 from delphi_contracts.enums import NeighborhoodMode
 from delphi_contracts.neighborhood import Neighborhood
-from delphi_contracts.paths import PathProposal, PathRequest
+from delphi_contracts.paths import ContextLeakError, PathProposal, PathRequest
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
@@ -191,6 +191,8 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         """
         try:
             return generate_paths(deps.catalog, request, deps.generator)
+        except ContextLeakError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="seed work not found") from exc
         except ValueError as exc:

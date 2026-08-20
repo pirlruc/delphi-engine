@@ -21,6 +21,7 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 - Consented single-PDF upload (not bulk Zotero sync).
 - Dual graphs: directed `cites` plus top-k `similar_to`. See [`docs/prototype-graphs.md`](prototype-graphs.md).
 - Catalog works in the content graph use composed title/abstract/identifiers/CPC and capped claims (plus truncated upload body), not licensed full text. See [`docs/evolution.md`](evolution.md). Hybrid BM25 / domain bi-encoders remain [PROD-003](issues.yml). JEPA is not the catalog embedder.
+- DOI URLs and hyphenated patent numbers are normalized at identity write/lookup. Fuzzy title+author+year matching is still [PROD-005](issues.yml).
 - Content-graph edges are nearest-neighbor similarities, not a full pairwise matrix of the slice.
 - Patent coverage in the fixture is one CPC-tagged record plus OpenAlex-shaped papers, not the full CPC tree. CPC is a category scheme ([SYS-008](issues.yml)), not exhaustive patent ingest.
 - LLM adapters: Fake in tests and in the default serve path; cloud or local in live runs ([SYS-006](issues.yml)).

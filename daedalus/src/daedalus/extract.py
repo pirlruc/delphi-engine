@@ -10,7 +10,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from delphi_contracts.enums import IdentityKind
 from delphi_contracts.extraction import BibliographyEntry, Extraction
-from delphi_contracts.identity import Identity
+from delphi_contracts.identity import Identity, normalize_doi
 from delphi_contracts.llm import ChatMessage, ChatRequest, LlmProvider, build_provider
 from pypdf import PdfReader
 
@@ -129,9 +129,26 @@ def _bibliography_entry(row: object) -> BibliographyEntry | None:
         return None
     raw = str(row["raw"])
     doi_raw = row.get("doi")
-    doi = str(doi_raw) if isinstance(doi_raw, str) and doi_raw else _doi_in(raw)
+    doi = _canonical_doi(str(doi_raw) if isinstance(doi_raw, str) else None) or _canonical_doi(raw)
     identity = Identity(kind=IdentityKind.DOI, value=doi) if doi else None
     return BibliographyEntry(raw=raw, identity=identity)
+
+
+def _canonical_doi(text: str | None) -> str | None:
+    """Return a DOI only when the string matches a resolver-safe pattern.
+
+    Args:
+        text: LLM field or bibliography line.
+
+    Returns:
+        Canonical DOI or None.
+    """
+    if not text:
+        return None
+    match = _DOI_RE.search(text)
+    if match is None:
+        return None
+    return normalize_doi(match.group(0).rstrip(".,;)"))
 
 
 def _doi_in(raw: str) -> str | None:
@@ -143,7 +160,4 @@ def _doi_in(raw: str) -> str | None:
     Returns:
         DOI or None.
     """
-    match = _DOI_RE.search(raw)
-    if match is None:
-        return None
-    return match.group(0).rstrip(".,;")
+    return _canonical_doi(raw)

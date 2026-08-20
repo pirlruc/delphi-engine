@@ -1,9 +1,10 @@
 """Path generation request, context, and proposals."""
 
 from datetime import date
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from delphi_contracts.enums import PathKind
 from delphi_contracts.neighborhood import Neighborhood
@@ -34,6 +35,20 @@ class PathRequest(BaseModel):
     seed_work_id: UUID | None = None
     extraction_id: UUID | None = None
     as_of: date | None = None
+
+    @model_validator(mode="after")
+    def _require_seed(self) -> Self:
+        """Require a catalog work or an extraction as the generate seed.
+
+        Returns:
+            This request.
+
+        Raises:
+            ValueError: When both seed references are missing.
+        """
+        if self.seed_work_id is None and self.extraction_id is None:
+            raise ValueError("seed_work_id or extraction_id is required")
+        return self
 
 
 class PathProposal(BaseModel):

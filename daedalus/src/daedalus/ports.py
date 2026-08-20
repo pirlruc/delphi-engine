@@ -47,3 +47,10 @@ class CatalogWriter(Protocol):
             work_id: Work to refresh.
             k: Neighbor cap.
         """
+
+    def rebuild_all_similar_to(self, k: int = 8) -> None:
+        """Recompute every similar_to edge after bulk embedding.
+
+        Args:
+            k: Neighbor cap.
+        """

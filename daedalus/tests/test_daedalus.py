@@ -192,7 +192,7 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     assert "Represent this patent" in patent_text
     assert "G06K" in patent_text
     assert "QR overlay" in patent_text
-    assert "ids: US-1" in patent_text
+    assert "ids: US1" in patent_text
     long_claims = from_patentsview(
         {
             "id": "abababab-abab-abab-abab-abababababab",
@@ -379,6 +379,7 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
     assert len(papers) == 1
     patents = fetch_patentsview("http://patents.test/patents", "two_d_codes", client)
     assert len(patents) == 1
+    assert patents[0]["patent"] == "US1"
 
     def boom(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(500)
@@ -516,3 +517,21 @@ def test_named_slice_drops_blocked_computer_vision() -> None:
     client = httpx.Client(transport=httpx.MockTransport(handler))
     rows = fetch_named_slice(client, per_subcategory=5)
     assert len(rows) == 3
+
+
+def test_request_json_retries_429(monkeypatch) -> None:
+    from daedalus.retry import request_json
+
+    monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
+    calls = {"n": 0}
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "0"})
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    payload = request_json(client, "GET", "http://example.test/x", attempts=3)
+    assert payload == {"ok": True}
+    assert calls["n"] == 2

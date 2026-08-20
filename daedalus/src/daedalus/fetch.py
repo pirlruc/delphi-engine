@@ -9,8 +9,10 @@ from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 from delphi_contracts.enums import SubcategoryId
+from delphi_contracts.identity import normalize_doi, normalize_patent
 
 from daedalus.caps import allowed_text
+from daedalus.retry import request_json
 
 __all__ = [
     "FetchError",
@@ -231,15 +233,10 @@ def _get_json(url: str, client: httpx.Client, attempts: int) -> object:
     Returns:
         Parsed JSON.
     """
-    last: Exception | None = None
-    for _attempt in range(max(attempts, 1)):
-        try:
-            response = client.get(url, timeout=30.0)
-            response.raise_for_status()
-            return response.json()
-        except (httpx.HTTPError, ValueError) as exc:
-            last = exc
-    raise FetchError(f"fetch failed after retries: {url}") from last
+    try:
+        return request_json(client, "GET", url, attempts=attempts)
+    except (httpx.HTTPError, ValueError) as exc:
+        raise FetchError(f"fetch failed after retries: {url}") from exc
 
 
 def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
@@ -302,7 +299,8 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     patent_id = str(item.get("patent_id") or item.get("patent_number") or "")
     if not patent_id:
         raise KeyError("patent_id")
-    work_id = str(uuid5(NAMESPACE_URL, patent_id))
+    normalized = normalize_patent(patent_id)
+    work_id = str(uuid5(NAMESPACE_URL, normalized))
     title = str(item.get("patent_title") or item.get("title") or "")
     if not title:
         raise KeyError("title")
@@ -311,15 +309,28 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     )
     if not published:
         raise KeyError("publication_date")
+    claims_raw = item.get("claims") or item.get("claim_text") or item.get("independent_claims")
+    claims: list[str] = []
+    if isinstance(claims_raw, list):
+        for row in claims_raw:
+            if isinstance(row, str) and row.strip():
+                claims.append(row.strip())
+            elif isinstance(row, dict):
+                text = str(row.get("claim_text") or row.get("text") or "").strip()
+                if text:
+                    claims.append(text)
+    elif isinstance(claims_raw, str) and claims_raw.strip():
+        claims = [claims_raw.strip()]
     return {
         "id": work_id,
         "kind": "patent",
         "title": title,
         "abstract": str(item.get("patent_abstract") or item.get("abstract") or ""),
         "published_on": published,
-        "patent": patent_id,
+        "patent": normalized,
         "authors": _string_names(item, "authors") or _inventor_names(item),
         "keywords": _string_names(item, "keywords") or _cpc_codes(item),
+        "claims": claims,
         "subcategory": subcategory,
         "cites": [],
     }
@@ -357,7 +368,7 @@ def _doi_value(doi: object) -> str | None:
     """
     if not doi:
         return None
-    return str(doi).removeprefix("https://doi.org/")
+    return normalize_doi(str(doi)) or None
 
 
 def _string_names(item: dict[str, Any], key: str) -> list[str]:

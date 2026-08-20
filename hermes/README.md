@@ -49,5 +49,6 @@ uv run hermes batch-check --doi 10.1000/qr-2014
 uv run hermes upload paper.pdf --subcategory two_d_codes --consent-destination delphi
 uv run hermes neighborhood 11111111-1111-1111-1111-111111111111 --subcategory two_d_codes --mode union
 uv run hermes generate research_path --subcategory two_d_codes --seed-work-id 11111111-1111-1111-1111-111111111111
+uv run hermes generate research_path --subcategory two_d_codes --extraction-id 22222222-2222-2222-2222-222222222222 --as-of 2016-01-01
 uv run hermes reprint upload
 ```

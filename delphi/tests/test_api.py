@@ -18,15 +18,16 @@ from delphi_contracts.extraction import BibliographyEntry, Extraction
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity
 from delphi_contracts.llm import hash_embed
-from delphi_contracts.paths import MaskedContext, PathProposal, PathRequest
+from delphi_contracts.paths import ContextLeakError, MaskedContext, PathProposal, PathRequest
 from delphi_contracts.work import Work
 from fastapi.testclient import TestClient
 
 from delphi.app import AppContainer, create_app
-from delphi.catalog import MemoryCatalog, has_subcategory
+from delphi.catalog import MemoryCatalog, has_subcategory, scored_neighbors
 from delphi.services import (
     ConsentError,
     MissingDependencyError,
+    attach_bibliography,
     content_hash,
     generate_paths,
     require_consent,
@@ -383,3 +384,100 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
     assert health.json()["catalog"] == "MemoryCatalog"
+
+
+def test_identity_index_url_doi_and_stale_keys() -> None:
+    catalog = MemoryCatalog()
+    work = _work("QR", date(2014, 1, 1), "10.1/qr")
+    catalog.upsert_work(work)
+    request = BatchCheckRequest(
+        identities=(Identity(kind=IdentityKind.DOI, value="https://doi.org/10.1/QR"),)
+    )
+    assert catalog.batch_check(request).rows[0].known is True
+    replaced = work.model_copy(
+        update={"identities": (Identity(kind=IdentityKind.DOI, value="10.1/new"),)}
+    )
+    catalog.upsert_work(replaced)
+    stale = BatchCheckRequest(identities=(Identity(kind=IdentityKind.DOI, value="10.1/qr"),))
+    assert catalog.batch_check(stale).rows[0].known is False
+    fresh = BatchCheckRequest(identities=(Identity(kind=IdentityKind.DOI, value="10.1/new"),))
+    assert catalog.batch_check(fresh).rows[0].known is True
+
+
+def test_rebuild_all_and_skip_foreign_identity() -> None:
+    catalog = MemoryCatalog()
+    owner = _work("owner", date(2014, 1, 1), "10.1/own")
+    other = _work("other", date(2014, 2, 1), "10.1/oth")
+    catalog.upsert_work(owner)
+    catalog.upsert_work(other)
+    thief = _work("thief", date(2014, 3, 1), "10.1/own")
+    catalog.upsert_work(thief)
+    check = catalog.batch_check(
+        BatchCheckRequest(identities=(Identity(kind=IdentityKind.DOI, value="10.1/own"),))
+    )
+    assert check.rows[0].work_id == owner.id
+    catalog.put_embedding(owner.id, hash_embed("owner text"), "m1")
+    catalog.put_embedding(other.id, hash_embed("other text"), "m1")
+    catalog.put_embedding(thief.id, hash_embed("thief text"), "m2")
+    catalog.rebuild_all_similar_to(k=8)
+    assert catalog.get_embedding(owner.id) is not None
+    ranked = scored_neighbors(
+        owner.id, hash_embed("owner text"), catalog._embeddings, catalog._models, "m1"
+    )
+    assert thief.id not in {item[0] for item in ranked}
+    assert scored_neighbors(owner.id, (1.0,), {other.id: (1.0, 0.0)}) == []
+
+
+def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
+    catalog = MemoryCatalog()
+    seed = _work("QR 2014", date(2014, 6, 1), "10.1/s")
+    held = _work("QR 2016", date(2016, 3, 1), "10.1/h")
+    sibling = _work("same day", date(2016, 3, 1), "10.1/sib")
+    catalog.upsert_work(seed)
+    catalog.upsert_work(held)
+    catalog.upsert_work(sibling)
+    catalog.add_edge(Edge(from_work=seed.id, to_work=held.id, kind=EdgeKind.SIMILAR_TO, score=0.9))
+    catalog.add_edge(
+        Edge(from_work=seed.id, to_work=sibling.id, kind=EdgeKind.SIMILAR_TO, score=0.8)
+    )
+    request = PathRequest(
+        kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=seed.id
+    )
+    proposals = generate_paths(catalog, request, _Generator(), held_out_ids=(held.id, uuid4()))
+    assert proposals[0].kind is PathKind.RESEARCH_PATH
+    unknown = _work("undated", date(1970, 1, 1), "10.1/u")
+    catalog.upsert_work(unknown)
+    bounded = PathRequest(
+        kind=PathKind.RESEARCH_PATH,
+        subcategory="two_d_codes",
+        seed_work_id=unknown.id,
+        as_of=date(2015, 1, 1),
+    )
+    assert generate_paths(catalog, bounded, _Generator())
+    open_ended = PathRequest(
+        kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=unknown.id
+    )
+    assert generate_paths(catalog, open_ended, _Generator())
+    missing = BibliographyEntry(raw="no doi")
+    assert attach_bibliography(catalog, seed.id, (missing,))[0].matched_work_id is None
+
+
+def test_generate_context_leak_returns_422() -> None:
+    catalog = MemoryCatalog()
+    seed = _work("QR", date(2014, 1, 1), "10.1/z")
+    catalog.upsert_work(seed)
+
+    class _Boom:
+        def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+            raise ContextLeakError("leaked")
+
+    client = TestClient(create_app(AppContainer(catalog=catalog, generator=_Boom())))
+    response = client.post(
+        "/v1/generate",
+        json={
+            "kind": "research_path",
+            "subcategory": "two_d_codes",
+            "seed_work_id": str(seed.id),
+        },
+    )
+    assert response.status_code == 422
