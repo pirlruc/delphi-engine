@@ -124,6 +124,7 @@ def _from_common(
     )
     authors = tuple(str(item) for item in record.get("authors", ()))
     keywords = tuple(str(item) for item in record.get("keywords", ()))
+    claims = tuple(str(item) for item in record.get("claims", ()) if str(item).strip())
     known = {item.value for item in SubcategoryId}
     parsed = SubcategoryId(subcategory) if subcategory in known else None
     category = Category(
@@ -140,6 +141,7 @@ def _from_common(
         authors=authors,
         keywords=keywords,
         abstract=str(record.get("abstract", "")),
+        claims=claims,
         published_on=date.fromisoformat(published),
         identities=(Identity(kind=identity_kind, value=ident_value),),
         categories=(category,),

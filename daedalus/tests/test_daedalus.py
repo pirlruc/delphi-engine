@@ -14,7 +14,7 @@ from pypdf import PdfWriter
 from daedalus.caps import CapsError, allowed_text, check_caps
 from daedalus.cli import main
 from daedalus.connectors import from_openalex, from_patentsview
-from daedalus.embed import HashEmbedder
+from daedalus.embed import HashEmbedder, chunk_text, compose_embed_text, mean_pool
 from daedalus.extract import PdfExtractor, pdf_text
 from daedalus.ingest import ingest_records, load_fixture
 
@@ -162,8 +162,36 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     assert extraction.title
     seed = catalog.get_work(UUID("11111111-1111-1111-1111-111111111111"))
     assert seed is not None
-    HashEmbedder(catalog).embed_and_link(seed, f"{seed.title} {seed.abstract}")
+    HashEmbedder(catalog).embed_and_link(seed)
     assert catalog.get_embedding(seed.id) is not None
+    composed = compose_embed_text(seed)
+    assert seed.title in composed
+    assert "scientific paper" in composed
+    assert compose_embed_text(seed, extra=f"{seed.title} {seed.abstract}") == composed
+    patent = from_patentsview(
+        {
+            "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "title": "Carrier patent",
+            "publication_date": "2013-01-01",
+            "patent_id": "US-1",
+            "keywords": ["G06K"],
+            "claims": ["A QR overlay on a substrate."],
+        },
+        "two_d_codes",
+    )
+    patent_text = compose_embed_text(patent)
+    assert "Represent this patent" in patent_text
+    assert "G06K" in patent_text
+    assert "QR overlay" in patent_text
+    assert chunk_text("short") == ["short"]
+    packed = chunk_text("para1\n\n" + ("x" * 13000), size=4000)
+    assert len(packed) >= 2
+    assert len(chunk_text("abcdefghij\nxy", size=10)) == 2
+    assert mean_pool([]) == ()
+    assert mean_pool([(1.0, 3.0), (3.0, 5.0)]) == (2.0, 4.0)
+    assert mean_pool([(1.0,), (1.0, 2.0)]) == (1.0,)
+    assert chunk_text("  ") == []
+    HashEmbedder(catalog).embed_and_link(seed, "qr body\n\n" + ("code " * 5000))
     assert isinstance(pdf_text(_blank_pdf()), str)
     assert main(["--dry-run"]) == 0
     assert main([]) == 0

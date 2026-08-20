@@ -44,7 +44,7 @@ def build_container(
     provider = build_provider(provider_settings_from_env())
     embedder = HashEmbedder(catalog, llm=provider)
     for work in catalog.list_works():
-        embedder.embed_and_link(work, f"{work.title} {work.abstract}")
+        embedder.embed_and_link(work)
     return AppContainer(
         catalog=catalog,
         extractor=PdfExtractor(provider),

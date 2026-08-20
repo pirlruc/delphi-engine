@@ -1110,9 +1110,10 @@ milestones:
         title: Improve content-graph text beyond title-plus-abstract
         overview:
           problem: >-
-            Phase 1 content edges use catalog abstracts. Licensed full text
-            or extracted claims would change k-NN quality once the prototype
-            loop works.
+            Phase 1 content edges use composed catalog text (title, abstract,
+            CPC/keywords, claims when present, truncated upload body). Licensed
+            full text or a domain/JEPA encoder would change k-NN quality once
+            that loop is measured ([docs/evolution.md](evolution.md)).
           goal: >-
             Re-embed catalog works when better text is available (claims,
             sections) without changing the neighborhood API. First content

@@ -32,7 +32,7 @@ def run_demo() -> dict[str, object]:
     ingest_records(catalog, load_fixture())
     embedder = HashEmbedder(catalog)
     for work in catalog.list_works():
-        embedder.embed_and_link(work, f"{work.title} {work.abstract}")
+        embedder.embed_and_link(work)
     extraction, neighborhood = upload_pdf(
         catalog,
         sample_pdf_bytes(),

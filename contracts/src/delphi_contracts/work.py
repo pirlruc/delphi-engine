@@ -20,8 +20,9 @@ class Work(BaseModel):
         kind: Paper or patent.
         title: Display title.
         authors: Ordered author or inventor names.
-        keywords: Subject tokens when known.
+        keywords: Subject tokens when known (CPC/IPC for patents).
         abstract: Catalog abstract; may be empty for sparse records.
+        claims: Independent or representative claim text when the source provides it.
         published_on: Publication or grant date used for hindcasting.
         identities: External identifiers.
         categories: Taxonomy assignments including subcategory.
@@ -35,6 +36,7 @@ class Work(BaseModel):
     authors: tuple[str, ...] = ()
     keywords: tuple[str, ...] = ()
     abstract: str = ""
+    claims: tuple[str, ...] = ()
     published_on: date
     identities: tuple[Identity, ...] = ()
     categories: tuple[Category, ...] = ()

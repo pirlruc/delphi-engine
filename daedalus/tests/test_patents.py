@@ -153,6 +153,7 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
                                 "classifications_cpc": {
                                     "classifications": [{"symbol": "G06K19/06"}]
                                 },
+                                "claims": [{"claim_text": "A method for overlaying a QR code."}],
                                 "abstracts": [{"lang": "en", "text": "A method."}],
                             },
                         }
@@ -195,6 +196,7 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
     lens = search_lens("QR", "two_d_codes", client)
     assert "Method for QR overlay" in lens[0]["title"]
     assert "OCHOA JORGE" in lens[0]["authors"]
+    assert lens[0]["claims"]
     assert from_lens(
         {
             "id": lens[0]["id"],
@@ -272,6 +274,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
                             "title": "Simple QR",
                             "publication_date": "2011-01-01",
                             "authors": ["Ada"],
+                            "claims": "A QR overlay on a carrier.",
                         }
                     ]
                 },
@@ -298,6 +301,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
         raise AssertionError("expected FetchError")
     simple = fetch_epo("https://ops.example/publications", "two_d_codes", client)
     assert simple[0]["title"] == "Simple QR"
+    assert simple[0]["claims"] == ["A QR overlay on a carrier."]
     assert fetch_patsnap("https://connect.patsnap.com/x", "two_d_codes", client) == []
     assert fetch_lens("https://api.lens.org/patent/search", "two_d_codes", client) == []
     nested = fetch_wipo("https://wipo-nested.test/x", "two_d_codes", client)

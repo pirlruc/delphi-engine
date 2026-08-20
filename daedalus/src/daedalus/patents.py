@@ -281,7 +281,7 @@ def search_lens(
     body = {
         "query": {"query_string": {"query": query, "fields": ["title", "abstract", "claims"]}},
         "size": min(limit, 100),
-        "include": ["biblio", "date_published", "jurisdiction", "doc_number", "lens_id"],
+        "include": ["biblio", "claims", "date_published", "jurisdiction", "doc_number", "lens_id"],
     }
     return fetch_lens(_LENS_SEARCH, subcategory, client, body=body, attempts=attempts)
 
@@ -476,6 +476,7 @@ def _patent_record(
     abstract: str = "",
     authors: list[str] | None = None,
     keywords: list[str] | None = None,
+    claims: list[str] | None = None,
 ) -> dict[str, Any]:
     """Build a fixture-shaped patent ingest dict.
 
@@ -487,6 +488,7 @@ def _patent_record(
         abstract: Abstract text.
         authors: Inventor names.
         keywords: CPC/IPC or topic tokens.
+        claims: Claim text when the office provides it.
 
     Returns:
         Ingest record.
@@ -507,6 +509,7 @@ def _patent_record(
         "patent": normalized,
         "authors": authors or [],
         "keywords": keywords or [],
+        "claims": [claim for claim in (claims or []) if claim],
         "subcategory": subcategory,
         "cites": [],
     }
@@ -576,7 +579,10 @@ def _epo_record(item: object, subcategory: str) -> dict[str, Any]:
     abstract = _ops_text(item.get("abstract") or (biblio or {}).get("abstract"))
     inventors = _ops_inventors(biblio if isinstance(biblio, dict) else item)
     keywords = _ops_classes(biblio if isinstance(biblio, dict) else item)
-    return _patent_record(patent_id, title, published, subcategory, abstract, inventors, keywords)
+    claims = _claim_list(item.get("claims") or (biblio or {}).get("claims"))
+    return _patent_record(
+        patent_id, title, published, subcategory, abstract, inventors, keywords, claims
+    )
 
 
 def _epo_document_id(item: dict[str, Any]) -> dict[str, Any]:
@@ -651,7 +657,10 @@ def _wipo_record(item: object, subcategory: str) -> dict[str, Any]:
     abstract = str(item.get("abstract") or "")
     inventors = _name_list(item.get("inventors") or item.get("authors"))
     keywords = _symbol_list(item.get("ipc") or item.get("cpc") or item.get("keywords"))
-    return _patent_record(patent_id, title, published, subcategory, abstract, inventors, keywords)
+    claims = _claim_list(item.get("claims") or item.get("independentClaims"))
+    return _patent_record(
+        patent_id, title, published, subcategory, abstract, inventors, keywords, claims
+    )
 
 
 def _patsnap_items(payload: object) -> list[object]:
@@ -697,7 +706,10 @@ def _patsnap_record(item: object, subcategory: str) -> dict[str, Any]:
         inventors = _name_list(inventors_raw)
     keywords = [str(item["authority"])] if item.get("authority") else []
     abstract = str(item.get("abstract") or "")
-    return _patent_record(patent_id, title, published, subcategory, abstract, inventors, keywords)
+    claims = _claim_list(item.get("claims") or item.get("claim"))
+    return _patent_record(
+        patent_id, title, published, subcategory, abstract, inventors, keywords, claims
+    )
 
 
 def _lens_items(payload: object) -> list[object]:
@@ -742,7 +754,10 @@ def _lens_record(item: object, subcategory: str) -> dict[str, Any]:
     abstract = _lens_abstract(biblio)
     inventors = _lens_inventors(biblio)
     keywords = _lens_cpc(biblio)
-    return _patent_record(patent_id, title, published, subcategory, abstract, inventors, keywords)
+    claims = _claim_list(item.get("claims") or biblio.get("claims"))
+    return _patent_record(
+        patent_id, title, published, subcategory, abstract, inventors, keywords, claims
+    )
 
 
 def _simple_patent(item: dict[str, Any], subcategory: str) -> dict[str, Any]:
@@ -763,6 +778,7 @@ def _simple_patent(item: dict[str, Any], subcategory: str) -> dict[str, Any]:
         str(item.get("abstract") or ""),
         _name_list(item.get("authors") or item.get("inventors")),
         _symbol_list(item.get("keywords") or item.get("cpc")),
+        _claim_list(item.get("claims")),
     )
 
 
@@ -1062,3 +1078,28 @@ def _symbol_list(raw: object) -> list[str]:
             if symbol:
                 symbols.append(str(symbol))
     return symbols
+
+
+def _claim_list(raw: object) -> list[str]:
+    """Claim text from strings or objects.
+
+    Args:
+        raw: Claim strings, dicts with claim_text/text, or a single string.
+
+    Returns:
+        Claim strings.
+    """
+    claims: list[str] = []
+    if isinstance(raw, str):
+        text = raw.strip()
+        return [text] if text else claims
+    if not isinstance(raw, list):
+        return claims
+    for row in raw:
+        if isinstance(row, str) and row.strip():
+            claims.append(row.strip())
+        elif isinstance(row, dict):
+            text = str(row.get("claim_text") or row.get("text") or row.get("value") or "").strip()
+            if text:
+                claims.append(text)
+    return claims

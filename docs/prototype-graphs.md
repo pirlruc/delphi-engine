@@ -25,8 +25,11 @@ Citation links miss papers that are about the same method but do not cite each o
 
 | Work kind | Text used for the vector |
 | --- | --- |
-| Catalog paper/patent | Title + abstract from the source API. Full text is out of scope unless later licensed |
-| Uploaded PDF | Extracted body (title, abstract, sections, keywords). Richer than catalog abstracts; still the same embedding model |
+| Catalog paper | Title + abstract + topic keywords, with a retrieval instruction prefix |
+| Catalog patent | Title + abstract + CPC/keywords + claims when the source sent them |
+| Uploaded PDF | Catalog fields plus extracted body (truncated / chunk-mean-pooled). Not raw PDF bytes |
+
+Kind-specific prefixes and mean-pooling live in `daedalus.embed.compose_embed_text` ([docs/evolution.md](evolution.md)). Full licensed text and JEPA encoders wait for [PROD-003](issues.yml).
 
 Each work gets one embedding. The content graph is the **top-k nearest neighbors** among other works in the same prototype slice (and optionally the same subcategory). Those neighbors are stored as `similar_to` edges with a score so Hermes can show them.
 

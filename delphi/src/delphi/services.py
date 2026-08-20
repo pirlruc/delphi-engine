@@ -156,7 +156,7 @@ def upload_pdf(
     resolved = attach_bibliography(catalog, work.id, extraction.bibliography)
     extraction = extraction.model_copy(update={"bibliography": resolved})
     catalog.put_extraction(extraction)
-    embedder.embed_and_link(work, extraction.body_text or f"{work.title} {work.abstract}")
+    embedder.embed_and_link(work, extraction.body_text)
     neighborhood = catalog.neighborhood(work.id, NeighborhoodMode.UNION, subcategory)
     return extraction, neighborhood
 

@@ -6,7 +6,7 @@
 | --- | --- |
 | **System** | Delphi Engine: research-path and patent-whitespace assistant with hindcasting |
 | **Type** | Workspace monorepo of isolated component folders (Python 3.13 / uv per package in Phase 1; Tauri/React in PROD-004) |
-| **Docs** | `docs/ai-agent-handoff.md`, `docs/issues.yml`, `docs/limitations.md`, `docs/prototype-corpus.md`, `docs/prototype-graphs.md` |
+| **Docs** | `docs/ai-agent-handoff.md`, `docs/issues.yml`, `docs/limitations.md`, `docs/prototype-corpus.md`, `docs/prototype-graphs.md`, `docs/evolution.md` |
 | **Methodology** | [github-issue-adr](https://github.com/pirlruc/methodologies/tree/1.2.1/github-issue-adr) (Epic = decision record, no ADR markdown files) |
 
 ## Current slice
@@ -17,7 +17,7 @@ Walking-skeleton prototype. Six Python packages, in-memory catalog by default, o
 | --- | --- | --- |
 | contracts | `contracts/` | `delphi_contracts` models + OpenAPI. |
 | delphi | `delphi/` | FastAPI. `MemoryCatalog`. Ports for extractor/embedder/generator. |
-| daedalus | `daedalus/` | Fixture ingest, PDF extract, hash embeddings vs other papers. |
+| daedalus | `daedalus/` | Fixture ingest, PDF extract, composed embeddings vs other papers. |
 | prometheus | `prometheus/` | Import `delphi_prometheus`. MaskedContext only. |
 | epimetheus | `epimetheus/` | Dual-graph temporal masks + Fake judge artifact. |
 | hermes | `hermes/` | CLI: batch-check, consented upload, neighborhood, generate. |
@@ -87,4 +87,4 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Path dependencies must be **editable** or `uv sync` will keep a stale copy of `delphi_contracts` in each package venv.
 - Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
 
-*Last updated: 2026-08-19 (EPO/WIPO/PatSnap/Lens patent clients + Compose)*
+*Last updated: 2026-08-20 (embed compose + evolution.md)*

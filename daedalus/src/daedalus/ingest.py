@@ -105,6 +105,7 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
         authors=tuple(str(item) for item in record.get("authors", ())),
         keywords=tuple(str(item) for item in record.get("keywords", ())),
         abstract=str(record.get("abstract", "")),
+        claims=tuple(str(item) for item in record.get("claims", ()) if str(item).strip()),
         published_on=date.fromisoformat(str(record["published_on"])),
         identities=identity,
         categories=(

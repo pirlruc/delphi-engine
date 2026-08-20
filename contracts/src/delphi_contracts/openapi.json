@@ -204,7 +204,7 @@
             "type": "string"
           }
         },
-        "description": "A paper or patent in the catalog.\n\nAttributes:\n    id: Stable internal UUID.\n    kind: Paper or patent.\n    title: Display title.\n    authors: Ordered author or inventor names.\n    keywords: Subject tokens when known.\n    abstract: Catalog abstract; may be empty for sparse records.\n    published_on: Publication or grant date used for hindcasting.\n    identities: External identifiers.\n    categories: Taxonomy assignments including subcategory.",
+        "description": "A paper or patent in the catalog.\n\nAttributes:\n    id: Stable internal UUID.\n    kind: Paper or patent.\n    title: Display title.\n    authors: Ordered author or inventor names.\n    keywords: Subject tokens when known (CPC/IPC for patents).\n    abstract: Catalog abstract; may be empty for sparse records.\n    claims: Independent or representative claim text when the source provides it.\n    published_on: Publication or grant date used for hindcasting.\n    identities: External identifiers.\n    categories: Taxonomy assignments including subcategory.",
         "properties": {
           "id": {
             "format": "uuid",
@@ -239,6 +239,14 @@
             "default": "",
             "title": "Abstract",
             "type": "string"
+          },
+          "claims": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Claims",
+            "type": "array"
           },
           "published_on": {
             "format": "date",
@@ -845,7 +853,7 @@
             "type": "string"
           },
           "Work": {
-            "description": "A paper or patent in the catalog.\n\nAttributes:\n    id: Stable internal UUID.\n    kind: Paper or patent.\n    title: Display title.\n    authors: Ordered author or inventor names.\n    keywords: Subject tokens when known.\n    abstract: Catalog abstract; may be empty for sparse records.\n    published_on: Publication or grant date used for hindcasting.\n    identities: External identifiers.\n    categories: Taxonomy assignments including subcategory.",
+            "description": "A paper or patent in the catalog.\n\nAttributes:\n    id: Stable internal UUID.\n    kind: Paper or patent.\n    title: Display title.\n    authors: Ordered author or inventor names.\n    keywords: Subject tokens when known (CPC/IPC for patents).\n    abstract: Catalog abstract; may be empty for sparse records.\n    claims: Independent or representative claim text when the source provides it.\n    published_on: Publication or grant date used for hindcasting.\n    identities: External identifiers.\n    categories: Taxonomy assignments including subcategory.",
             "properties": {
               "id": {
                 "format": "uuid",
@@ -880,6 +888,14 @@
                 "default": "",
                 "title": "Abstract",
                 "type": "string"
+              },
+              "claims": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Claims",
+                "type": "array"
               },
               "published_on": {
                 "format": "date",
