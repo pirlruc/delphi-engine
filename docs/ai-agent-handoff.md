@@ -87,4 +87,4 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Path dependencies must be **editable** or `uv sync` will keep a stale copy of `delphi_contracts` in each package venv.
 - Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
 
-*Last updated: 2026-08-20 (embed compose + evolution.md)*
+*Last updated: 2026-08-20 (embed compose: capped claims, contextual chunks; JEPA rejected for retrieval)*

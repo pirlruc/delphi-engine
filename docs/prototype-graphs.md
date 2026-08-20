@@ -25,11 +25,11 @@ Citation links miss papers that are about the same method but do not cite each o
 
 | Work kind | Text used for the vector |
 | --- | --- |
-| Catalog paper | Title + abstract + topic keywords, with a retrieval instruction prefix |
-| Catalog patent | Title + abstract + CPC/keywords + claims when the source sent them |
-| Uploaded PDF | Catalog fields plus extracted body (truncated / chunk-mean-pooled). Not raw PDF bytes |
+| Catalog paper | Title + abstract + identifiers + topic keywords, with a retrieval instruction prefix |
+| Catalog patent | Title + abstract + identifiers + CPC/keywords + **capped** claims (first three, clipped) |
+| Uploaded PDF | Catalog fields plus extracted body (truncated / contextual-chunk mean-pooled). Not raw PDF bytes |
 
-Kind-specific prefixes and mean-pooling live in `daedalus.embed.compose_embed_text` ([docs/evolution.md](evolution.md)). Full licensed text and JEPA encoders wait for [PROD-003](issues.yml).
+Title and abstract are the mixed-graph bridge (papers have no claims). Kind-specific prefixes and contextual mean-pooling live in `daedalus.embed` ([docs/evolution.md](evolution.md)). Licensed full text and a hybrid lexical index wait for [PROD-003](issues.yml).
 
 Each work gets one embedding. The content graph is the **top-k nearest neighbors** among other works in the same prototype slice (and optionally the same subcategory). Those neighbors are stored as `similar_to` edges with a score so Hermes can show them.
 

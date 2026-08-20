@@ -1,20 +1,29 @@
 """Daedalus ingest and extraction tests."""
 
 import json
+from datetime import date
 from io import BytesIO
 from pathlib import Path
 from uuid import UUID
 
 import httpx
 from delphi.catalog import MemoryCatalog
-from delphi_contracts.enums import WorkKind
+from delphi_contracts.enums import IdentityKind, WorkKind
+from delphi_contracts.identity import Identity
 from delphi_contracts.llm import FakeProvider
+from delphi_contracts.work import Work
 from pypdf import PdfWriter
 
 from daedalus.caps import CapsError, allowed_text, check_caps
 from daedalus.cli import main
 from daedalus.connectors import from_openalex, from_patentsview
-from daedalus.embed import HashEmbedder, chunk_text, compose_embed_text, mean_pool
+from daedalus.embed import (
+    HashEmbedder,
+    chunk_text,
+    compose_embed_text,
+    contextual_windows,
+    mean_pool,
+)
 from daedalus.extract import PdfExtractor, pdf_text
 from daedalus.ingest import ingest_records, load_fixture
 
@@ -183,6 +192,49 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     assert "Represent this patent" in patent_text
     assert "G06K" in patent_text
     assert "QR overlay" in patent_text
+    assert "ids: US-1" in patent_text
+    long_claims = from_patentsview(
+        {
+            "id": "abababab-abab-abab-abab-abababababab",
+            "title": "Many claims",
+            "publication_date": "2013-02-01",
+            "patent_id": "US-2",
+            "claims": [
+                "Independent overlay claim.",
+                "Dependent carrier claim.",
+                "Dependent ink claim.",
+                "Dropped fourth claim unique-token-zz9.",
+            ],
+        },
+        "two_d_codes",
+    )
+    capped = compose_embed_text(long_claims)
+    assert "Independent overlay claim." in capped
+    assert "unique-token-zz9" not in capped
+    body = "methods\n\n" + ("formula " * 4000)
+    windows = contextual_windows(seed, extra=body, size=2500)
+    assert len(windows) >= 2
+    assert all(seed.title in window for window in windows)
+    tiny = contextual_windows(seed, extra="body-only-tail", size=80)
+    assert tiny
+    assert all(seed.title in window for window in tiny)
+    hashed = Work(
+        id=UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+        kind=WorkKind.PAPER,
+        title="Bare",
+        published_on=date(2014, 1, 1),
+        identities=(Identity(kind=IdentityKind.CONTENT_HASH, value="deadbeef"),),
+    )
+    assert "ids:" not in compose_embed_text(hashed)
+    assert "deadbeef" not in compose_embed_text(hashed)
+    wide = Work(
+        id=UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+        kind=WorkKind.PAPER,
+        title="W" * 800,
+        published_on=date(2014, 1, 1),
+    )
+    overflow = contextual_windows(wide, extra="", size=120)
+    assert len(overflow) >= 2
     assert chunk_text("short") == ["short"]
     packed = chunk_text("para1\n\n" + ("x" * 13000), size=4000)
     assert len(packed) >= 2

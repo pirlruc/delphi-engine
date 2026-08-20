@@ -154,7 +154,7 @@ Python package gates (ruff, mypy, interrogate, pytest with 95% coverage) run as 
 
 - [`docs/prototype-corpus.md`](docs/prototype-corpus.md) — four subcategories and ingest bounds
 - [`docs/prototype-graphs.md`](docs/prototype-graphs.md) — citation graph and content graph
-- [`docs/evolution.md`](docs/evolution.md) — model choices, JEPA placement, embed-text rules, cost notes
+- [`docs/evolution.md`](docs/evolution.md) — model choices, why JEPA is not the catalog embedder, embed-text rules, cost notes
 - [`docs/eval-rubric.md`](docs/eval-rubric.md) — judge scores
 - [`docs/prototype-demo.json`](docs/prototype-demo.json) — last Fake-LLM demo artifact
 - [`docs/proposal/guardrails/`](docs/proposal/guardrails/) — proposed TS-* pack

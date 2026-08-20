@@ -2,28 +2,40 @@
 
 from __future__ import annotations
 
-from delphi_contracts.enums import WorkKind
+from delphi_contracts.enums import IdentityKind, WorkKind
 from delphi_contracts.llm import EmbedRequest, LlmProvider, build_provider
 from delphi_contracts.work import Work
 
 from daedalus.ports import CatalogWriter
 
-__all__ = ["HashEmbedder", "chunk_text", "compose_embed_text", "mean_pool"]
+__all__ = [
+    "HashEmbedder",
+    "chunk_text",
+    "compose_embed_text",
+    "contextual_windows",
+    "mean_pool",
+]
 
 _PAPER_PREFIX = "Represent this scientific paper for nearest-neighbor retrieval:\n"
 _PATENT_PREFIX = "Represent this patent for nearest-neighbor retrieval:\n"
 _SEP = "\n\n"
 _CHUNK_CHARS = 12_000
 _MAX_EXTRA_CHARS = 24_000
+_MAX_CLAIM_COUNT = 3
+_MAX_CLAIMS_CHARS = 4_000
+_MIN_TAIL_BUDGET = 256
+_ID_KINDS = frozenset(
+    {IdentityKind.DOI, IdentityKind.ARXIV, IdentityKind.PATENT},
+)
 
 
 def compose_embed_text(work: Work, extra: str = "") -> str:
     """Build the canonical embedding string for a catalog work.
 
-    Title and abstract are always included. Patents add CPC/keywords and
-    claims. Uploaded body is appended when it is not a duplicate of the
-    catalog fields. Kind-specific instruction prefixes help instruction-tuned
-    embedders; they do not change Fake hashing except as more tokens.
+    Title, abstract, public identifiers, and CPC/keywords are the mixed-graph
+    core (papers have no claims). Patents may add a **capped** claim block so
+    legalese does not drown the abstract. Uploaded body is appended when it is
+    not a duplicate of the catalog fields.
 
     Args:
         work: Catalog work.
@@ -33,20 +45,38 @@ def compose_embed_text(work: Work, extra: str = "") -> str:
     Returns:
         Text to embed (possibly longer than one model window).
     """
-    prefix = _PATENT_PREFIX if work.kind is WorkKind.PATENT else _PAPER_PREFIX
-    parts = [work.title.strip()]
-    abstract = work.abstract.strip()
-    if abstract:
-        parts.append(abstract)
-    if work.keywords:
-        label = "CPC" if work.kind is WorkKind.PATENT else "keywords"
-        parts.append(f"{label}: {', '.join(work.keywords)}")
-    if work.claims:
-        parts.append("claims: " + " ".join(claim.strip() for claim in work.claims if claim.strip()))
-    extra_clean = _clip(" ".join(extra.split()), _MAX_EXTRA_CHARS)
-    if extra_clean and not _redundant_catalog_text(work, extra_clean):
-        parts.append(extra_clean)
-    return prefix + _SEP.join(part for part in parts if part)
+    header = _compose_header(work)
+    tail = _compose_tail(work, extra)
+    return header if not tail else header + _SEP + tail
+
+
+def contextual_windows(work: Work, extra: str = "", size: int = _CHUNK_CHARS) -> list[str]:
+    """Chunk long tails while repeating title and abstract on every window.
+
+    Args:
+        work: Catalog work.
+        extra: Optional extracted body.
+        size: Maximum characters per window.
+
+    Returns:
+        One or more strings to embed, then mean-pool.
+    """
+    composed = compose_embed_text(work, extra=extra)
+    if len(composed) <= size:
+        return [composed]
+    header = _compose_header(work)
+    tail = composed[len(header) :].lstrip()
+    if not tail:
+        return chunk_text(header, size=size) or [header]
+    budget = size - len(header) - len(_SEP)
+    if budget < _MIN_TAIL_BUDGET:
+        title_tag = _kind_prefix(work) + work.title.strip() + _SEP
+        room = max(size - len(title_tag), _MIN_TAIL_BUDGET)
+        pieces = chunk_text(composed, size=room)
+        return [
+            piece if piece.startswith(_kind_prefix(work)) else title_tag + piece for piece in pieces
+        ]
+    return [header + _SEP + piece for piece in chunk_text(tail, size=budget)]
 
 
 def chunk_text(text: str, size: int = _CHUNK_CHARS) -> list[str]:
@@ -101,8 +131,6 @@ def mean_pool(vectors: list[tuple[float, ...]]) -> tuple[float, ...]:
         return ()
     dim = len(usable[0])
     aligned = [row for row in usable if len(row) == dim]
-    if not aligned:
-        return ()
     acc = [0.0] * dim
     for row in aligned:
         for index, value in enumerate(row):
@@ -132,28 +160,101 @@ class HashEmbedder:
             text: Optional extracted body. Title+abstract-only strings are
                 treated as empty so old call sites do not duplicate fields.
         """
-        composed = compose_embed_text(work, extra=text)
-        vector, model = self._embed_pooled(composed)
+        windows = contextual_windows(work, extra=text)
+        vector, model = self._embed_pooled(windows)
         self._catalog.put_embedding(work.id, vector, model)
         self._catalog.rebuild_similar_to(work.id)
 
-    def _embed_pooled(self, text: str) -> tuple[tuple[float, ...], str]:
+    def _embed_pooled(self, windows: list[str]) -> tuple[tuple[float, ...], str]:
         """Embed one window, or mean-pool chunks when over the size cap.
 
         Args:
-            text: Composed embedding string.
+            windows: Contextual embedding strings.
 
         Returns:
             Vector and model id.
         """
-        windows = chunk_text(text) or [text or "empty"]
-        if len(windows) == 1:
-            response = self._llm.embed(EmbedRequest(text=windows[0]))
+        texts = windows or ["empty"]
+        if len(texts) == 1:
+            response = self._llm.embed(EmbedRequest(text=texts[0]))
             return response.vector, response.model
-        responses = [self._llm.embed(EmbedRequest(text=window)) for window in windows]
+        responses = [self._llm.embed(EmbedRequest(text=window)) for window in texts]
         pooled = mean_pool([item.vector for item in responses])
         model = responses[0].model
         return pooled or responses[0].vector, model
+
+
+def _kind_prefix(work: Work) -> str:
+    """Return the instruction prefix for a work kind.
+
+    Args:
+        work: Catalog work.
+
+    Returns:
+        Retrieval instruction line including a trailing newline.
+    """
+    return _PATENT_PREFIX if work.kind is WorkKind.PATENT else _PAPER_PREFIX
+
+
+def _compose_header(work: Work) -> str:
+    """Title, abstract, identifiers, and CPC — the paper/patent bridge.
+
+    Args:
+        work: Catalog work.
+
+    Returns:
+        Prefix plus semantic-core fields.
+    """
+    parts = [work.title.strip()]
+    abstract = work.abstract.strip()
+    if abstract:
+        parts.append(abstract)
+    identifiers = [
+        item.value.strip()
+        for item in work.identities
+        if item.kind in _ID_KINDS and item.value.strip()
+    ]
+    if identifiers:
+        parts.append("ids: " + ", ".join(identifiers))
+    if work.keywords:
+        label = "CPC" if work.kind is WorkKind.PATENT else "keywords"
+        parts.append(f"{label}: {', '.join(work.keywords)}")
+    return _kind_prefix(work) + _SEP.join(part for part in parts if part)
+
+
+def _compose_tail(work: Work, extra: str) -> str:
+    """Capped claims and optional body that is not catalog duplication.
+
+    Args:
+        work: Catalog work.
+        extra: Extracted body.
+
+    Returns:
+        Tail string, possibly empty.
+    """
+    parts: list[str] = []
+    claims = _capped_claims(work)
+    if claims:
+        parts.append(claims)
+    extra_clean = _clip(" ".join(extra.split()), _MAX_EXTRA_CHARS)
+    if extra_clean and not _redundant_catalog_text(work, extra_clean):
+        parts.append(extra_clean)
+    return _SEP.join(parts)
+
+
+def _capped_claims(work: Work) -> str:
+    """Keep the first independent-style claims without drowning the abstract.
+
+    Args:
+        work: Catalog work.
+
+    Returns:
+        Claim block or empty string.
+    """
+    claims = [claim.strip() for claim in work.claims if claim.strip()][:_MAX_CLAIM_COUNT]
+    if not claims:
+        return ""
+    return "claims: " + _clip(" ".join(claims), _MAX_CLAIMS_CHARS)
 
 
 def _redundant_catalog_text(work: Work, extra: str) -> bool:
