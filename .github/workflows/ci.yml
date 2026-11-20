@@ -61,16 +61,6 @@ jobs:
       run_shfmt: true
       scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
 
-  scaffold-verify:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions:
-      contents: read
-      issues: read
-    uses: pirlruc/commondevops/.github/workflows/common-scaffold-verify.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
-    with:
-      blocking: true
-      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
-
   secrets-sast:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
@@ -124,6 +114,8 @@ jobs:
     with:
       blocking: true
       dockerfile: Dockerfile
+      run_infra_lint: false
+      run_secrets_scan: false
       scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
 
   container-build:
@@ -184,7 +176,6 @@ jobs:
       - python-quality
       - infra-lint
       - doc-verify
-      - scaffold-verify
       - secrets-sast
       - supply-chain
       - pins

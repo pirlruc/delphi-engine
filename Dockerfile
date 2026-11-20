@@ -13,11 +13,12 @@ COPY --chown=10001:10001 epimetheus /app/epimetheus
 COPY --chown=10001:10001 hermes /app/hermes
 COPY --chown=10001:10001 scripts /app/scripts
 
-USER 10001
 RUN uv sync --frozen --no-dev --no-editable \
     --package delphi \
     --package daedalus \
-    --package delphi-prometheus
+    --package delphi-prometheus \
+    && chown -R 10001:10001 /app
+USER 10001
 
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1
