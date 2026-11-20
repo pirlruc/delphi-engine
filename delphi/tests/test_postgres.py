@@ -76,7 +76,7 @@ def test_catalog_from_url_defaults_to_memory() -> None:
     assert isinstance(catalog_from_url(None), MemoryCatalog)
     pg = catalog_from_url(_DSN)
     assert isinstance(pg, PostgresCatalog)
-    pg.close()  # type: ignore[union-attr]
+    pg.close()
 
 
 def test_postgres_works_edges_embeddings_and_neighborhood(catalog: PostgresCatalog) -> None:
