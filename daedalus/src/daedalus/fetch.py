@@ -42,6 +42,9 @@ class FetchError(RuntimeError):
     """Raised when an HTTP page cannot be fetched after retries."""
 
 
+_MAX_ABSTRACT_POSITIONS = 20_000
+
+
 def reconstruct_abstract(index: object) -> str:
     """Rebuild OpenAlex inverted-index abstracts.
 
@@ -64,8 +67,11 @@ def reconstruct_abstract(index: object) -> str:
                 positions[loc] = str(word)
     if not positions:
         return ""
-    size = max(positions) + 1
-    return " ".join(positions.get(offset, "") for offset in range(size)).strip()
+    capped = {loc: word for loc, word in positions.items() if 0 <= loc < _MAX_ABSTRACT_POSITIONS}
+    if not capped:
+        return ""
+    size = max(capped) + 1
+    return " ".join(capped.get(offset, "") for offset in range(size)).strip()
 
 
 def fetch_openalex(

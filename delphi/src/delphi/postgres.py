@@ -113,6 +113,15 @@ class PostgresCatalog:
         Returns:
             The stored work.
         """
+        for identity in work.identities:
+            owner = self._conn.execute(
+                "SELECT work_id FROM identities WHERE kind = %s AND value = %s",
+                (identity.kind.value, identity.value),
+            ).fetchone()
+            if owner is not None and owner[0] != work.id:
+                raise ValueError(
+                    f"identity {identity.kind.value}:{identity.value} belongs to another work"
+                )
         payload = Jsonb(work.model_dump(mode="json"))
         self._conn.execute(
             """
@@ -126,7 +135,7 @@ class PostgresCatalog:
             self._conn.execute(
                 """
             INSERT INTO identities (kind, value, work_id) VALUES (%s, %s, %s)
-            ON CONFLICT (kind, value) DO NOTHING
+            ON CONFLICT (kind, value) DO UPDATE SET work_id = EXCLUDED.work_id
                 """,
                 (identity.kind.value, identity.value, work.id),
             )

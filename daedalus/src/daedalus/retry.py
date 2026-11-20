@@ -43,30 +43,35 @@ def request_json(
     delay = 0.05
     last: Exception | None = None
     verb = method.upper()
-    for attempt in range(max(attempts, 1)):
+    tries = max(attempts, 1)
+    for attempt in range(tries):
         try:
             if verb == "POST":
                 response = client.post(url, json=json_body, timeout=timeout, headers=headers)
             else:
                 response = client.get(url, timeout=timeout, headers=headers)
-            if response.status_code == 429:
-                last = httpx.HTTPStatusError(
-                    "Too Many Requests", request=response.request, response=response
-                )
-                time.sleep(_retry_wait(response, delay))
-                delay = min(delay * 2, 4.0)
-                continue
-            response.raise_for_status()
-            return response.json()
-        except (httpx.HTTPError, ValueError) as exc:
+        except httpx.TransportError as exc:
             last = exc
-            if attempt + 1 >= max(attempts, 1):
+            if attempt + 1 >= tries:
                 break
             time.sleep(delay)
             delay = min(delay * 2, 4.0)
-    if last is not None:
-        raise last
-    raise RuntimeError(f"request failed: {url}")
+            continue
+        if response.status_code == 429 or response.status_code >= 500:
+            last = httpx.HTTPStatusError(
+                "retryable status", request=response.request, response=response
+            )
+            if attempt + 1 >= tries:
+                break
+            wait = _retry_wait(response, delay) if response.status_code == 429 else delay
+            time.sleep(wait)
+            delay = min(delay * 2, 4.0)
+            continue
+        response.raise_for_status()
+        return response.json()
+    if last is None:  # pragma: no cover
+        raise RuntimeError(f"request failed: {url}")
+    raise last
 
 
 def _retry_wait(response: httpx.Response, fallback: float) -> float:

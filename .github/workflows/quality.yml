@@ -7,7 +7,8 @@
 # Local parity (CI-008): bash scripts/check-ci-local.sh
 # Python package gates (ruff/mypy/pytest): bash scripts/python-gates.sh
 # Python gates stay local unless quota allows a dispatch job (GATE-001).
-# Submodules are public, so checkout uses submodules: recursive.
+# The default GITHUB_TOKEN makes public submodule clones return 404.
+# Checkout the repo without credentials, then init submodules anonymously.
 
 name: quality
 
@@ -31,7 +32,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: recursive
+          submodules: false
+
+      - name: Checkout public analog submodules
+        run: git submodule update --init --depth 1
 
       - name: Install PyYAML
         run: python3 -m pip install --user pyyaml
