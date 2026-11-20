@@ -1,6 +1,8 @@
 """Contracts unit tests."""
 
+from collections.abc import Callable
 from datetime import date
+from typing import cast
 from uuid import uuid4
 
 import httpx
@@ -75,9 +77,10 @@ def test_identity_normalizes_doi_and_patent() -> None:
     hashed = Identity(kind=IdentityKind.CONTENT_HASH, value=" abc ")
     assert hashed.value == "abc"
     assert normalize_identity(IdentityKind.OPENALEX, " W1 ") == "W1"
-    assert Identity._canonicalize("raw") == "raw"
-    assert Identity._canonicalize({"kind": "nope", "value": "x"}) == {"kind": "nope", "value": "x"}
-    assert Identity._canonicalize({"kind": "doi", "value": 12}) == {"kind": "doi", "value": 12}
+    canonicalize = cast(Callable[[object], object], Identity._canonicalize)
+    assert canonicalize("raw") == "raw"
+    assert canonicalize({"kind": "nope", "value": "x"}) == {"kind": "nope", "value": "x"}
+    assert canonicalize({"kind": "doi", "value": 12}) == {"kind": "doi", "value": 12}
 
 
 def test_batch_check_request_requires_rows() -> None:

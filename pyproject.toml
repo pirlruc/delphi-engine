@@ -25,3 +25,42 @@ daedalus = { workspace = true }
 delphi-prometheus = { workspace = true }
 epimetheus = { workspace = true }
 hermes = { workspace = true }
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+namespace_packages = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+mypy_path = [
+    "contracts/src",
+    "delphi/src",
+    "daedalus/src",
+    "prometheus/src",
+    "epimetheus/src",
+    "hermes/src",
+]
+exclude = [
+    "^docs/guardrails/",
+    "^\\.github/",
+    "^\\.devops/",
+    "^\\.venv/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "contracts.tests.*",
+    "delphi.tests.*",
+    "daedalus.tests.*",
+    "prometheus.tests.*",
+    "epimetheus.tests.*",
+    "hermes.tests.*",
+]
+check_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_defs = false

@@ -89,5 +89,6 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - Proposal guardrails were removed. Do not recreate `docs/proposal/`.
 
 - An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
+- Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`. Per-member configs are not used when CI runs from the repository root, and duplicate test module names otherwise fail the run.
 
 *Last updated: 2026-11-20 (CI runs on pull requests via pydevops, commondevops, and containerdevops).*

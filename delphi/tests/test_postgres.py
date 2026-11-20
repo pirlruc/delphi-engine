@@ -1,6 +1,7 @@
 """Postgres catalog tests (SYS-002)."""
 
 import os
+from collections.abc import Generator
 from datetime import date
 from uuid import uuid4
 
@@ -65,7 +66,7 @@ def _work(title: str, published: date, doi: str | None = None) -> Work:
 
 
 @pytest.fixture
-def catalog() -> PostgresCatalog:
+def catalog() -> Generator[PostgresCatalog]:
     store = PostgresCatalog(_DSN, reset=True)
     yield store
     store.close()
