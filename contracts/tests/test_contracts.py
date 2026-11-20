@@ -153,6 +153,32 @@ def test_masked_context_forbidden_includes_later_neighbors() -> None:
     assert later.id in context.forbidden_ids()
 
 
+def test_masked_context_same_day_neighbor_is_forbidden() -> None:
+    seed = _work("seed", date(2015, 1, 1))
+    sibling = _work("sibling", date(2016, 1, 1))
+    neighborhood = Neighborhood(
+        seed=seed,
+        mode=NeighborhoodMode.UNION,
+        neighbors=(
+            Neighbor(
+                work=sibling,
+                edge_kind=EdgeKind.SIMILAR_TO,
+                direction=NeighborDirection.OUT,
+                score=0.5,
+            ),
+        ),
+    )
+    context = MaskedContext(
+        seed=seed,
+        mask_on=date(2016, 1, 1),
+        held_out_ids=(),
+        neighborhood=neighborhood,
+        subcategory="two_d_codes",
+        kind=PathKind.RESEARCH_PATH,
+    )
+    assert sibling.id in context.forbidden_ids()
+
+
 def test_hash_embed_is_deterministic_and_normalized() -> None:
     left = hash_embed("qr data matrix barcode", dim=16)
     right = hash_embed("qr data matrix barcode", dim=16)

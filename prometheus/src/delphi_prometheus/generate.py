@@ -23,7 +23,7 @@ def assert_no_leak(context: MaskedContext) -> None:
     leaked.update(
         item.work.id
         for item in context.neighborhood.neighbors
-        if item.work.published_on > context.mask_on
+        if item.work.published_on >= context.mask_on
     )
     if leaked:
         raise ContextLeakError(f"context leaks ids: {sorted(leaked)}")

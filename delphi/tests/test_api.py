@@ -3,6 +3,7 @@
 from datetime import date
 from uuid import uuid4
 
+import pytest
 from delphi_contracts.batch import BatchCheckRequest
 from delphi_contracts.category import Category
 from delphi_contracts.enums import (
@@ -28,6 +29,7 @@ from delphi.services import (
     ConsentError,
     MissingDependencyError,
     attach_bibliography,
+    build_masked_context,
     content_hash,
     generate_paths,
     require_consent,
@@ -367,6 +369,7 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
         kind=PathKind.RESEARCH_PATH,
         subcategory="two_d_codes",
         extraction_id=extraction.id,
+        as_of=date(2016, 1, 1),
     )
     proposals = generate_paths(catalog, request, _Generator())
     assert proposals[0].kind is PathKind.RESEARCH_PATH
@@ -443,8 +446,13 @@ def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
     request = PathRequest(
         kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=seed.id
     )
-    proposals = generate_paths(catalog, request, _Generator(), held_out_ids=(held.id, uuid4()))
+    context = build_masked_context(catalog, request, held_out_ids=(held.id,))
+    assert sibling.id not in {item.work.id for item in context.neighborhood.neighbors}
+    assert held.id not in {item.work.id for item in context.neighborhood.neighbors}
+    proposals = generate_paths(catalog, request, _Generator(), held_out_ids=(held.id,))
     assert proposals[0].kind is PathKind.RESEARCH_PATH
+    with pytest.raises(KeyError):
+        generate_paths(catalog, request, _Generator(), held_out_ids=(held.id, uuid4()))
     unknown = _work("undated", date(1970, 1, 1), "10.1/u")
     catalog.upsert_work(unknown)
     bounded = PathRequest(
@@ -457,7 +465,8 @@ def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
     open_ended = PathRequest(
         kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=unknown.id
     )
-    assert generate_paths(catalog, open_ended, _Generator())
+    with pytest.raises(ValueError, match="publication date"):
+        generate_paths(catalog, open_ended, _Generator())
     missing = BibliographyEntry(raw="no doi")
     assert attach_bibliography(catalog, seed.id, (missing,))[0].matched_work_id is None
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Hindcast masks treat a work published on the cut date as future, and an undated seed no longer disables the date filter.
+
 ### Changed
 
 - Pin guardrails 1.15.0, github-scaffold 1.12.0, and methodologies 1.11.1.

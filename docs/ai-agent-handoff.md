@@ -88,4 +88,6 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
 - Proposal guardrails were removed. Do not recreate `docs/proposal/`.
 
-*Last updated: 2026-11-20 (guardrails 1.15.0, scaffold 1.12.0, uv workspace)*
+- An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
+
+*Last updated: 2026-11-20 (hindcast mask uses one cut rule)*
