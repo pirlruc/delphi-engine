@@ -21,7 +21,6 @@ daedalus/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/daedalus/
   tests/
   docs/ai-agent-handoff.md

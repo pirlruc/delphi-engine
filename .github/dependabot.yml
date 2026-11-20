@@ -52,3 +52,15 @@ updates:
     directory: /
     patterns: ["*"]
     multi-ecosystem-group: all-dependencies
+  - package-ecosystem: uv
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
+  - package-ecosystem: docker
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
+  - package-ecosystem: gitsubmodule
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies

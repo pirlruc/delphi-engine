@@ -21,9 +21,6 @@ dev = [
     "ruff==0.15.12",
 ]
 
-[tool.uv.sources]
-delphi-contracts = { path = "../contracts", editable = true }
-
 [tool.setuptools.package-data]
 delphi_prometheus = ["py.typed"]
 

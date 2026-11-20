@@ -26,7 +26,6 @@ epimetheus/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/epimetheus/
   tests/
   docs/ai-agent-handoff.md

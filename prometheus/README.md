@@ -23,7 +23,6 @@ prometheus/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/delphi_prometheus/
   tests/
   docs/ai-agent-handoff.md

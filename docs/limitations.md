@@ -31,8 +31,8 @@ Known limits that are not GitHub issues. Product gaps that we intend to close li
 
 ## Guardrails
 
-- Pinned language pack is Python 3.13 at `docs/guardrails/` @ 1.3.0.
-- TypeScript/Tauri gates live in [`docs/proposal/guardrails/`](proposal/guardrails/README.md) until TOOL-002 is upstreamed. Do not copy them into `docs/guardrails/` (that path is a submodule).
+- Pinned language pack is Python 3.13 at `docs/guardrails/` @ 1.15.0.
+- Desktop TypeScript gates are the org node pack in that submodule. There is no local proposal pack.
 - Org Python floors are 95% statement and branch coverage.
 
 ## Environment

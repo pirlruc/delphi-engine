@@ -16,7 +16,7 @@ Let a scientist or patent searcher overlay a document they have on the global ca
 - Show **citation** and **content** neighborhoods (content = similar other papers, not the PDF in isolation).
 - Query `research_path` or `patent_whitespace` for those categories.
 
-**Phase 2 ([PROD-004](../docs/issues.yml)):** Tauri + React desktop. First reference manager is local Zotero SQLite. Reuse the same consent rule. Quality follows [`docs/proposal/guardrails/typescript/`](../docs/proposal/guardrails/typescript/) until that pack is upstreamed. Qiqqa and Mendeley wait until Zotero works.
+**Phase 2 ([PROD-004](../docs/issues.yml)):** the Tauri + React app lives in [pirlruc/hermes-desktop](https://github.com/pirlruc/hermes-desktop). This folder stays the Python client the tests use. Quality for the desktop app follows the org [node pack](https://github.com/pirlruc/guardrails/tree/1.15.0/node). Qiqqa and Mendeley wait until Zotero works.
 
 ## Layout (Phase 1)
 
@@ -25,7 +25,6 @@ hermes/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/hermes/
   tests/
   docs/ai-agent-handoff.md

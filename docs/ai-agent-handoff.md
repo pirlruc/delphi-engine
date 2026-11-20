@@ -7,7 +7,7 @@
 | **System** | Delphi Engine: research-path and patent-whitespace assistant with hindcasting |
 | **Type** | Workspace monorepo of isolated component folders (Python 3.13 / uv per package in Phase 1; Tauri/React in PROD-004) |
 | **Docs** | `docs/ai-agent-handoff.md`, `docs/issues.yml`, `docs/limitations.md`, `docs/prototype-corpus.md`, `docs/prototype-graphs.md`, `docs/evolution.md` |
-| **Methodology** | [github-issue-adr](https://github.com/pirlruc/methodologies/tree/1.2.1/github-issue-adr) (Epic = decision record, no ADR markdown files) |
+| **Methodology** | [github-issue-adr](https://github.com/pirlruc/methodologies/tree/1.11.1/github-issue-adr) (Epic = decision record, no ADR markdown files) |
 
 ## Current slice
 
@@ -22,7 +22,7 @@ Walking-skeleton prototype. Six Python packages, in-memory catalog by default, o
 | epimetheus | `epimetheus/` | Dual-graph temporal masks + Fake judge artifact. |
 | hermes | `hermes/` | CLI: batch-check, consented upload, neighborhood, generate. |
 
-Root owns GitHub templates, Cursor rules, `docs/issues.yml`, analog submodules, `scripts/serve_prototype.py`, and `docs/proposal/guardrails/`. Sibling imports except contracts are forbidden in package **src**. Tests and `scripts/serve_prototype.py` may wire siblings.
+Root owns GitHub templates, Cursor rules, `docs/issues.yml`, analog submodules, the uv workspace, and `scripts/serve_prototype.py`. Sibling imports except contracts are forbidden in package **src**. Tests and `scripts/serve_prototype.py` may wire siblings.
 
 ## How to run
 
@@ -56,11 +56,11 @@ System Python may be 3.12. Packages require **uv + CPython 3.13**.
 
 | Companion | How it is pinned |
 | --- | --- |
-| `pirlruc/guardrails` | Git submodule at `docs/guardrails/` tag **1.3.0** |
-| `pirlruc/github-scaffold` | Git submodule at `.github/scaffold/` tag **1.2.0** |
-| `pirlruc/methodologies` | Cited by tag `1.2.1`. Not a submodule. |
+| `pirlruc/guardrails` | Git submodule at `docs/guardrails/` tag **1.15.0** |
+| `pirlruc/github-scaffold` | Git submodule at `.github/scaffold/` tag **1.12.0** |
+| `pirlruc/methodologies` | Cited by tag `1.11.1`. Not a submodule. |
 
-TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-002](issues.yml)). Not org defaults.
+JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)).
 
 ## Locked decisions (do not reopen silently)
 
@@ -68,7 +68,7 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - Cloud LLM is allowed; Local (OpenAI-compatible, e.g. Ollama/vLLM) and Fake adapters are mandatory ([SYS-006](issues.yml)).
 - Users are **scientists and patent searchers**; query kind is `research_path` or `patent_whitespace` ([SYS-007](issues.yml)).
 - Prototype requires consented PDF upload, metadata extraction, and dual graphs (citation + content vs other papers) ([SYS-004](issues.yml), [SYS-008](issues.yml), [SYS-010](issues.yml)).
-- Hermes desktop is Tauri + React; follow the TS proposal until upstreamed ([TOOL-002](issues.yml), [PROD-004](issues.yml)).
+- Hermes desktop is Tauri + React in pirlruc/hermes-desktop; follow the org node pack ([TOOL-002](issues.yml), [PROD-004](issues.yml)).
 - First corpus subcategories: `transformers_foundation_models`, `computer_vision` (bounded), `steganography`, `two_d_codes` ([SYS-009](issues.yml)).
 - GitHub Actions: `workflow_dispatch` only ([GATE-001](issues.yml)).
 
@@ -84,7 +84,8 @@ TS-* gates: [`docs/proposal/guardrails/`](proposal/guardrails/README.md) ([TOOL-
 - `git remote -v` may display rewritten `x-access-token` URLs from a global `insteadOf`.
 - Creating GitHub issues is a publishing action.
 - Proposal guardrails under `docs/proposal/guardrails/` must not be read as `docs/guardrails/` thresholds.
-- Path dependencies must be **editable** or `uv sync` will keep a stale copy of `delphi_contracts` in each package venv.
+- Members share one workspace lockfile at the repository root. Run `uv sync --all-packages --all-extras` from the root.
 - Do not use `from __future__ import annotations` in `delphi/app.py`: FastAPI then treats `Depends` as a query field.
+- Proposal guardrails were removed. Do not recreate `docs/proposal/`.
 
-*Last updated: 2026-08-20 (identity normalize, full similar_to rebuild, same-day hindcast mask)*
+*Last updated: 2026-11-20 (guardrails 1.15.0, scaffold 1.12.0, uv workspace)*

@@ -1,7 +1,7 @@
 # Authored backlog for Delphi Engine. Source of truth for GitHub Epic/Task issues.
 #
-# Schema: https://github.com/pirlruc/github-scaffold/blob/1.2.0/docs/issues-schema.md
-# Methodology: https://github.com/pirlruc/methodologies/tree/1.2.1/github-issue-adr
+# Schema: https://github.com/pirlruc/github-scaffold/blob/1.12.0/docs/issues-schema.md
+# Methodology: https://github.com/pirlruc/methodologies/tree/1.11.1/github-issue-adr
 #
 # The Epic is the decision record — there are no ADR markdown files.
 # Deviations from guardrails go in docs/guardrail-deviations.yml, not here.
@@ -28,8 +28,8 @@ milestones:
             no issue templates, and no authored backlog. That invites invented
             ADR markdown and unenforceable quality gates.
           goal: >-
-            Pin pirlruc/guardrails at tag 1.3.0 and pirlruc/github-scaffold at
-            tag 1.2.0, cite github-issue-adr at methodologies 1.2.1, and make
+            Pin pirlruc/guardrails at tag 1.15.0 and pirlruc/github-scaffold at
+            tag 1.12.0, cite github-issue-adr at methodologies 1.11.1, and make
             docs/issues.yml the decision log. Methodologies is cited by tag,
             not vendored.
         architecture:
@@ -42,8 +42,8 @@ milestones:
             - scripts
             - .cursor/rules
         acceptance_criteria:
-          - docs/guardrails is pinned at tag 1.3.0
-          - .github/scaffold is pinned at tag 1.2.0
+          - docs/guardrails is pinned at tag 1.15.0
+          - .github/scaffold is pinned at tag 1.12.0
           - Issue/PR templates and Cursor rules come from sync-templates.sh
           - docs/issues.yml is the authored backlog; no docs/adr/ tree exists
           - Wrapper scripts under scripts/ call the scaffold copies
@@ -89,27 +89,25 @@ milestones:
               - test -x scripts/setup-issue-scaffold.sh
 
       - id: TOOL-002
-        status: open
-        title: Propose TypeScript and Tauri guardrails for upstream
+        status: done
+        title: Use the org node pack instead of a local TypeScript proposal
         overview:
           problem: >-
-            Hermes desktop will be Tauri plus React. pirlruc/guardrails 1.3.0
-            has no TypeScript pack, so a desktop package would either skip
-            gates or invent local thresholds that drift from the org.
+            Hermes desktop will be Tauri plus React. A local TS-* proposal
+            would drift from the org the moment guardrails shipped a
+            JavaScript and TypeScript pack.
           goal: >-
-            Author a TS-* proposal pack under docs/proposal/guardrails/ that
-            matches the three-file guardrails layout, for later copy into
-            pirlruc/guardrails. This workspace must not treat the proposal as
-            a pinned org default.
+            Delete docs/proposal/guardrails and follow the node pack pinned
+            with docs/guardrails. React and Tauri rules that the node pack
+            does not cover are upstream issues, not a second pack in this repo.
         architecture:
-          target: docs/proposal/guardrails/typescript
+          target: docs/guardrails/node
           modules:
-            - docs/proposal/guardrails
-            - hermes
+            - docs/guardrails
+            - README.md
         acceptance_criteria:
-          - typescript/guardrails.md, profile.md, and profile.thresholds.yml exist
-          - IDs use prefix TS and do not collide with PY/KT/CPP
-          - README states the pack is a proposal and how to upstream it
+          - docs/proposal does not exist
+          - README cites the node pack by GitHub URL
           - Phase 1 Hermes CLI remains on the pinned Python pack
         guardrail_refs:
           - PY-DELIV-001
@@ -120,12 +118,18 @@ milestones:
             instructions:
               files:
                 - docs/proposal/guardrails/README.md
-                - docs/proposal/guardrails/typescript/guardrails.md
-                - docs/proposal/guardrails/typescript/profile.md
-                - docs/proposal/guardrails/typescript/profile.thresholds.yml
             verification:
-              - test -f docs/proposal/guardrails/typescript/guardrails.md
-              - rg -n 'TS-RUN-001|TS-TEST-002|TS-DESK-001' docs/proposal/guardrails/typescript/guardrails.md
+              - test ! -d docs/proposal
+          - id: TOOL-002-T2
+            status: done
+            title: Remove the proposal and cite the node pack
+            instructions:
+              files:
+                - README.md
+                - docs/limitations.md
+            verification:
+              - test ! -d docs/proposal
+              - rg -n 'guardrails/tree/1.15.0/node' README.md
 
       - id: GATE-001
         status: open
@@ -150,7 +154,7 @@ milestones:
           - No workflow uses on.push, on.pull_request, or on.schedule
           - quality.yml uses workflow_dispatch only
           - Third-party actions are pinned by commit SHA (CI-001)
-          - Top-level permissions are contents: read (CI-025)
+          - "Top-level permissions are contents: read (CI-025)"
           - bash scripts/check-ci-local.sh matches the workflow checks
         guardrail_refs:
           - CI-001
@@ -184,8 +188,9 @@ milestones:
             In the context of a greenfield research-path system, facing the
             need to iterate on contracts while remaining extractable, we
             decided to keep every component as a folder that mirrors a
-            standalone pirlruc package (README, lockfile, src/, tests/,
-            docs/, CHANGELOG; Python via uv or Hermes desktop via pnpm),
+            standalone pirlruc package (README, src/, tests/,
+            docs/, CHANGELOG) inside one uv workspace with a single root
+            lockfile,
             to achieve a mechanical split later, accepting
             that GitHub Issues, CI, and analog pins stay at the workspace root
             until SCALE-003.
@@ -1159,20 +1164,19 @@ milestones:
             that reads local Zotero SQLite, reuses the Phase 1 consented PDF
             upload, batch-checks identifiers, and shows category-filtered
             research_path and patent_whitespace results. Quality follows
-            docs/proposal/guardrails/typescript until that pack is upstreamed.
+            the org node pack. The app itself lives in pirlruc/hermes-desktop.
         architecture:
-          target: hermes/ desktop client
+          target: https://github.com/pirlruc/hermes-desktop
           modules:
             - hermes
             - delphi
-            - docs/proposal/guardrails/typescript
         acceptance_criteria:
           - Zotero local SQLite import is the first reference-manager integration
           - Batch-check is chunked to stay within the Delphi request bound
           - PDF upload reuses the SYS-004 consent prompt; it is not a new policy
           - Offline browsing uses the local SQLite cache
           - Qiqqa and Mendeley are out of scope until Zotero works
-          - Desktop CI runs the proposed TS-* gates or records a deviation
+          - Desktop CI follows the org node pack or records a deviation
         guardrail_refs:
           - PY-API-002
         tasks:

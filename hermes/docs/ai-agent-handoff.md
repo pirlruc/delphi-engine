@@ -14,7 +14,7 @@ Walking skeleton ([PROTO-006](../../docs/issues.yml)). Typer CLI talks to Delphi
 - Upload without `--consent-destination delphi` must fail tests (exit 2).
 - Generate kinds: `research_path` and `patent_whitespace`, filtered by category/subcategory.
 - Content neighborhood is similar **other papers**, not a graph of the uploaded PDF alone ([SYS-010](../../docs/issues.yml)).
-- Zotero/Tauri is [PROD-004](../../docs/issues.yml); follow `docs/proposal/guardrails/typescript/`.
+- Zotero/Tauri is [PROD-004](../../docs/issues.yml) in [pirlruc/hermes-desktop](https://github.com/pirlruc/hermes-desktop). Follow the org node pack.
 
 ## Suggested next work
 

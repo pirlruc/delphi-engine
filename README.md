@@ -86,9 +86,9 @@ bash scripts/compose-up.sh
 
 ## Methodology
 
-[GitHub Issue-native ADR](https://github.com/pirlruc/methodologies/tree/1.2.1/github-issue-adr) — Epic = decision record, optional Y-statement, no ADR markdown files. Templates: [pirlruc/github-scaffold](https://github.com/pirlruc/github-scaffold) @ **1.2.0**. Quality: pin [pirlruc/guardrails](https://github.com/pirlruc/guardrails) at `docs/guardrails/` @ **1.3.0**. Applies to **new issues only**.
+[GitHub Issue-native ADR](https://github.com/pirlruc/methodologies/tree/1.11.1/github-issue-adr) — Epic = decision record, optional Y-statement, no ADR markdown files. Templates: [pirlruc/github-scaffold](https://github.com/pirlruc/github-scaffold) @ **1.12.0**. Quality: pin [pirlruc/guardrails](https://github.com/pirlruc/guardrails) at `docs/guardrails/` @ **1.15.0**. Applies to **new issues only**.
 
-TypeScript/Tauri gates for Hermes desktop are a **proposal** in [`docs/proposal/guardrails/`](docs/proposal/guardrails/) until they are copied into pirlruc/guardrails ([TOOL-002](docs/issues.yml)).
+The desktop app uses the org [node pack](https://github.com/pirlruc/guardrails/tree/1.15.0/node) ([TOOL-002](docs/issues.yml)). React and Tauri rules that pack does not cover are upstream issues, not a second pack in this repository.
 
 Authored backlog: [`docs/issues.yml`](docs/issues.yml).
 
@@ -134,9 +134,9 @@ flowchart LR
 
 | Companion | How it is pinned |
 | --- | --- |
-| `pirlruc/guardrails` | Git submodule SHA at `docs/guardrails/` (tag **1.3.0**) |
-| `pirlruc/github-scaffold` | Git submodule SHA at `.github/scaffold/` (tag **1.2.0**) |
-| `pirlruc/methodologies` | Cited by tag (`tree/1.2.1/github-issue-adr`). Not a submodule. |
+| `pirlruc/guardrails` | Git submodule SHA at `docs/guardrails/` (tag **1.15.0**) |
+| `pirlruc/github-scaffold` | Git submodule SHA at `.github/scaffold/` (tag **1.12.0**) |
+| `pirlruc/methodologies` | Cited by tag (`tree/1.11.1/github-issue-adr`). Not a submodule. |
 
 Private clones need `CURSOR_REPO_READ_TOKEN` (or equivalent) at VM start. `.gitmodules` uses HTTPS URLs without tokens.
 
@@ -157,7 +157,6 @@ Python package gates (ruff, mypy, interrogate, pytest with 95% coverage) run as 
 - [`docs/evolution.md`](docs/evolution.md) — model choices, why JEPA is not the catalog embedder, embed-text rules, cost notes
 - [`docs/eval-rubric.md`](docs/eval-rubric.md) — judge scores
 - [`docs/prototype-demo.json`](docs/prototype-demo.json) — last Fake-LLM demo artifact
-- [`docs/proposal/guardrails/`](docs/proposal/guardrails/) — proposed TS-* pack
 - [`docs/ai-agent-handoff.md`](docs/ai-agent-handoff.md)
 - [`docs/issues.yml`](docs/issues.yml)
 - [`docs/limitations.md`](docs/limitations.md)

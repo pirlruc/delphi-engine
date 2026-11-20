@@ -17,7 +17,6 @@ delphi/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/delphi/
   tests/
   docs/ai-agent-handoff.md

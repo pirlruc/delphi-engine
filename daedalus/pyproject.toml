@@ -29,10 +29,6 @@ dev = [
 [project.scripts]
 daedalus = "daedalus.cli:main"
 
-[tool.uv.sources]
-delphi-contracts = { path = "../contracts", editable = true }
-delphi = { path = "../delphi", editable = true }
-
 [tool.setuptools.package-data]
 daedalus = ["py.typed", "fixtures/slice.json"]
 

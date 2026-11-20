@@ -15,13 +15,12 @@ contracts/
   README.md
   CHANGELOG.md
   pyproject.toml
-  uv.lock
   src/delphi_contracts/
   tests/
   docs/ai-agent-handoff.md
 ```
 
-Matches [pymjolnir](https://github.com/pirlruc/pymjolnir): `src/` layout, uv, Google docstrings, pytest. Import name is `delphi_contracts`.
+Matches [pymjolnir](https://github.com/pirlruc/pymjolnir): `src/` layout, uv, Google docstrings, pytest. The lockfile is the workspace `uv.lock` at the repository root. Import name is `delphi_contracts`.
 
 ## Status
 

@@ -29,10 +29,6 @@ dev = [
 [project.scripts]
 hermes = "hermes.cli:app"
 
-[tool.uv.sources]
-delphi-contracts = { path = "../contracts", editable = true }
-delphi = { path = "../delphi", editable = true }
-
 [tool.setuptools.package-data]
 hermes = ["py.typed"]
 
