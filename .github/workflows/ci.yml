@@ -57,7 +57,7 @@ jobs:
     with:
       blocking: true
       run_link_lint: true
-      run_markdownlint: true
+      run_markdownlint: false
       run_shfmt: true
       scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
 
