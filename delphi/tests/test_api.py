@@ -167,7 +167,9 @@ def test_self_loop_and_duplicate_edges_ignored() -> None:
     real = Edge(from_work=work.id, to_work=other.id, kind=EdgeKind.CITES)
     catalog.add_edge(real)
     catalog.add_edge(real)
-    assert catalog.edges() == (real,)
+    updated = real.model_copy(update={"score": 0.4})
+    catalog.add_edge(updated)
+    assert catalog.edges() == (updated,)
 
 
 def test_upload_consent_and_bibliography_match() -> None:
@@ -414,7 +416,8 @@ def test_rebuild_all_and_skip_foreign_identity() -> None:
     catalog.upsert_work(owner)
     catalog.upsert_work(other)
     thief = _work("thief", date(2014, 3, 1), "10.1/own")
-    catalog.upsert_work(thief)
+    with pytest.raises(ValueError, match="belongs to another work"):
+        catalog.upsert_work(thief)
     check = catalog.batch_check(
         BatchCheckRequest(identities=(Identity(kind=IdentityKind.DOI, value="10.1/own"),))
     )
@@ -422,6 +425,7 @@ def test_rebuild_all_and_skip_foreign_identity() -> None:
     catalog.put_embedding(owner.id, hash_embed("owner text"), "m1")
     catalog.put_embedding(other.id, hash_embed("other text"), "m1")
     catalog.put_embedding(thief.id, hash_embed("thief text"), "m2")
+    catalog.upsert_work(thief.model_copy(update={"identities": ()}))
     catalog.rebuild_all_similar_to(k=8)
     assert catalog.get_embedding(owner.id) is not None
     ranked = scored_neighbors(

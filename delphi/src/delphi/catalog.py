@@ -198,16 +198,19 @@ class MemoryCatalog:
         Returns:
             The stored work.
         """
+        for identity in work.identities:
+            key = (identity.kind.value, identity.value)
+            owner = self._identities.get(key)
+            if owner is not None and owner != work.id:
+                raise ValueError(
+                    f"identity {identity.kind.value}:{identity.value} belongs to another work"
+                )
         self._works[work.id] = work
         stale = [key for key, owner in self._identities.items() if owner == work.id]
         for key in stale:
             del self._identities[key]
         for identity in work.identities:
-            key = (identity.kind.value, identity.value)
-            owner = self._identities.get(key)
-            if owner is not None and owner != work.id:
-                continue
-            self._identities[key] = work.id
+            self._identities[(identity.kind.value, identity.value)] = work.id
         return work
 
     def get_work(self, work_id: UUID) -> Work | None:
@@ -241,8 +244,15 @@ class MemoryCatalog:
         """
         if edge.from_work == edge.to_work:
             return
-        if edge in self._edges:
-            return
+        for index, existing in enumerate(self._edges):
+            same = (
+                existing.from_work == edge.from_work
+                and existing.to_work == edge.to_work
+                and existing.kind is edge.kind
+            )
+            if same:
+                self._edges[index] = edge
+                return
         self._edges.append(edge)
 
     def edges(self, kind: EdgeKind | None = None) -> tuple[Edge, ...]:

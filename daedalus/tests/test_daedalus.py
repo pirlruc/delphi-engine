@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import httpx
+import pytest
 from delphi.catalog import MemoryCatalog
 from delphi_contracts.enums import IdentityKind, WorkKind
 from delphi_contracts.identity import Identity
@@ -424,6 +425,7 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
     assert reconstruct_abstract(None) == ""
     assert reconstruct_abstract({"qr": [0, 2], "codes": [1]}) == "qr codes qr"
     assert reconstruct_abstract({"qr": "bad"}) == ""
+    assert reconstruct_abstract({"qr": [10**9]}) == ""
 
     pages = {"n": 0}
 
@@ -535,3 +537,54 @@ def test_request_json_retries_429(monkeypatch) -> None:
     payload = request_json(client, "GET", "http://example.test/x", attempts=3)
     assert payload == {"ok": True}
     assert calls["n"] == 2
+
+
+def test_request_json_does_not_retry_client_errors(monkeypatch) -> None:
+    from daedalus.retry import request_json
+
+    monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
+    calls = {"n": 0}
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(404, json={"missing": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(httpx.HTTPStatusError):
+        request_json(client, "GET", "http://example.test/missing", attempts=3)
+    assert calls["n"] == 1
+
+
+def test_request_json_retries_transport_and_server_errors(monkeypatch) -> None:
+    from daedalus.retry import request_json
+
+    monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise httpx.ConnectError("down", request=request)
+        if calls["n"] == 2:
+            return httpx.Response(500, request=request)
+        if calls["n"] == 3:
+            return httpx.Response(429, headers={"Retry-After": "soon"}, request=request)
+        return httpx.Response(200, json={"ok": True}, request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    payload = request_json(client, "POST", "http://example.test/x", json_body={"a": 1}, attempts=4)
+    assert payload == {"ok": True}
+    assert calls["n"] == 4
+
+
+def test_request_json_raises_after_retry_budget(monkeypatch) -> None:
+    from daedalus.retry import request_json
+
+    monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("down", request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(httpx.ConnectError):
+        request_json(client, "GET", "http://example.test/down", attempts=2)

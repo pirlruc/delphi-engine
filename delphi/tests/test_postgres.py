@@ -118,6 +118,20 @@ def test_postgres_works_edges_embeddings_and_neighborhood(catalog: PostgresCatal
     assert catalog.edges(EdgeKind.SIMILAR_TO)
 
 
+def test_postgres_rejects_identity_theft_and_updates_edge_score(catalog: PostgresCatalog) -> None:
+    owner = _work("owner", date(2014, 1, 1), "10.1/own")
+    catalog.upsert_work(owner)
+    thief = _work("thief", date(2015, 1, 1), "10.1/own")
+    with pytest.raises(ValueError, match="belongs to another work"):
+        catalog.upsert_work(thief)
+    edge = Edge(from_work=owner.id, to_work=thief.id, kind=EdgeKind.CITES, score=0.2)
+    catalog.upsert_work(thief.model_copy(update={"identities": ()}))
+    catalog.add_edge(edge)
+    catalog.add_edge(edge.model_copy(update={"score": 0.9}))
+    stored = catalog.edges(EdgeKind.CITES)
+    assert stored[0].score == 0.9
+
+
 def test_postgres_extractions_and_empty_vector(catalog: PostgresCatalog) -> None:
     extraction = Extraction(id=uuid4(), content_hash="a" * 64, title="PDF", body_text="x")
     catalog.put_extraction(extraction)
