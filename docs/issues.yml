@@ -1,0 +1,1371 @@
+# Authored backlog for Delphi Engine. Source of truth for GitHub Epic/Task issues.
+#
+# Schema: https://github.com/pirlruc/github-scaffold/blob/1.12.0/docs/issues-schema.md
+# Methodology: https://github.com/pirlruc/methodologies/tree/1.11.1/github-issue-adr
+#
+# The Epic is the decision record — there are no ADR markdown files.
+# Deviations from guardrails go in docs/guardrail-deviations.yml, not here.
+#
+# `id` values are permanent: issues are matched by the [ID] in their title.
+#
+# Sync:
+#   bash scripts/setup-issue-scaffold.sh
+#   bash scripts/issues-sync.sh --repo pirlruc/delphi-engine --yaml docs/issues.yml --validate-only
+#   bash scripts/issues-sync.sh --repo pirlruc/delphi-engine --yaml docs/issues.yml --dry-run
+#   bash scripts/issues-sync.sh --repo pirlruc/delphi-engine --yaml docs/issues.yml
+#
+# Publishing issues is gated. Run --dry-run and get approval before a live sync.
+
+milestones:
+  - name: Tooling — Analog & methodology
+    epics:
+      - id: TOOL-001
+        status: open
+        title: Pin analog repos and adopt github-issue-adr
+        overview:
+          problem: >-
+            The repo was an empty README, so agents had no pinned guardrails,
+            no issue templates, and no authored backlog. That invites invented
+            ADR markdown and unenforceable quality gates.
+          goal: >-
+            Pin pirlruc/guardrails at tag 1.15.0 and pirlruc/github-scaffold at
+            tag 1.12.0, cite github-issue-adr at methodologies 1.11.1, and make
+            docs/issues.yml the decision log. Methodologies is cited by tag,
+            not vendored.
+        architecture:
+          target: Analog pins plus docs/issues.yml as the decision log
+          modules:
+            - docs/guardrails
+            - .github/scaffold
+            - docs/issues.yml
+            - docs/issues-sync-targets.yml
+            - scripts
+            - .cursor/rules
+        acceptance_criteria:
+          - docs/guardrails is pinned at tag 1.15.0
+          - .github/scaffold is pinned at tag 1.12.0
+          - Issue/PR templates and Cursor rules come from sync-templates.sh
+          - docs/issues.yml is the authored backlog; no docs/adr/ tree exists
+          - Wrapper scripts under scripts/ call the scaffold copies
+        guardrail_refs:
+          - PY-DELIV-001
+          - CI-018
+        tasks:
+          - id: TOOL-001-T1
+            status: done
+            title: Pin guardrails and github-scaffold submodules
+            instructions:
+              files:
+                - .gitmodules
+                - docs/guardrails
+                - .github/scaffold
+            verification:
+              - git -C docs/guardrails describe --tags --exact-match HEAD
+              - git -C .github/scaffold describe --tags --exact-match HEAD
+          - id: TOOL-001-T2
+            status: done
+            title: Sync GitHub templates and Cursor rules from the scaffold
+            instructions:
+              files:
+                - .github/ISSUE_TEMPLATE
+                - .github/pull_request_template.md
+                - .cursor/rules
+                - docs/guardrail-deviations.yml
+            verification:
+              - test -f .github/ISSUE_TEMPLATE/epic-template.md
+              - test -f .cursor/rules/github-issue-adr.mdc
+          - id: TOOL-001-T3
+            status: done
+            title: Author issues.yml, targets, and root wrapper scripts
+            instructions:
+              files:
+                - docs/issues.yml
+                - docs/issues-sync-targets.yml
+                - scripts/issues-sync.sh
+                - scripts/setup-issue-scaffold.sh
+                - scripts/sync-templates.sh
+            verification:
+              - bash scripts/issues-sync.sh --validate-only
+              - test -x scripts/setup-issue-scaffold.sh
+
+      - id: TOOL-002
+        status: done
+        title: Use the org node pack instead of a local TypeScript proposal
+        overview:
+          problem: >-
+            Hermes desktop will be Tauri plus React. A local TS-* proposal
+            would drift from the org the moment guardrails shipped a
+            JavaScript and TypeScript pack.
+          goal: >-
+            Delete docs/proposal/guardrails and follow the node pack pinned
+            with docs/guardrails. React and Tauri rules that the node pack
+            does not cover are upstream issues, not a second pack in this repo.
+        architecture:
+          target: docs/guardrails/node
+          modules:
+            - docs/guardrails
+            - README.md
+        acceptance_criteria:
+          - docs/proposal does not exist
+          - README cites the node pack by GitHub URL
+          - Phase 1 Hermes CLI remains on the pinned Python pack
+        guardrail_refs:
+          - PY-DELIV-001
+        tasks:
+          - id: TOOL-002-T1
+            status: done
+            title: Author the TypeScript proposal pack
+            instructions:
+              files:
+                - docs/proposal/guardrails/README.md
+            verification:
+              - test ! -d docs/proposal
+          - id: TOOL-002-T2
+            status: done
+            title: Remove the proposal and cite the node pack
+            instructions:
+              files:
+                - README.md
+                - docs/limitations.md
+            verification:
+              - test ! -d docs/proposal
+              - rg -n 'guardrails/tree/1.15.0/node' README.md
+
+      - id: GATE-001
+        status: open
+        title: GitHub Actions run only on workflow_dispatch
+        overview:
+          problem: >-
+            The repo is private and Actions minutes are scarce. Default
+            push/PR/schedule workflows would spend quota on every commit.
+          goal: >-
+            In the context of a private prototype repo, facing limited
+            Actions minutes, we decided that CI workflows use
+            workflow_dispatch only, to keep quota for intentional runs,
+            accepting that PRs are not gated on GitHub until quota allows
+            push/PR triggers. Local parity is scripts/check-ci-local.sh
+            (CI-008).
+        architecture:
+          target: .github/workflows/quality.yml
+          modules:
+            - .github/workflows
+            - scripts/check-ci-local.sh
+        acceptance_criteria:
+          - No workflow uses on.push, on.pull_request, or on.schedule
+          - quality.yml uses workflow_dispatch only
+          - Third-party actions are pinned by commit SHA (CI-001)
+          - "Top-level permissions are contents: read (CI-025)"
+          - bash scripts/check-ci-local.sh matches the workflow checks
+        guardrail_refs:
+          - CI-001
+          - CI-008
+          - CI-025
+        tasks:
+          - id: GATE-001-T1
+            status: done
+            title: Add dispatch-only quality workflow and local parity script
+            instructions:
+              files:
+                - .github/workflows/quality.yml
+                - scripts/check-ci-local.sh
+            verification:
+              - bash scripts/check-ci-local.sh
+              - rg -n 'workflow_dispatch' .github/workflows/quality.yml
+              - "! rg -n '^  (push|pull_request|schedule):' .github/workflows/*.yml"
+
+  - name: Phase 0 — System decisions
+    epics:
+      - id: SYS-001
+        status: open
+        title: Isolated-folder monorepo now, one-repo-per-library later
+        overview:
+          problem: >-
+            Guardrails prefer one git repository per publishable library, but
+            the first slice needs all components in one place so contracts can
+            move without cross-repo churn. A tangled monorepo would make the
+            later split a rewrite.
+          goal: >-
+            In the context of a greenfield research-path system, facing the
+            need to iterate on contracts while remaining extractable, we
+            decided to keep every component as a folder that mirrors a
+            standalone pirlruc package (README, src/, tests/,
+            docs/, CHANGELOG) inside one uv workspace with a single root
+            lockfile,
+            to achieve a mechanical split later, accepting
+            that GitHub Issues, CI, and analog pins stay at the workspace root
+            until SCALE-003.
+        architecture:
+          target: Workspace root owns methodology; each component folder is a package
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - prometheus
+            - epimetheus
+            - hermes
+        acceptance_criteria:
+          - Each component folder has README, docs/ai-agent-handoff.md, CHANGELOG.md
+          - Python components use src/<package>/ and tests/ like pymjolnir
+          - Components do not import sibling source trees except contracts via an explicit path extra
+          - Root docs/issues.yml remains the only decision log (no per-folder docs/adr/)
+          - Out of scope - publishing each folder to its own GitHub repo before SCALE-003
+        guardrail_refs:
+          - PY-API-002
+          - PY-RUN-001
+        tasks:
+          - id: SYS-001-T1
+            status: done
+            title: Seed isolated component folder skeletons
+            instructions:
+              files:
+                - contracts/README.md
+                - delphi/README.md
+                - daedalus/README.md
+                - prometheus/README.md
+                - epimetheus/README.md
+                - hermes/README.md
+            verification:
+              - test -f contracts/docs/ai-agent-handoff.md
+              - test -f hermes/docs/ai-agent-handoff.md
+
+      - id: SYS-002
+        status: open
+        title: Prototype on Postgres and pgvector; defer distributed graph stores
+        overview:
+          problem: >-
+            The original Delphi RTFC asked for Neptune/TigerGraph plus
+            Milvus/Qdrant at billions of nodes before any eval loop exists.
+            That locks schema and ops cost to an unproven thesis.
+          goal: >-
+            In the context of serving a dated citation graph and a content
+            similarity graph, facing an unproven hindcasting thesis, we
+            decided that Phase 1 uses one Postgres instance with pgvector,
+            a cites edge table, and a similar_to edge table, to achieve
+            both graphs without a second database, accepting that Phase 3
+            will replace the store when corpus size or query shape demands it.
+        architecture:
+          target: Prototype store behind the Delphi API, not leaked into clients
+          modules:
+            - delphi
+            - daedalus
+            - contracts
+        acceptance_criteria:
+          - Phase 1 persistence is Postgres 16 plus pgvector, started from Compose
+          - Work records, cites edges, similar_to edges, and embeddings share one store
+          - No Neptune, TigerGraph, Neo4j, or clustered Milvus in Phase 1
+          - Delphi owns the repository interfaces so SCALE-001 can swap engines
+        guardrail_refs:
+          - PY-API-002
+          - PY-PERF-001
+        tasks:
+          - id: SYS-002-T1
+            status: done
+            title: Document the prototype store contract in Delphi
+            instructions:
+              files:
+                - delphi/README.md
+                - delphi/docs/ai-agent-handoff.md
+            verification:
+              - rg -n 'pgvector|Postgres' delphi/README.md
+
+      - id: SYS-003
+        status: open
+        title: Canonical work identity for batch existence checks
+        overview:
+          problem: >-
+            Hermes must ask Delphi whether thousands of local papers already
+            exist without uploading PDFs. A billion-scale graph is useless if
+            the same paper has three identifiers and no merge rule.
+          goal: >-
+            In the context of library sync and ingest, facing heterogeneous
+            IDs (DOI, arXiv, OpenAlex, patent number), we decided that every
+            Work has a stable internal UUID plus an ordered identity map,
+            and that Phase 1 matching is exact-identifier only, to achieve a
+            fast batch-check API, accepting that fuzzy title/author matching
+            waits for PROD-005.
+        architecture:
+          target: contracts identity schema consumed by Delphi and Hermes
+          modules:
+            - contracts
+            - delphi
+            - hermes
+            - daedalus
+        acceptance_criteria:
+          - A Work may carry DOI, arXiv id, OpenAlex id, patent number, and content hash
+          - Batch-check accepts up to thousands of identifiers in one request and returns known/unknown per row
+          - Phase 1 never uploads PDF bytes during existence checks
+          - Unknown identifiers may queue a consented PDF upload; known identifiers pull catalog metadata instead
+        guardrail_refs:
+          - PY-API-001
+          - PY-PERF-002
+        tasks:
+          - id: SYS-003-T1
+            status: done
+            title: Specify identity fields in the contracts package README
+            instructions:
+              files:
+                - contracts/README.md
+            verification:
+              - rg -n 'DOI|OpenAlex|patent' contracts/README.md
+
+      - id: SYS-004
+        status: open
+        title: Consented PDF upload is required for a working prototype
+        overview:
+          problem: >-
+            The first SYS-004 kept PDFs off the wire in Phase 1. A working
+            prototype now requires upload plus extraction so a user can start
+            from a paper they actually have, not only from a DOI list.
+          goal: >-
+            In the context of a local research hub, facing copyright and
+            privacy risk, we decided that Phase 1 does accept raw PDFs after
+            an explicit per-file consent prompt naming the destination, to
+            achieve extract-then-query, accepting that unconsented bulk
+            library upload and silent background sync remain forbidden.
+        architecture:
+          target: Hermes upload UX, Delphi upload API, Daedalus extraction
+          modules:
+            - hermes
+            - delphi
+            - daedalus
+        acceptance_criteria:
+          - PDF bytes are accepted only after a consent prompt that names Delphi as destination
+          - Batch-check of identifiers still does not require a PDF
+          - Extraction output is stored as structured fields, not as a second anonymous blob store
+          - A working prototype demo is upload → extract metadata → dual graphs → category query (SYS-008, SYS-010, PROTO-008, PROTO-006)
+        guardrail_refs:
+          - PY-SEC-001
+          - TS-SEC-004
+        tasks:
+          - id: SYS-004-T1
+            status: done
+            title: Record the prototype source policy in Daedalus and Hermes READMEs
+            instructions:
+              files:
+                - daedalus/README.md
+                - hermes/README.md
+                - docs/limitations.md
+            verification:
+              - rg -n 'PDF|consent|OpenAlex' daedalus/README.md hermes/README.md
+          - id: SYS-004-T2
+            status: done
+            title: Reverse the no-PDF prototype policy in docs
+            instructions:
+              files:
+                - docs/issues.yml
+                - README.md
+                - hermes/README.md
+                - daedalus/README.md
+            verification:
+              - rg -n 'consent' hermes/README.md
+              - rg -n 'upload one PDF' hermes/README.md
+
+      - id: SYS-005
+        status: open
+        title: Six isolated components including Prometheus and contracts
+        overview:
+          problem: >-
+            The original four RTFC boxes store, ingest, evaluate, and display,
+            but nothing owns research-path generation, and nothing owns the
+            shared schema. Stuffing generation into Delphi or Epimetheus
+            would couple serving with eval.
+          goal: >-
+            In the context of identifying research paths and patent
+            whitespaces, facing a missing generator, we decided on six
+            folders - contracts, delphi, daedalus, prometheus, epimetheus,
+            hermes - to achieve a testable generation surface scored by
+            hindcasting, accepting one extra package versus the original
+            RTFC.
+        architecture:
+          target: Component map in the root README
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - prometheus
+            - epimetheus
+            - hermes
+        acceptance_criteria:
+          - contracts owns Pydantic models and the OpenAPI document
+          - delphi is the query/sync API and catalog, not an ingest/eval orchestrator
+          - daedalus writes works, citation edges, similar_to edges, embeddings, and extraction jobs
+          - prometheus generates research paths and patent-whitespace hypotheses from a masked neighborhood
+          - epimetheus is a batch eval harness with temporal masking, not a required runtime for queries
+          - hermes is the user-facing client (CLI with PDF upload in Phase 1, Tauri desktop in Phase 2)
+        guardrail_refs:
+          - PY-API-002
+        tasks:
+          - id: SYS-005-T1
+            status: done
+            title: Publish the component map in the root README
+            instructions:
+              files:
+                - README.md
+                - docs/ai-agent-handoff.md
+            verification:
+              - rg -n 'prometheus|epimetheus|daedalus' README.md
+
+      - id: SYS-006
+        status: open
+        title: LLM provider must run on cloud and on local runtimes
+        overview:
+          problem: >-
+            Path generation, PDF extraction, and LLM-as-judge need a model.
+            Locking to one cloud vendor blocks air-gapped use; locking to
+            local-only blocks the first prototype if no GPU is present.
+          goal: >-
+            In the context of generation and extraction, facing mixed
+            deployment constraints, we decided on one provider interface with
+            Cloud, Local (OpenAI-compatible, e.g. Ollama or vLLM), and Fake
+            adapters, to achieve cloud calls in the prototype while remaining
+            able to switch to local weights via config, accepting that model
+            quality will differ across adapters and must be recorded on each
+            EvalRun.
+        architecture:
+          target: Shared provider interface used by prometheus, daedalus, epimetheus
+          modules:
+            - prometheus
+            - daedalus
+            - epimetheus
+            - contracts
+        acceptance_criteria:
+          - Adapter is selected by config, not by rewriting call sites
+          - Tests use Fake; CI never needs a cloud key or a GPU
+          - Cloud and Local share the same request/response schema
+          - EvalRun records provider name, model id, and cloud vs local
+        guardrail_refs:
+          - PY-PERF-002
+          - PY-SEC-003
+        tasks:
+          - id: SYS-006-T1
+            status: done
+            title: Record the provider-adapter decision in component READMEs
+            instructions:
+              files:
+                - prometheus/README.md
+                - daedalus/README.md
+                - epimetheus/README.md
+            verification:
+              - rg -n 'Ollama|vLLM|Fake|cloud' prometheus/README.md daedalus/README.md
+
+      - id: SYS-007
+        status: open
+        title: Serve working scientists and patent searchers in the same prototype
+        overview:
+          problem: >-
+            A papers-only path finder ignores patent whitespace. A
+            patent-only landscape tool ignores the next experiment. The
+            product must do both for the same uploaded PDF.
+          goal: >-
+            In the context of dual users, facing two query intents, we
+            decided that every generate call takes a kind of research_path or
+            patent_whitespace plus category/subcategory filters, to achieve
+            one catalog and one generator, accepting that the first corpus
+            field must have both a paper graph and a patent slice (SYS-009).
+        architecture:
+          target: PathRequest.kind in contracts, served by Delphi, produced by Prometheus
+          modules:
+            - contracts
+            - delphi
+            - prometheus
+            - hermes
+        acceptance_criteria:
+          - Query kind is an enum, not two different APIs
+          - Prototype demo can answer both kinds for the same extracted PDF
+          - Hindcasting can hold out a paper or a patent family
+        guardrail_refs:
+          - PY-API-001
+        tasks:
+          - id: SYS-007-T1
+            status: done
+            title: Document dual query kinds in contracts and Prometheus READMEs
+            instructions:
+              files:
+                - contracts/README.md
+                - prometheus/README.md
+            verification:
+              - rg -n 'research_path|patent_whitespace' contracts/README.md prometheus/README.md
+
+      - id: SYS-008
+        status: open
+        title: Categories and subcategories are the query axis
+        overview:
+          problem: >-
+            "Next research path or patent" is undefined unless the user can
+            name the neighborhood. Identifier lists and raw semantic k-NN
+            do not match how scientists or examiners browse a field.
+          goal: >-
+            In the context of extract-then-query, facing mixed paper and
+            patent taxonomies, we decided on a Category model with scheme
+            (openalex_topic or cpc), code, label, and optional parent, to
+            achieve filterable path and whitespace queries, accepting that
+            LLM-assigned categories from a PDF are suggestions until a user
+            confirms them.
+        architecture:
+          target: contracts Category plus Delphi filter on generate/neighborhood
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - hermes
+        acceptance_criteria:
+          - Extracted PDFs carry suggested categories and subcategories
+          - Generate queries require kind plus at least one category or subcategory
+          - OpenAlex topics and CPC classes are both representable
+          - User can override suggested categories before generate
+        guardrail_refs:
+          - PY-API-001
+        tasks:
+          - id: SYS-008-T1
+            status: done
+            title: Document the Category model in contracts
+            instructions:
+              files:
+                - contracts/README.md
+                - docs/prototype-corpus.md
+            verification:
+              - rg -n 'openalex_topic|cpc|subcategor' contracts/README.md
+
+      - id: SYS-009
+        status: open
+        title: First corpus is CV, 2D codes, steganography, and bounded transformers
+        overview:
+          problem: >-
+            The owner will use the prototype on transformers/foundation
+            models, computer vision, steganography, and 2D codes. A
+            CRISPR-style slice would be denser for patents in isolation but
+            would not get real PDFs from this user. Unbounded cs.CV plus
+            all of foundation-model literature would drown the niche topics.
+          goal: >-
+            In the context of a personal prototype, facing four related CS
+            topics, we decided on one ingest with four subcategories
+            (transformers_foundation_models, computer_vision, steganography,
+            two_d_codes), hard caps so transformers cannot exceed the other
+            three combined, and CPC/keyword bounds that keep 2D-code and
+            watermarking patents in the slice, to achieve a corpus the owner
+            will actually query, accepting weaker FM-only patent signal and
+            the need to hindcast on codes/stego rather than 'Attention Is
+            All You Need'.
+        architecture:
+          target: Four subcategories in one Daedalus ingest; see docs/prototype-corpus.md
+          modules:
+            - daedalus
+            - contracts
+            - docs/prototype-corpus.md
+        acceptance_criteria:
+          - Subcategory ids are transformers_foundation_models, computer_vision, steganography, two_d_codes
+          - computer_vision excludes medical imaging and autonomous driving unless a later Epic adds them
+          - Transformers slice is capped at no more than the sum of the other three
+          - Patent filters start from G06K 7/, G06K 19/, bounded G06V/G06T, keyword-bounded G06N
+          - docs/prototype-corpus.md records the decision and the failure modes
+        guardrail_refs:
+          - PY-API-002
+        tasks:
+          - id: SYS-009-T1
+            status: done
+            title: Author the corpus-field explanation
+            instructions:
+              files:
+                - docs/prototype-corpus.md
+            verification:
+              - rg -n 'two_d_codes|steganography|transformers_foundation_models' docs/prototype-corpus.md
+          - id: SYS-009-T2
+            status: done
+            title: Record owner-chosen subcategories and ingest bounds
+            instructions:
+              files:
+                - docs/prototype-corpus.md
+                - docs/issues.yml
+                - README.md
+            verification:
+              - rg -n 'G06K' docs/prototype-corpus.md
+              - rg -n 'Named' docs/prototype-corpus.md
+
+      - id: SYS-010
+        status: open
+        title: Prototype builds citation and content graphs including other papers
+        overview:
+          problem: >-
+            An uploaded PDF is useless as an isolated document. Citation
+            links miss related work that never cites. A content graph of
+            only the uploaded file has nothing to connect to.
+          goal: >-
+            In the context of extract-then-query, facing both bibliographic
+            and semantic relatedness, we decided that Phase 1 extracts
+            title, authors, keywords, and bibliography from the PDF, writes
+            directed cites edges (PDF bibliography plus catalog citations),
+            and writes similar_to edges from embeddings of this paper's
+            text against embeddings of other works in the slice, to achieve
+            dual neighborhoods for generate, accepting catalog-side text is
+            title-plus-abstract until licensed full text exists.
+        architecture:
+          target: Dual graph in Delphi; extraction in Daedalus; see docs/prototype-graphs.md
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - prometheus
+            - epimetheus
+            - hermes
+            - docs/prototype-graphs.md
+        acceptance_criteria:
+          - Extracted metadata includes title, authors, keywords, and bibliography
+          - Citation graph includes catalog cites and PDF-extracted cites matched by identity
+          - Content graph k-NN includes the uploaded work and other ingested works
+          - Neighborhood API supports citation, content, and union modes
+          - Temporal masks drop future nodes on both graphs
+        guardrail_refs:
+          - PY-API-001
+          - PY-PERF-001
+        tasks:
+          - id: SYS-010-T1
+            status: done
+            title: Document dual-graph behavior in prototype-graphs.md
+            instructions:
+              files:
+                - docs/prototype-graphs.md
+                - README.md
+                - delphi/README.md
+            verification:
+              - rg -n 'similar_to|cites' docs/prototype-graphs.md
+              - rg -n 'content graph' README.md
+
+  - name: Phase 1 — Prototype
+    epics:
+      - id: PROTO-001
+        status: done
+        title: Shared contracts package and OpenAPI for the walking skeleton
+        overview:
+          problem: >-
+            Six folders will drift if Work, Identity, BatchCheck, PathQuery,
+            and EvalRun exist only as implicit dicts.
+          goal: >-
+            Ship a contracts Python package (Python 3.13, uv) that exports
+            Pydantic models and an OpenAPI 3 document Delphi implements and
+            the other packages consume.
+        architecture:
+          target: contracts/ as a pymjolnir-shaped library
+          modules:
+            - contracts
+        acceptance_criteria:
+          - contracts/pyproject.toml targets Python 3.13 and uv.lock is committed
+          - Models cover Work, Identity, Category, BatchCheck, PdfUpload, Extraction (title, authors, keywords, bibliography, body text), Neighborhood (citation, content, union), PathRequest (kind research_path or patent_whitespace), EvalRun
+          - OpenAPI is generated from the models and checked in
+          - Package tests meet pinned PY-TEST-002 floors or a recorded deviation exists
+        guardrail_refs:
+          - PY-RUN-001
+          - PY-RUN-003
+          - PY-API-001
+          - PY-TEST-002
+          - PY-DOC-002
+        tasks:
+          - id: PROTO-001-T1
+            status: done
+            title: Create the contracts package skeleton and identity/batch-check models
+            instructions:
+              files:
+                - contracts/pyproject.toml
+                - contracts/src/delphi_contracts
+                - contracts/tests
+            verification:
+              - cd contracts && uv run pytest
+            guardrail_refs:
+              - PY-TEST-001
+
+      - id: PROTO-002
+        status: open
+        title: Delphi prototype API with batch-check and neighborhood query
+        overview:
+          problem: >-
+            Clients and eval cannot run without a catalog that answers "do
+            these identifiers exist?" and "what is the dated citation
+            neighborhood of this work?".
+          goal: >-
+            Implement Delphi as FastAPI over Postgres/pgvector with REST
+            only. GraphQL is out of scope until SCALE-001 says otherwise.
+        architecture:
+          target: delphi/ FastAPI service
+          modules:
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - POST /v1/works:batch-check returns known/unknown for a list of identifiers
+          - POST /v1/generate accepts kind, category, subcategory, and a seed work or extraction id
+          - GET neighborhood supports mode citation, content, or union and returns dated neighbors tagged by edge kind
+          - Repository interfaces hide SQL so SCALE-001 can swap the engine
+          - Compose stack brings up API plus Postgres locally
+        guardrail_refs:
+          - PY-API-001
+          - PY-PERF-002
+          - PY-TEST-002
+        tasks:
+          - id: PROTO-002-T1
+            status: done
+            title: Implement batch-check and neighborhood endpoints with tests
+            instructions:
+              files:
+                - delphi/src
+                - delphi/tests
+                - delphi/README.md
+            verification:
+              - cd delphi && uv run pytest
+              - batch-check is covered for mixed known/unknown identifier lists
+          - id: PROTO-002-T2
+            status: done
+            title: Postgres catalog behind the repository interface
+            instructions:
+              files:
+                - delphi/src/delphi/postgres.py
+                - docker-compose.yml
+                - Dockerfile
+                - scripts/serve_prototype.py
+            verification:
+              - cd delphi && uv run pytest
+              - rg -n 'PostgresCatalog|DELPHI_DATABASE_URL' delphi/src/delphi/postgres.py scripts/serve_prototype.py
+
+      - id: PROTO-003
+        status: open
+        title: Daedalus metadata ingest for the named field (papers and patents)
+        overview:
+          problem: >-
+            Hindcasting and dual-audience queries need real dated citation
+            edges in both papers and patents. LLM extraction of user PDFs is
+            a separate epic (PROTO-008).
+          goal: >-
+            Ingest the SYS-009 slice (four subcategories: transformers,
+            bounded computer vision, steganography, 2D codes) from OpenAlex
+            and a matching PatentsView/CPC extract, with idempotent upserts.
+            LLM extraction of user PDFs is PROTO-008.
+        architecture:
+          target: daedalus/ ingest CLI writing through Delphi or the shared store
+          modules:
+            - daedalus
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - Ingest respects SYS-009 subcategory caps and exclusions
+          - Re-running ingest does not duplicate works or edges
+          - Paper and patent connectors are separate modules
+          - Catalog works store title, authors, keywords/topics, abstract, and source citation edges
+          - Failure of a page/batch is retried; poison records are skipped with a log
+        guardrail_refs:
+          - PY-SEC-001
+          - PY-PERF-002
+        tasks:
+          - id: PROTO-003-T1
+            status: done
+            title: Implement OpenAlex and patent slice ingest with idempotent upserts
+            instructions:
+              files:
+                - daedalus/src
+                - daedalus/tests
+            verification:
+              - cd daedalus && uv run pytest
+              - Fixture ingest creates paper and patent works with dates and categories
+          - id: PROTO-003-T2
+            status: done
+            title: Map live OpenAlex/PatentsView JSON and page the named slice
+            instructions:
+              files:
+                - daedalus/src/daedalus/fetch.py
+                - daedalus/src/daedalus/cli.py
+            verification:
+              - cd daedalus && uv run pytest
+              - rg -n 'fetch_named_slice|authorships|abstract_inverted_index' daedalus/src/daedalus/fetch.py
+
+      - id: PROTO-004
+        status: done
+        title: Prometheus research-path generator on a masked neighborhood
+        overview:
+          problem: >-
+            The product is not a literature search engine. Without a
+            generator, Hermes has nothing to show and Epimetheus has nothing
+            to score.
+          goal: >-
+            Given a seed work or extracted PDF and an explicitly supplied
+            past-only neighborhood filtered by category/subcategory,
+            Prometheus returns ranked research_path or patent_whitespace
+            proposals that cite only context works.
+        architecture:
+          target: prometheus/ library plus CLI
+          modules:
+            - prometheus
+            - contracts
+        acceptance_criteria:
+          - Generator accepts a MaskedContext object; it cannot fetch the catalog itself
+          - MaskedContext includes citation neighbors and content neighbors tagged by edge kind
+          - kind is research_path or patent_whitespace
+          - Output is structured (claims, rationale, cited context ids, categories) not free prose only
+          - LLM access uses the SYS-006 provider interface with a deterministic Fake for tests
+          - Prompts forbid using knowledge after the mask date
+        guardrail_refs:
+          - PY-PERF-002
+          - PY-TEST-001
+        tasks:
+          - id: PROTO-004-T1
+            status: done
+            title: Implement MaskedContext path generation with a fake provider
+            instructions:
+              files:
+                - prometheus/src
+                - prometheus/tests
+            verification:
+              - cd prometheus && uv run pytest
+              - Tests fail if the generator is given future work ids in context
+
+      - id: PROTO-005
+        status: done
+        title: Epimetheus hindcasting with leak-proof temporal masks
+        overview:
+          problem: >-
+            If the eval context includes the held-out paper, its descendants,
+            or any later work, scores are meaningless and the product thesis
+            cannot be tested.
+          goal: >-
+            Select a historical work, delete it plus all works with later
+            dates plus its downstream citation closure plus later
+            content-graph neighbors from the context, call Prometheus,
+            and score the proposal against the held-out work with
+            LLM-as-judge plus embedding similarity.
+        architecture:
+          target: epimetheus/ batch harness
+          modules:
+            - epimetheus
+            - prometheus
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - Mask construction is unit-tested against a fixture graph with known leak cases
+          - Context passed to Prometheus contains no held-out id, no later publication date, no citation descendant, and no later content-graph neighbor
+          - Judge scores novelty, relevance, and accuracy on a documented rubric
+          - A run writes metrics (judge scores, embedding similarity) to a JSON artifact
+          - HITL UI is out of scope (PROD-006)
+        guardrail_refs:
+          - PY-TEST-001
+          - PY-TEST-002
+          - PY-PERF-002
+        tasks:
+          - id: PROTO-005-T1
+            status: done
+            title: Implement temporal mask graph traversal with leak tests
+            instructions:
+              files:
+                - epimetheus/src
+                - epimetheus/tests
+            verification:
+              - cd epimetheus && uv run pytest
+              - Leak fixtures (future paper, citation descendant, later similar_to neighbor, same-year-after) all fail closed
+          - id: PROTO-005-T2
+            status: done
+            title: Implement LLM-as-judge scoring and metrics artifact
+            instructions:
+              files:
+                - epimetheus/src
+                - epimetheus/tests
+            verification:
+              - Fake judge provider produces a stored EvalRun JSON with the three scores
+
+      - id: PROTO-006
+        status: done
+        title: Hermes prototype CLI with consented PDF upload and category queries
+        overview:
+          problem: >-
+            A working prototype must start from a PDF the user has, extract
+            it, and query the next research path or patent by category.
+            A desktop stack can wait; the CLI cannot omit upload.
+          goal: >-
+            Phase 1 Hermes is a Python CLI plus local SQLite cache that
+            prompts for consent, uploads one PDF, shows extracted
+            categories, and prints generate results for both query kinds.
+            Zotero and Tauri wait for PROD-004.
+        architecture:
+          target: hermes/ Python CLI
+          modules:
+            - hermes
+            - contracts
+        acceptance_criteria:
+          - CLI refuses upload unless a consent flag or interactive yes names the destination
+          - CLI prints extracted title, authors, keywords, and bibliography match counts
+          - CLI can show citation and content neighborhoods for the uploaded work
+          - CLI can generate research_path and patent_whitespace filtered by category/subcategory
+          - Local SQLite caches returned works and extractions for offline reprint
+        guardrail_refs:
+          - PY-RUN-001
+          - PY-TEST-001
+          - PY-SEC-001
+        tasks:
+          - id: PROTO-006-T1
+            status: done
+            title: Implement consenting upload, extract status, and category generate CLI
+            instructions:
+              files:
+                - hermes/src
+                - hermes/tests
+            verification:
+              - cd hermes && uv run pytest
+              - Tests refuse upload without consent
+
+      - id: PROTO-007
+        status: done
+        title: Prototype go/no-go on the named field
+        overview:
+          problem: >-
+            Shipping ingest and APIs without a user demo or a hindcasting
+            result would recreate the original RTFC trap.
+          goal: >-
+            A working prototype is (1) upload PDF → extract metadata →
+            attach citation and content graphs against other papers →
+            query research_path and patent_whitespace by category, and
+            (2) Epimetheus numbers on the ingested slice. Phase 2 starts
+            only when this epic closes with that evidence.
+        architecture:
+          target: docs plus hermes demo plus epimetheus run artifacts
+          modules:
+            - hermes
+            - epimetheus
+            - docs
+        acceptance_criteria:
+          - Documented commands cover the PDF demo and a hindcast run
+          - The PDF demo shows extracted metadata plus citation and content neighbors
+          - Metrics include trial count, mean judge scores, embedding similarity
+          - Both query kinds are exercised on the extracted PDF
+          - Known limitations of the slice are listed in docs/limitations.md
+          - SYS-009 subcategories are the generate filters for the PDF demo
+        guardrail_refs:
+          - PY-PERF-001
+        tasks:
+          - id: PROTO-007-T1
+            status: done
+            title: Add reproducible demo and eval entrypoints
+            instructions:
+              files:
+                - hermes/README.md
+                - epimetheus/README.md
+                - docs/limitations.md
+            verification:
+              - rg -n 'consent|research_path|patent_whitespace' hermes/README.md
+              - rg -n 'hindcast|EvalRun' epimetheus/README.md
+
+      - id: PROTO-008
+        status: done
+        title: PDF extraction of metadata, bibliography, and body text
+        overview:
+          problem: >-
+            Metadata ingest does not read a user PDF. Without extraction,
+            the upload has no title, authors, keywords, cites, or text to
+            embed against other papers.
+          goal: >-
+            Daedalus extracts bibliographic metadata (title, authors,
+            keywords, dates, identifiers), bibliography entries, and body
+            text from a consented PDF using the SYS-006 provider, with
+            retries. Bibliography rows are batch-checked into cites edges
+            (SYS-010). Queue depth and DLQ at product scale remain PROD-002.
+        architecture:
+          target: daedalus extraction path behind Delphi upload
+          modules:
+            - daedalus
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - Extraction is idempotent on content hash
+          - Output includes title, authors, keywords, bibliography, body text, suggested categories
+          - Bibliography identities are submitted to batch-check; unmatched cites are stored unresolved
+          - Fake provider covers tests; cloud or local is config
+          - Failed extraction is retried then recorded as failed, not silent
+        guardrail_refs:
+          - PY-PERF-002
+          - PY-SEC-001
+        tasks:
+          - id: PROTO-008-T1
+            status: done
+            title: Implement PDF extraction with Fake provider tests
+            instructions:
+              files:
+                - daedalus/src
+                - daedalus/tests
+            verification:
+              - cd daedalus && uv run pytest
+
+      - id: PROTO-009
+        status: done
+        title: Content graph from embeddings of the upload and other papers
+        overview:
+          problem: >-
+            Citation edges miss related work that never cites. Embedding
+            only the uploaded PDF cannot place it among other papers.
+          goal: >-
+            Embed catalog works (title plus abstract) and the uploaded
+            PDF (extracted body) with the same model, write similar_to
+            top-k edges, and expose content and union neighborhoods.
+            Distributed vector databases remain SCALE-001.
+        architecture:
+          target: daedalus embed job plus Delphi k-NN / similar_to table
+          modules:
+            - daedalus
+            - delphi
+            - contracts
+        acceptance_criteria:
+          - Catalog ingest produces embeddings for works with abstracts
+          - PDF extraction triggers an embed of the new work and refreshes its similar_to edges
+          - Neighbors are other works in the slice, not self-loops
+          - GET neighborhood mode=content returns dated similar_to neighbors
+          - Embeddings are idempotent on (work id, model id)
+        guardrail_refs:
+          - PY-PERF-001
+          - PY-API-001
+        tasks:
+          - id: PROTO-009-T1
+            status: done
+            title: Embed catalog and uploaded works and store similar_to edges
+            instructions:
+              files:
+                - daedalus/src
+                - delphi/src
+                - delphi/tests
+            verification:
+              - cd daedalus && uv run pytest
+              - cd delphi && uv run pytest
+
+  - name: Phase 2 — Product slice
+    epics:
+      - id: PROD-001
+        status: open
+        title: Expand patent ingest beyond the prototype CPC slice
+        overview:
+          problem: >-
+            The prototype holds one CPC neighborhood. Product users will
+            query adjacent classes and continuations the first slice omits.
+          goal: >-
+            Widen Daedalus patent coverage (more CPC prefixes, assignments,
+            continuations) without changing Work identity. Office numbers are
+            already canonicalized (hyphens/spaces) across PatentsView and
+            EPO/WIPO/PatSnap/Lens. Prototype slice ingest stays PROTO-003.
+        architecture:
+          target: daedalus patent connector
+          modules:
+            - daedalus
+            - contracts
+            - delphi
+        acceptance_criteria:
+          - Patent works round-trip through identity and batch-check
+          - Citation or continuation edges that the source provides are stored
+          - Connector stays isolated from the paper ingest module
+        guardrail_refs:
+          - PY-API-002
+          - PY-SEC-001
+        tasks:
+          - id: PROD-001-T1
+            status: done
+            title: Add a patent connector and identity fields
+            instructions:
+              files:
+                - daedalus/src
+                - contracts/src/delphi_contracts
+            verification:
+              - cd daedalus && uv run pytest
+              - cd contracts && uv run pytest
+          - id: PROD-001-T2
+            status: done
+            title: Add EPO, WIPO, PatSnap, and Lens.org patent fetchers
+            instructions:
+              files:
+                - daedalus/src/daedalus/patents.py
+                - daedalus/src/daedalus/cli.py
+                - daedalus/tests/test_patents.py
+            verification:
+              - cd daedalus && uv run pytest
+              - rg -n 'fetch_epo|fetch_lens|fetch_patsnap|fetch_wipo' daedalus/src/daedalus/patents.py
+
+      - id: PROD-002
+        status: open
+        title: Extraction at ingest scale with queues and dead-letter handling
+        overview:
+          problem: >-
+            PROTO-008 extracts consented user PDFs. Live HTTP fetch retries
+            with exponential backoff and 429 handling (`daedalus.retry`).
+            Catalog-scale extraction of bulk full texts still needs a durable
+            queue and DLQ.
+          goal: >-
+            Put extraction behind a durable queue, with rate limits,
+            exponential backoff, retries, and a dead-letter queue, applied
+            to records that lack structured fields the eval uses.
+        architecture:
+          target: daedalus extraction worker
+          modules:
+            - daedalus
+        acceptance_criteria:
+          - Worker is skippable; metadata-only ingest still works
+          - LLM failures land on a retry queue then a DLQ, never silent drop
+          - Rate limiting is tested with the Fake provider and a 429 stub
+          - Extraction schema remains the contracts version from PROTO-008
+        guardrail_refs:
+          - PY-PERF-002
+          - PY-SEC-001
+        tasks:
+          - id: PROD-002-T1
+            status: open
+            title: Implement extraction worker with backoff and DLQ tests
+            instructions:
+              files:
+                - daedalus/src
+                - daedalus/tests
+            verification:
+              - cd daedalus && uv run pytest
+              - Tests cover 429 backoff and DLQ after exhausted retries
+
+      - id: PROD-003
+        status: open
+        title: Improve content-graph text beyond title-plus-abstract
+        overview:
+          problem: >-
+            Phase 1 content edges use composed catalog text (title, abstract,
+            identifiers, CPC/keywords, capped claims, truncated upload body).
+            Licensed full text or a hybrid lexical index would change k-NN
+            quality once that loop is measured ([docs/evolution.md](evolution.md)).
+            JEPA is not the catalog embedder.
+          goal: >-
+            Re-embed catalog works when better text is available (claims,
+            sections) without changing the neighborhood API. First content
+            graph remains PROTO-009.
+        architecture:
+          target: delphi vector repository on pgvector
+          modules:
+            - delphi
+            - daedalus
+            - prometheus
+        acceptance_criteria:
+          - Re-embed is idempotent on (work id, model id, text version)
+          - Neighborhood API is unchanged
+          - Prometheus still receives temporally masked content neighbors
+        guardrail_refs:
+          - PY-PERF-001
+          - PY-API-001
+        tasks:
+          - id: PROD-003-T1
+            status: open
+            title: Re-embed catalog works when richer text is available
+            instructions:
+              files:
+                - delphi/src
+                - daedalus/src
+            verification:
+              - cd delphi && uv run pytest
+
+      - id: PROD-004
+        status: open
+        title: Hermes desktop with Zotero import and explicit PDF consent
+        overview:
+          problem: >-
+            The product promise is a local research hub over thousands of
+            user papers. The Phase 1 CLI cannot read Zotero or show paths
+            visually.
+          goal: >-
+            Replace or wrap the CLI with a Tauri plus React desktop app
+            that reads local Zotero SQLite, reuses the Phase 1 consented PDF
+            upload, batch-checks identifiers, and shows category-filtered
+            research_path and patent_whitespace results. Quality follows
+            the org node pack. The app itself lives in pirlruc/hermes-desktop.
+        architecture:
+          target: https://github.com/pirlruc/hermes-desktop
+          modules:
+            - hermes
+            - delphi
+        acceptance_criteria:
+          - Zotero local SQLite import is the first reference-manager integration
+          - Batch-check is chunked to stay within the Delphi request bound
+          - PDF upload reuses the SYS-004 consent prompt; it is not a new policy
+          - Offline browsing uses the local SQLite cache
+          - Qiqqa and Mendeley are out of scope until Zotero works
+          - Desktop CI follows the org node pack or records a deviation
+        guardrail_refs:
+          - PY-API-002
+        tasks:
+          - id: PROD-004-T1
+            status: open
+            title: Specify desktop stack and Zotero reader against the batch-check API
+            instructions:
+              files:
+                - hermes/README.md
+                - hermes/docs/ai-agent-handoff.md
+            verification:
+              - rg -n 'Zotero|consent|Tauri' hermes/README.md
+
+      - id: PROD-005
+        status: open
+        title: Fuzzy identity resolution beyond exact identifiers
+        overview:
+          problem: >-
+            Local libraries often lack DOIs. Exact matching will mark too
+            many papers unknown and queue needless uploads.
+          goal: >-
+            Add a documented matching ladder (DOI, then arXiv, then
+            title+first-author+year) with confidence scores returned by
+            batch-check.
+        architecture:
+          target: delphi identity resolver
+          modules:
+            - delphi
+            - contracts
+            - hermes
+        acceptance_criteria:
+          - batch-check returns match method and confidence
+          - Ambiguous matches are not auto-merged
+          - Tests cover colliding titles in the same year
+        guardrail_refs:
+          - PY-API-001
+          - PY-TEST-001
+        tasks:
+          - id: PROD-005-T1
+            status: open
+            title: Implement the matching ladder with ambiguity tests
+            instructions:
+              files:
+                - delphi/src
+                - contracts/src/delphi_contracts
+            verification:
+              - cd delphi && uv run pytest
+
+      - id: PROD-006
+        status: open
+        title: Human-in-the-loop queue for low-confidence hindcasts
+        overview:
+          problem: >-
+            LLM-as-judge will disagree with researchers on novelty. Those
+            disagreements are training signal, not only a dashboard number.
+          goal: >-
+            Store flagged EvalRuns and present a review queue (Hermes or a
+            thin web view) so a reviewer can override scores. No second
+            desktop app.
+        architecture:
+          target: epimetheus review records served through Delphi
+          modules:
+            - epimetheus
+            - delphi
+            - hermes
+        acceptance_criteria:
+          - Low-confidence runs are queryable via Delphi
+          - Reviewer override is stored with identity and timestamp
+          - Queue is optional; batch eval still runs headless
+        guardrail_refs:
+          - PY-API-001
+        tasks:
+          - id: PROD-006-T1
+            status: open
+            title: Persist flagged EvalRuns and expose a review list endpoint
+            instructions:
+              files:
+                - epimetheus/src
+                - delphi/src
+            verification:
+              - cd epimetheus && uv run pytest
+              - cd delphi && uv run pytest
+
+  - name: Phase 3 — Scale-out
+    epics:
+      - id: SCALE-001
+        status: open
+        title: Split citation graph and vector search when Postgres saturates
+        overview:
+          problem: >-
+            Billion-edge citation traversal and dense k-NN will eventually
+            exceed one Postgres instance. Choosing Neptune or Milvus before
+            measuring that point wastes the prototype.
+          goal: >-
+            Replace Delphi repository implementations using evidence from
+            PROTO-007 and Phase 2 load - graph engine for multi-hop
+            citation, clustered vector store for k-NN - without changing
+            the OpenAPI contract.
+        architecture:
+          target: delphi repository adapters
+          modules:
+            - delphi
+        acceptance_criteria:
+          - Swap is justified with measured query latency or storage limits from the product slice
+          - Public REST contract remains versioned in contracts
+          - GraphQL is added only if Hermes query shapes require it
+          - Dual-write or backfill plan is documented in the Delphi handoff
+        guardrail_refs:
+          - PY-PERF-001
+          - PY-API-001
+        tasks:
+          - id: SCALE-001-T1
+            status: open
+            title: Record saturation evidence and choose graph and vector engines
+            instructions:
+              files:
+                - delphi/docs/ai-agent-handoff.md
+                - docs/issues.yml
+            verification:
+              - Handoff cites measured limits before naming a vendor
+
+      - id: SCALE-002
+        status: open
+        title: Streaming ingest with retries and dead-letter queues at throughput
+        overview:
+          problem: >-
+            Continuous arXiv, USPTO, and consented user uploads will outrun
+            a CLI ingest loop. The original Daedalus RTFC is correct here,
+            but only after the prototype schema is stable.
+          goal: >-
+            Run Daedalus as workers on a durable queue, with rate-limited
+            LLM calls, exponential backoff, and DLQs, writing into the
+            SCALE-001 stores.
+        architecture:
+          target: daedalus workers
+          modules:
+            - daedalus
+        acceptance_criteria:
+          - At-least-once ingest with idempotent upserts
+          - Poison messages land in a DLQ with a replay tool
+          - Backpressure is visible in metrics
+        guardrail_refs:
+          - PY-PERF-002
+        tasks:
+          - id: SCALE-002-T1
+            status: open
+            title: Replace CLI ingest with queued workers and a DLQ replay tool
+            instructions:
+              files:
+                - daedalus/src
+                - daedalus/README.md
+            verification:
+              - cd daedalus && uv run pytest
+
+      - id: SCALE-003
+        status: open
+        title: Split component folders into standalone repositories
+        overview:
+          problem: >-
+            Guardrails prefer one repo per library. The folder layout exists
+            so this split is mechanical once contracts are stable.
+          goal: >-
+            Extract contracts, delphi, daedalus, prometheus, epimetheus, and
+            hermes into standalone git repositories, each pinning guardrails
+            and github-scaffold, and consuming contracts as a versioned
+            package.
+        architecture:
+          target: New GitHub repos under pirlruc, this repo becomes the workspace or Delphi home
+          modules:
+            - contracts
+            - delphi
+            - daedalus
+            - prometheus
+            - epimetheus
+            - hermes
+        acceptance_criteria:
+          - Each extracted repo has its own docs/issues.yml for later work
+          - Cross-repo links are GitHub URLs pinned by tag (cross-repo-links rule)
+          - This repo either remains Delphi or becomes a thin aggregator README
+        guardrail_refs:
+          - PY-API-002
+          - PY-DELIV-001
+        tasks:
+          - id: SCALE-003-T1
+            status: open
+            title: Define extract order starting with contracts
+            instructions:
+              files:
+                - README.md
+                - docs/ai-agent-handoff.md
+            verification:
+              - README states extract order and that contracts publishes first

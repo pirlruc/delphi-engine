@@ -1,0 +1,54 @@
+# Prototype store (SYS-002). Default `scripts/serve_prototype.py` still uses an
+# in-memory catalog so unit tests do not need Docker. Compose brings up API plus
+# Postgres 16 / pgvector when you want the SQL backend locally.
+#
+#   docker compose up --build
+#   curl -s http://127.0.0.1:8000/health
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: delphi
+      POSTGRES_PASSWORD: delphi
+      POSTGRES_DB: delphi
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delphi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - delphi-pg:/var/lib/postgresql/data
+
+  delphi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    environment:
+      DELPHI_DATABASE_URL: postgresql://delphi:delphi@postgres:5432/delphi
+      DELPHI_LLM_KIND: fake
+    ports:
+      - "8000:8000"
+
+volumes:
+  delphi-pg:

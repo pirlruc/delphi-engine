@@ -1,0 +1,57 @@
+# Quality (manual)
+
+# Trigger policy: workflow_dispatch only (private-repo Actions minutes).
+# Do not add push, pull_request, or schedule until quota allows (GATE-001).
+# Analog: github-scaffold templates/ci-quality.yml dispatch-only default.
+#
+# Local parity (CI-008): bash scripts/check-ci-local.sh
+# Python package gates (ruff/mypy/pytest): bash scripts/python-gates.sh
+# Python gates stay local unless quota allows a dispatch job (GATE-001).
+# Submodules are public, so checkout uses submodules: recursive.
+
+name: quality
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    name: Validate manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+
+      - name: Validate issues.yml
+        run: python3 .github/scaffold/scripts/issues-sync.py --yaml docs/issues.yml --validate-only
+
+      - name: Parse YAML configs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+          paths = [
+              Path("docs/issues.yml"),
+              Path("docs/issues-sync-targets.yml"),
+              Path("docs/guardrail-deviations.yml"),
+              Path(".github/dependabot.yml"),
+              Path(".github/workflows/quality.yml"),
+          ]
+          for path in paths:
+              yaml.safe_load(path.read_text(encoding="utf-8"))
+              print(f"ok {path}")
+          PY

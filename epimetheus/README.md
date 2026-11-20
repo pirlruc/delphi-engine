@@ -1,0 +1,50 @@
+# epimetheus
+
+Hindcasting evaluation harness.
+
+Treat this folder as if it were a standalone repository (`pirlruc/epimetheus`). Depend on `contracts`. Call Prometheus with a context you built. Read the catalog through Delphi's API, not by importing Delphi internals. The prototype CLI runs a packaged fixture graph so it does not import Delphi.
+
+## Role
+
+1. Pick a historical work.
+2. Build a temporal mask: drop that work, every later work, its **citation descendants**, and **content-graph neighbors that only exist because of later papers**.
+3. Ask Prometheus to propose the next step from the remaining past.
+4. Score the proposal against the held-out work (LLM-as-judge plus embedding similarity).
+   The judge uses the SYS-006 provider (Fake in tests; cloud or local OpenAI-compatible
+   such as Ollama or vLLM in live runs). EvalRun records which adapter ran.
+
+Held-out work may be a paper or a patent family ([SYS-007](../docs/issues.yml)).
+
+If a future paper or patent can reach the prompt, the run is invalid. That rule is stricter than model quality.
+
+Phase 1 is a batch CLI plus JSON metrics ([PROTO-005](../docs/issues.yml), [PROTO-007](../docs/issues.yml)). Human review is [PROD-006](../docs/issues.yml), not a second desktop app.
+
+## Layout
+
+```
+epimetheus/
+  README.md
+  CHANGELOG.md
+  pyproject.toml
+  src/epimetheus/
+  tests/
+  docs/ai-agent-handoff.md
+```
+
+## Status
+
+Walking skeleton ([PROTO-005](../docs/issues.yml)). The CLI runs the QR-2014 vs color-QR-2020 fixture hindcast with the Fake judge.
+
+## Commands
+
+```bash
+cd epimetheus
+uv sync --frozen --extra dev
+uv run pytest
+uv run epimetheus --output evalrun.json
+uv run epimetheus --works-json ../daedalus/src/daedalus/fixtures/slice.json --output eval-summary.json
+```
+
+`--works-json` runs one earliest-vs-latest trial per subcategory and writes trial count plus mean novelty/relevance/accuracy/embedding similarity.
+
+The artifact is an `EvalRun` JSON object: judge scores (novelty, relevance, accuracy) plus embedding similarity.

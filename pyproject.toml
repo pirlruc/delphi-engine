@@ -1,0 +1,27 @@
+[project]
+name = "delphi-engine"
+version = "0.1.0"
+description = "Workspace root for Delphi Engine. The installable packages are the members."
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+    "contracts",
+    "delphi",
+    "daedalus",
+    "prometheus",
+    "epimetheus",
+    "hermes",
+]
+
+[tool.uv.sources]
+delphi-contracts = { workspace = true }
+delphi = { workspace = true }
+daedalus = { workspace = true }
+delphi-prometheus = { workspace = true }
+epimetheus = { workspace = true }
+hermes = { workspace = true }
