@@ -133,34 +133,47 @@ milestones:
 
       - id: GATE-001
         status: open
-        title: GitHub Actions run only on workflow_dispatch
+        title: GitHub Actions run on pull requests and pushes to main
         overview:
           problem: >-
-            The repo is private and Actions minutes are scarce. Default
-            push/PR/schedule workflows would spend quota on every commit.
+            A dispatch-only workflow never runs at merge time, so a green
+            local script is the only gate. The repository is public, so
+            standard-runner minutes are not billed.
           goal: >-
-            In the context of a private prototype repo, facing limited
-            Actions minutes, we decided that CI workflows use
-            workflow_dispatch only, to keep quota for intentional runs,
-            accepting that PRs are not gated on GitHub until quota allows
-            push/PR triggers. Local parity is scripts/check-ci-local.sh
-            (CI-008).
+            In the context of a public prototype, facing checks that did
+            not exist at merge time, we decided to run CI on pull_request
+            and on pushes to main, with concurrency cancellation and one
+            aggregate job, to achieve a merge-time gate, accepting the
+            extra public-runner minutes. Local parity remains
+            scripts/check-ci-local.sh (CI-008).
         architecture:
           target: .github/workflows/quality.yml
           modules:
             - .github/workflows
             - scripts/check-ci-local.sh
         acceptance_criteria:
-          - No workflow uses on.push, on.pull_request, or on.schedule
-          - quality.yml uses workflow_dispatch only
+          - quality.yml and ci.yml run on pull_request and on pushes to main
+          - ci.yml cancels in-progress runs for the same ref
+          - ci.yml ends in an aggregate required job
+          - "Reusable callers pin a commit SHA and pass the same value as devops_ref or scripts_ref (CI-018, CI-034)"
           - Third-party actions are pinned by commit SHA (CI-001)
-          - "Top-level permissions are contents: read (CI-025)"
-          - bash scripts/check-ci-local.sh matches the workflow checks
+          - "Workflow permissions start empty and each job grants only what it needs (CI-025)"
+          - bash scripts/check-ci-local.sh matches the manifest checks
         guardrail_refs:
           - CI-001
           - CI-008
           - CI-025
         tasks:
+          - id: GATE-001-T2
+            status: done
+            title: Run CI on pull requests and pushes to main
+            instructions:
+              files:
+                - .github/workflows/ci.yml
+                - .github/workflows/quality.yml
+            verification:
+              - rg -n 'pull_request' .github/workflows/ci.yml
+              - rg -n 'required:' .github/workflows/ci.yml
           - id: GATE-001-T1
             status: done
             title: Add dispatch-only quality workflow and local parity script
@@ -171,7 +184,6 @@ milestones:
             verification:
               - bash scripts/check-ci-local.sh
               - rg -n 'workflow_dispatch' .github/workflows/quality.yml
-              - "! rg -n '^  (push|pull_request|schedule):' .github/workflows/*.yml"
 
   - name: Phase 0 — System decisions
     epics:

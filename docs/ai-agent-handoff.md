@@ -90,4 +90,4 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 
 - An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
 
-*Last updated: 2026-11-20 (hindcast mask uses one cut rule)*
+*Last updated: 2026-11-20 (CI runs on pull requests via pydevops, commondevops, and containerdevops).*

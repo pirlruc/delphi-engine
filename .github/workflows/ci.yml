@@ -1,0 +1,209 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  python-quality:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+      actions: write
+      packages: read
+      security-events: write
+      pull-requests: write
+    uses: pirlruc/pydevops/.github/workflows/python-quality.yml@2b9bbf03b18309df42eec0af508ca82a8150686c
+    with:
+      strictness_level: Medium
+      docstring_format: Google
+      enable_dast: false
+      uv_workspace: true
+      typecheck_strict: true
+      working_directory: .
+      python_version: "3.13"
+      test_compose_file: tests/postgres-compose.yml
+      test_compose_services: postgres
+      devops_repository: pirlruc/pydevops
+      devops_ref: 2b9bbf03b18309df42eec0af508ca82a8150686c
+
+  infra-lint:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: read
+    uses: pirlruc/commondevops/.github/workflows/common-infra-lint.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      blocking: true
+      run_shfmt: true
+      shell_scripts: scripts/*.sh
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+      container_image: ghcr.io/catthehacker/ubuntu:act-24.04@sha256:dff4ec57d90046a7283aafc314298380be82bfeccb9ad0f1b36c4ebe74aabe78
+      mount_runner_git: false
+
+  doc-verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+    uses: pirlruc/commondevops/.github/workflows/common-doc-verify.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      blocking: true
+      run_link_lint: true
+      run_markdownlint: true
+      run_shfmt: true
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+
+  scaffold-verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      issues: read
+    uses: pirlruc/commondevops/.github/workflows/common-scaffold-verify.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      blocking: true
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+
+  secrets-sast:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: read
+    uses: pirlruc/commondevops/.github/workflows/common-secrets-sast.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      blocking: true
+      semgrep_config: p/python
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+      container_image: ghcr.io/catthehacker/ubuntu:act-24.04@sha256:dff4ec57d90046a7283aafc314298380be82bfeccb9ad0f1b36c4ebe74aabe78
+      mount_runner_git: false
+
+  supply-chain:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+      security-events: write
+    uses: pirlruc/commondevops/.github/workflows/common-supply-chain.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      blocking: true
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+      container_image: ghcr.io/catthehacker/ubuntu:act-24.04@sha256:dff4ec57d90046a7283aafc314298380be82bfeccb9ad0f1b36c4ebe74aabe78
+      mount_runner_git: false
+
+  pins:
+    permissions:
+      contents: read
+    uses: pirlruc/commondevops/.github/workflows/common-pins-verify.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+    with:
+      pin_script: scripts/check-submodule-pins.sh
+      scripts_ref: 0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: pirlruc/commondevops/.github/workflows/common-dependency-review.yml@0e78652fa9f65b9d98033ac82bf9e5308ebb17a7
+
+  container-lint:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    uses: pirlruc/containerdevops/.github/workflows/container-lint.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    with:
+      blocking: true
+      dockerfile: Dockerfile
+      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+
+  container-build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: write
+    uses: pirlruc/containerdevops/.github/workflows/container-build.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    with:
+      blocking: true
+      image_name: delphi-engine:ci
+      structure_test_config: container-structure-test.yml
+      push_handoff: true
+      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+
+  container-scan:
+    needs: container-build
+    if: always() && needs.container-build.result == 'success'
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    uses: pirlruc/containerdevops/.github/workflows/container-scan.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    with:
+      blocking: true
+      image: ghcr.io/${{ github.repository_owner }}/${{ needs.container-build.outputs.image_ref }}
+      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+
+  container-iac:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+    uses: pirlruc/containerdevops/.github/workflows/container-iac.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    with:
+      blocking: true
+      compose_files: docker-compose.yml
+      env_files: tests/compose.env
+      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+
+  container-smoke:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+    uses: pirlruc/containerdevops/.github/workflows/container-compose-smoke.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    with:
+      blocking: true
+      compose_files: docker-compose.yml
+      env_files: tests/compose.env
+      project_name: delphi-smoke
+      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+
+  required:
+    if: always()
+    needs:
+      - python-quality
+      - infra-lint
+      - doc-verify
+      - scaffold-verify
+      - secrets-sast
+      - supply-chain
+      - pins
+      - dependency-review
+      - container-lint
+      - container-build
+      - container-scan
+      - container-iac
+      - container-smoke
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Fail when a required job failed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          bad = [name for name, info in needs.items() if info.get("result") not in ("success", "skipped")]
+          if bad:
+              print("required jobs not green:", ", ".join(bad))
+              sys.exit(1)
+          print("required jobs are green or skipped")
+          PY

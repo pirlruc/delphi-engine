@@ -1,18 +1,14 @@
-# Quality (manual)
-
-# Trigger policy: workflow_dispatch only (private-repo Actions minutes).
-# Do not add push, pull_request, or schedule until quota allows (GATE-001).
-# Analog: github-scaffold templates/ci-quality.yml dispatch-only default.
-#
-# Local parity (CI-008): bash scripts/check-ci-local.sh
-# Python package gates (ruff/mypy/pytest): bash scripts/python-gates.sh
-# Python gates stay local unless quota allows a dispatch job (GATE-001).
+# Manifest checks. The repo is public, so pull requests and pushes to main
+# run this job (GATE-001). Python, container, and shared gates live in ci.yml.
 # The default GITHUB_TOKEN makes public submodule clones return 404.
 # Checkout the repo without credentials, then init submodules anonymously.
 
 name: quality
 
 on:
+  pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
