@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from hashlib import sha256
 from uuid import NAMESPACE_URL, UUID, uuid5
 
@@ -188,17 +188,17 @@ def build_masked_context(
     seed = _seed_work(catalog, request)
     if not has_subcategory(seed, request.subcategory):
         raise ValueError("seed is not in the requested subcategory")
-    mask_on, blocked = _mask_bounds(catalog, request, seed, held_out_ids)
+    mask_on, inclusive_as_of, blocked = _mask_bounds(catalog, request, seed, held_out_ids)
     neighborhood = catalog.neighborhood(
         seed.id,
         NeighborhoodMode.UNION,
         request.subcategory,
-        as_of=mask_on,
+        as_of=inclusive_as_of,
         excluded_ids=blocked,
     )
     return MaskedContext(
         seed=seed,
-        mask_on=mask_on or seed.published_on,
+        mask_on=mask_on,
         held_out_ids=held_out_ids,
         neighborhood=neighborhood,
         subcategory=request.subcategory,
@@ -259,8 +259,12 @@ def _mask_bounds(
     request: PathRequest,
     seed: Work,
     held_out_ids: tuple[UUID, ...],
-) -> tuple[date | None, frozenset[UUID]]:
-    """Return the neighborhood date bound and hindcast drop set.
+) -> tuple[date, date, frozenset[UUID]]:
+    """Return the first forbidden date, the inclusive neighborhood bound, and drops.
+
+    ``mask_on`` is the first date that counts as future (``published_on >= mask_on``).
+    The catalog ``as_of`` argument stays inclusive, so it is the day before ``mask_on``.
+    An undated seed never opens the filter.
 
     Args:
         catalog: Store.
@@ -269,25 +273,31 @@ def _mask_bounds(
         held_out_ids: Ids Epimetheus wants hidden.
 
     Returns:
-        Inclusive ``as_of`` (None means no date filter) and excluded ids.
+        First forbidden date, inclusive neighborhood bound, and excluded ids.
+
+    Raises:
+        KeyError: A held-out id is not in the catalog.
+        ValueError: The seed has no publication date and the request has no ``as_of``.
     """
     if held_out_ids:
         cuts: list[date] = []
         for hid in held_out_ids:
             held = catalog.get_work(hid)
-            if held is not None:
-                cuts.append(held.published_on)
-        mask_on = request.as_of or (min(cuts) if cuts else seed.published_on)
+            if held is None:
+                raise KeyError(f"held-out work not found: {hid}")
+            if held.published_on == _UNKNOWN_DATE:
+                raise ValueError("held-out work has no publication date")
+            cuts.append(held.published_on)
+        mask_on = request.as_of or min(cuts)
         blocked: set[UUID] = set()
         for hid in held_out_ids:
             blocked |= dropped_ids(catalog.list_works(), catalog.edges(), hid, mask_on)
         blocked.discard(seed.id)
-        return mask_on, frozenset(blocked)
-    if request.as_of is not None:
-        return request.as_of, frozenset()
-    if seed.published_on == _UNKNOWN_DATE:
-        return None, frozenset()
-    return seed.published_on, frozenset()
+        return mask_on, mask_on - timedelta(days=1), frozenset(blocked)
+    last_allowed = request.as_of or seed.published_on
+    if last_allowed == _UNKNOWN_DATE:
+        raise ValueError("seed has no publication date; pass as_of")
+    return last_allowed + timedelta(days=1), last_allowed, frozenset()
 
 
 def _seed_work(catalog: Catalog, request: PathRequest) -> Work:

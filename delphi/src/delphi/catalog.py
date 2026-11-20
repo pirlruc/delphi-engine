@@ -528,7 +528,7 @@ def _visible(
         work: Candidate neighbor.
         seed_id: Seed to exclude.
         subcategory: Required subcategory.
-        as_of: Inclusive date bound.
+        as_of: Last allowed publication date. Works on the next day are future.
         blocked: Extra exclusions.
 
     Returns:

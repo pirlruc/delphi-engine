@@ -44,4 +44,6 @@ def run_hindcast(
     dropped = dropped_ids(works, edges, held_out.id, cut)
     context = masked_context(seed, neighbors, held_out.id, cut, dropped, kind, subcategory)
     proposals = (generator or PathGenerator()).generate(context)
+    if not proposals:
+        raise ValueError("generator returned no proposals")
     return score_proposal(proposals[0], held_out, seed.id, subcategory)

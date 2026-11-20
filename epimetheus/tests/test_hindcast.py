@@ -229,6 +229,26 @@ def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
         PathGenerator().generate(leaked)
 
 
+def test_run_hindcast_rejects_empty_proposals() -> None:
+    seed = _work("seed", date(2014, 1, 1))
+    held = _work("held", date(2016, 1, 1))
+
+    class _Empty:
+        def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+            return ()
+
+    with pytest.raises(ValueError, match="no proposals"):
+        run_hindcast(
+            seed,
+            held,
+            (seed, held),
+            (),
+            (),
+            "two_d_codes",
+            generator=_Empty(),  # type: ignore[arg-type]
+        )
+
+
 def test_citation_descendant_cycle_safe() -> None:
     a = uuid4()
     b = uuid4()

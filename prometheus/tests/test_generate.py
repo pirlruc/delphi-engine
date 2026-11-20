@@ -91,6 +91,25 @@ def test_leak_future_and_held_out() -> None:
         PathGenerator().generate(context)
 
 
+def test_same_day_neighbor_is_a_leak() -> None:
+    seed = _work("QR 2014", date(2014, 6, 1))
+    sibling = _work("same day", date(2016, 3, 1))
+    context = _context(
+        seed,
+        (
+            Neighbor(
+                work=sibling,
+                edge_kind=EdgeKind.SIMILAR_TO,
+                direction=NeighborDirection.OUT,
+                score=0.4,
+            ),
+        ),
+        date(2016, 3, 1),
+    )
+    with pytest.raises(ContextLeakError):
+        assert_no_leak(context)
+
+
 def test_assert_no_leak_clean() -> None:
     seed = _work("seed", date(2014, 1, 1))
     assert_no_leak(_context(seed, (), date(2016, 1, 1)))

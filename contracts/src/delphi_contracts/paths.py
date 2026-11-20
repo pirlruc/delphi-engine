@@ -78,7 +78,7 @@ class MaskedContext(BaseModel):
 
     Attributes:
         seed: Seed work.
-        mask_on: Instant after which works are forbidden.
+        mask_on: First forbidden publication date. A work on this date is future.
         held_out_ids: Ids that must not appear in neighbors.
         neighborhood: Citation and content neighbors already filtered.
         subcategory: Query filter used to build the neighborhood.
@@ -98,12 +98,12 @@ class MaskedContext(BaseModel):
         """Return ids that must not appear in generator context.
 
         Returns:
-            Held-out ids plus any neighbor published after the mask date.
+            Held-out ids plus any neighbor published on or after the mask date.
         """
         leaked = [
             neighbor.work.id
             for neighbor in self.neighborhood.neighbors
-            if neighbor.work.published_on > self.mask_on
+            if neighbor.work.published_on >= self.mask_on
         ]
         present = {self.seed.id, *(item.work.id for item in self.neighborhood.neighbors)}
         held = frozenset(self.held_out_ids) & present

@@ -16,7 +16,7 @@ Walking skeleton ([PROTO-001](../../docs/issues.yml)). Package `delphi_contracts
 - Category schemes: `openalex_topic` and `cpc` ([SYS-008](../../docs/issues.yml)).
 - PathRequest.kind: `research_path` or `patent_whitespace` ([SYS-007](../../docs/issues.yml)).
 - Extraction covers title, authors, keywords, bibliography, and body text. Neighborhood modes are `citation`, `content`, and `union` ([SYS-010](../../docs/issues.yml)).
-- `MaskedContext.forbidden_ids()` only flags held-out ids that are **present** in the seed or neighbors, plus neighbors published after `mask_on`.
+- `MaskedContext.mask_on` is the first forbidden date. `forbidden_ids()` flags neighbors published on or after that date, plus held-out ids that are present.
 
 ## Suggested next work
 
