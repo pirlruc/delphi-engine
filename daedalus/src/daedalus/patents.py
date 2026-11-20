@@ -16,6 +16,7 @@ from delphi_contracts.identity import normalize_patent
 
 from daedalus.caps import allowed_text
 from daedalus.fetch import FetchError
+from daedalus.net import assert_allowed_url
 from daedalus.retry import request_json
 
 __all__ = [
@@ -317,7 +318,12 @@ def fetch_patent_slice(
 
     Returns:
         Combined ingest records.
+
+    Raises:
+        UrlNotAllowed: The WIPO URL is not https on an allowed host.
     """
+    if wipo_key:
+        assert_allowed_url(wipo_url)
     collected: list[dict[str, Any]] = []
     epo_token = ""
     if epo_key and epo_secret:

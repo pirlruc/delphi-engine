@@ -1,5 +1,7 @@
 """FastAPI application factory."""
 
+import os
+import secrets
 from datetime import date
 from typing import Annotated
 from uuid import UUID
@@ -8,7 +10,7 @@ from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse
 from delphi_contracts.enums import NeighborhoodMode
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.paths import ContextLeakError, PathProposal, PathRequest
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from delphi.catalog import Catalog, MemoryCatalog
@@ -22,6 +24,8 @@ from delphi.services import (
 
 __all__ = ["AppContainer", "create_app"]
 
+_MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
 
 class AppContainer:
     """Runtime collaborators for the API.
@@ -31,6 +35,7 @@ class AppContainer:
         extractor: Optional Daedalus extractor.
         embedder: Optional Daedalus embedder.
         generator: Optional Prometheus generator.
+        api_key: Shared secret required on /v1 routes. Empty rejects every call.
     """
 
     def __init__(
@@ -39,6 +44,7 @@ class AppContainer:
         extractor: Extractor | None = None,
         embedder: Embedder | None = None,
         generator: Generator | None = None,
+        api_key: str | None = None,
     ) -> None:
         """Store collaborators.
 
@@ -47,11 +53,13 @@ class AppContainer:
             extractor: PDF extractor.
             embedder: Content-graph embedder.
             generator: Path generator.
+            api_key: Required X-API-Key. None reads DELPHI_API_KEY.
         """
         self.catalog = catalog or MemoryCatalog()
         self.extractor = extractor
         self.embedder = embedder
         self.generator = generator
+        self.api_key = os.environ.get("DELPHI_API_KEY", "") if api_key is None else api_key
 
 
 def create_app(container: AppContainer | None = None) -> FastAPI:
@@ -74,10 +82,31 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         """
         return state
 
+    def require_key(
+        request: Request,
+        deps: Annotated[AppContainer, Depends(get_state)],
+    ) -> None:
+        """Reject /v1 calls that do not present the configured API key.
+
+        Args:
+            request: Incoming HTTP request.
+            deps: Container.
+
+        """
+        supplied = request.headers.get("x-api-key", "")
+        expected = deps.api_key
+        if (
+            not expected
+            or len(supplied) != len(expected)
+            or not secrets.compare_digest(supplied, expected)
+        ):
+            raise HTTPException(status_code=401, detail="invalid API key")
+
     @app.post("/v1/works:batch-check", response_model=BatchCheckResponse)
     def batch_check(
         request: BatchCheckRequest,
         deps: Annotated[AppContainer, Depends(get_state)],
+        _: Annotated[None, Depends(require_key)],
     ) -> BatchCheckResponse:
         """Exact identifier existence check.
 
@@ -96,6 +125,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         mode: NeighborhoodMode,
         subcategory: str,
         deps: Annotated[AppContainer, Depends(get_state)],
+        _: Annotated[None, Depends(require_key)],
         as_of: date | None = None,
         k: Annotated[int, Query(ge=1, le=50)] = 8,
     ) -> Neighborhood:
@@ -121,6 +151,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     @app.post("/v1/uploads")
     async def post_upload(
         deps: Annotated[AppContainer, Depends(get_state)],
+        _: Annotated[None, Depends(require_key)],
         file: Annotated[UploadFile, File()],
         consent_destination: Annotated[str, Form()],
         subcategory: Annotated[str, Form()],
@@ -137,7 +168,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             Extraction and union neighborhood.
 
         """
-        payload = await file.read()
+        payload = await _read_upload(file)
         try:
             extraction, neighborhood = upload_pdf(
                 deps.catalog,
@@ -178,6 +209,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     def post_generate(
         request: PathRequest,
         deps: Annotated[AppContainer, Depends(get_state)],
+        _: Annotated[None, Depends(require_key)],
     ) -> tuple[PathProposal, ...]:
         """Generate research_path or patent_whitespace proposals.
 
@@ -201,3 +233,28 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             raise HTTPException(status_code=503, detail=str(extra)) from extra
 
     return app
+
+
+async def _read_upload(file: UploadFile) -> bytes:
+    """Read an upload, refusing bodies over the size cap.
+
+    Args:
+        file: Multipart PDF.
+
+    Returns:
+        Raw bytes.
+
+    Raises:
+        HTTPException: When the body exceeds the cap.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        block = await file.read(1024 * 1024)
+        if not block:
+            break
+        total += len(block)
+        if total > _MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="PDF exceeds 25MB")
+        chunks.append(block)
+    return b"".join(chunks)

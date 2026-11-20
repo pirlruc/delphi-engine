@@ -18,7 +18,7 @@ class BatchCheckRequest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    identities: tuple[Identity, ...] = Field(min_length=1)
+    identities: tuple[Identity, ...] = Field(min_length=1, max_length=500)
 
 
 class BatchCheckRow(BaseModel):

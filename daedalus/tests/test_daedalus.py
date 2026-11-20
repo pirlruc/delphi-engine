@@ -426,6 +426,11 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
     assert reconstruct_abstract({"qr": [0, 2], "codes": [1]}) == "qr codes qr"
     assert reconstruct_abstract({"qr": "bad"}) == ""
     assert reconstruct_abstract({"qr": [10**9]}) == ""
+    from daedalus.net import UrlNotAllowed, assert_allowed_url
+
+    assert_allowed_url("https://api.openalex.org/works")
+    with pytest.raises(UrlNotAllowed):
+        assert_allowed_url("http://169.254.169.254/latest")
 
     pages = {"n": 0}
 

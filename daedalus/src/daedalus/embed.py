@@ -163,7 +163,7 @@ class HashEmbedder:
         windows = contextual_windows(work, extra=text)
         vector, model = self._embed_pooled(windows)
         self._catalog.put_embedding(work.id, vector, model)
-        self._catalog.rebuild_all_similar_to()
+        self._catalog.rebuild_similar_to(work.id)
 
     def _embed_pooled(self, windows: list[str]) -> tuple[tuple[float, ...], str]:
         """Embed one window, or mean-pool chunks when over the size cap.

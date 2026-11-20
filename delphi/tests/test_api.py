@@ -249,9 +249,16 @@ def test_upload_and_generate_http() -> None:
             extractor=_Extractor(extraction),
             embedder=_Embedder(catalog),
             generator=_Generator(),
+            api_key="test-key",
         )
     )
     client = TestClient(app)
+    client.headers["X-API-Key"] = "test-key"
+    denied_key = TestClient(app).post(
+        "/v1/works:batch-check",
+        json={"identities": [{"kind": "doi", "value": "10.1/seed"}]},
+    )
+    assert denied_key.status_code == 401
     mixed = client.post(
         "/v1/works:batch-check",
         json={
@@ -326,8 +333,9 @@ def test_generate_without_generator_and_upload_without_extractor() -> None:
         pass
     else:
         raise AssertionError("expected MissingDependencyError")
-    app = create_app(AppContainer(catalog=catalog))
+    app = create_app(AppContainer(catalog=catalog, api_key="test-key"))
     client = TestClient(app)
+    client.headers["X-API-Key"] = "test-key"
     upload = client.post(
         "/v1/uploads",
         files={"file": ("x.pdf", b"%PDF", "application/pdf")},
@@ -484,7 +492,10 @@ def test_generate_context_leak_returns_422() -> None:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
             raise ContextLeakError("leaked")
 
-    client = TestClient(create_app(AppContainer(catalog=catalog, generator=_Boom())))
+    client = TestClient(
+        create_app(AppContainer(catalog=catalog, generator=_Boom(), api_key="test-key"))
+    )
+    client.headers["X-API-Key"] = "test-key"
     response = client.post(
         "/v1/generate",
         json={
