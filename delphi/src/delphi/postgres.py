@@ -164,7 +164,26 @@ class PostgresCatalog:
         Returns:
             Known/unknown rows in the same order.
         """
-        rows = tuple(self._check_identity(identity) for identity in request.identities)
+        kinds = [identity.kind.value for identity in request.identities]
+        values = [identity.value for identity in request.identities]
+        found_rows = self._conn.execute(
+            """
+            SELECT kind, value, work_id FROM identities
+            WHERE (kind, value) IN (
+                SELECT * FROM unnest(%s::text[], %s::text[])
+            )
+            """,
+            (kinds, values),
+        ).fetchall()
+        found = {(str(kind), str(value)): work_id for kind, value, work_id in found_rows}
+        rows = tuple(
+            BatchCheckRow(
+                identity=identity,
+                known=(identity.kind.value, identity.value) in found,
+                work_id=found.get((identity.kind.value, identity.value)),
+            )
+            for identity in request.identities
+        )
         return BatchCheckResponse(rows=rows)
 
     def add_edge(self, edge: Edge) -> None:
@@ -321,10 +340,35 @@ class PostgresCatalog:
             Neighborhood around the seed.
         """
         mirror = MemoryCatalog()
-        for work in self.list_works():
-            mirror.upsert_work(work)
-        for edge in self.edges():
-            mirror.add_edge(edge)
+        if as_of is None:
+            payloads = self._conn.execute("SELECT id, payload FROM works").fetchall()
+        else:
+            payloads = self._conn.execute(
+                """
+                SELECT id, payload FROM works
+                WHERE (payload->>'published_on')::date <= %s OR id = %s
+                """,
+                (as_of, seed_id),
+            ).fetchall()
+        for _work_id, payload in payloads:
+            mirror.upsert_work(Work.model_validate(payload))
+        ids = list(mirror._works)
+        if ids:
+            edge_rows = self._conn.execute(
+                """
+                SELECT from_work, to_work, kind, score FROM edges
+                WHERE from_work = ANY(%s) AND to_work = ANY(%s)
+                """,
+                (ids, ids),
+            ).fetchall()
+            for row in edge_rows:
+                mirror.add_edge(_edge_from_row(row))
+            vectors = self._conn.execute(
+                "SELECT work_id, vector, model_id FROM embeddings WHERE work_id = ANY(%s)",
+                (ids,),
+            ).fetchall()
+            for work_id, vector, model_id in vectors:
+                mirror.put_embedding(work_id, _vector(vector), str(model_id))
         return mirror.neighborhood(seed_id, mode, subcategory, as_of, excluded_ids, k)
 
     def rebuild_similar_to(self, work_id: UUID, k: int = 8) -> None:
@@ -341,9 +385,9 @@ class PostgresCatalog:
         self._conn.execute(
             """
             DELETE FROM edges
-            WHERE kind = %s AND (from_work = %s OR to_work = %s)
+            WHERE kind = %s AND from_work = %s
             """,
-            (EdgeKind.SIMILAR_TO.value, work_id, work_id),
+            (EdgeKind.SIMILAR_TO.value, work_id),
         )
         ranked = scored_neighbors(work_id, source, embeddings, models, models.get(work_id))
         for other_id, score in ranked[:k]:

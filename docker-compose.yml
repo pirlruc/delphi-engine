@@ -7,13 +7,23 @@
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f
     environment:
       POSTGRES_USER: delphi
-      POSTGRES_PASSWORD: delphi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: delphi
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U delphi"]
       interval: 5s
@@ -45,10 +55,20 @@ services:
       retries: 12
       start_period: 90s
     environment:
-      DELPHI_DATABASE_URL: postgresql://delphi:delphi@postgres:5432/delphi
+      DELPHI_DATABASE_URL: postgresql://delphi:${POSTGRES_PASSWORD}@postgres:5432/delphi
       DELPHI_LLM_KIND: fake
+      DELPHI_API_KEY: ${DELPHI_API_KEY:?set DELPHI_API_KEY}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 1g
 
 volumes:
   delphi-pg:

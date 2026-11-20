@@ -9,6 +9,7 @@ import os
 import re
 from collections.abc import Mapping
 from typing import Any, Protocol, runtime_checkable
+from urllib.parse import urlparse
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
@@ -399,13 +400,34 @@ def provider_settings_from_env(environ: Mapping[str, str] | None = None) -> Prov
         ProviderKind.LOCAL: ("llama3", "nomic-embed-text", "http://127.0.0.1:11434/v1"),
     }
     model, embedding, base = defaults[kind]
+    base_url = _require_safe_base_url(env.get("DELPHI_LLM_BASE_URL", base))
     return ProviderSettings(
         kind=kind,
         model=env.get("DELPHI_LLM_MODEL", model),
         embedding_model=env.get("DELPHI_LLM_EMBEDDING_MODEL", embedding),
-        base_url=env.get("DELPHI_LLM_BASE_URL", base),
+        base_url=base_url,
         api_key=env.get("DELPHI_LLM_API_KEY", ""),
     )
+
+
+def _require_safe_base_url(url: str) -> str:
+    """Allow https, or http only on a loopback host.
+
+    Args:
+        url: Candidate LLM base URL.
+
+    Returns:
+        The same URL when it is allowed.
+
+    Raises:
+        ValueError: The URL could reach a non-local network over http.
+    """
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    loopback = host in {"localhost", "127.0.0.1", "::1"}
+    if parsed.scheme == "https" or (parsed.scheme == "http" and loopback):
+        return url
+    raise ValueError("LLM base URL must be https or loopback http")
 
 
 def build_provider(

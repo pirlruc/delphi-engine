@@ -85,6 +85,14 @@ def test_batch_check_request_requires_rows() -> None:
         BatchCheckRequest(identities=())
 
 
+def test_batch_check_rejects_more_than_500_identities() -> None:
+    identities = tuple(
+        Identity(kind=IdentityKind.DOI, value=f"10.1/{index}") for index in range(501)
+    )
+    with pytest.raises(ValidationError):
+        BatchCheckRequest(identities=identities)
+
+
 def test_batch_check_row_unknown() -> None:
     identity = Identity(kind=IdentityKind.ARXIV, value="1605.00000")
     row = BatchCheckRow(identity=identity, known=False)
@@ -284,9 +292,15 @@ def test_provider_settings_from_env_defaults_and_overrides(
         "DELPHI_LLM_KIND": "local",
         "DELPHI_LLM_MODEL": "custom",
         "DELPHI_LLM_EMBEDDING_MODEL": "emb",
-        "DELPHI_LLM_BASE_URL": "http://ollama/v1",
+        "DELPHI_LLM_BASE_URL": "http://127.0.0.1:11434/v1",
     })
+    assert local.base_url.startswith("http://127.0.0.1")
     assert local.model == "custom"
+    with pytest.raises(ValueError, match="loopback"):
+        provider_settings_from_env({
+            "DELPHI_LLM_KIND": "local",
+            "DELPHI_LLM_BASE_URL": "http://ollama/v1",
+        })
     assert local.embedding_model == "emb"
     monkeypatch.setenv("DELPHI_LLM_KIND", "fake")
     assert provider_settings_from_env().kind is ProviderKind.FAKE

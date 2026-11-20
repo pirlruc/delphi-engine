@@ -406,7 +406,7 @@ class MemoryCatalog:
                 )
 
     def _replace_similar_to(self, work_id: UUID, ranked: list[tuple[UUID, float]], k: int) -> None:
-        """Drop similar_to edges touching one work, then write its top-k pairs.
+        """Drop this work's outgoing similar_to edges, then write its top-k pairs.
 
         Args:
             work_id: Work to refresh.
@@ -416,8 +416,7 @@ class MemoryCatalog:
         self._edges = [
             edge
             for edge in self._edges
-            if edge.kind is not EdgeKind.SIMILAR_TO
-            or (edge.from_work != work_id and edge.to_work != work_id)
+            if edge.kind is not EdgeKind.SIMILAR_TO or edge.from_work != work_id
         ]
         for other_id, score in ranked[:k]:
             self.add_edge(
