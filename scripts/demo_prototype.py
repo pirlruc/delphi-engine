@@ -42,20 +42,28 @@ def run_demo() -> dict[str, object]:
         PdfExtractor(),
         embedder,
     )
-    citation = catalog.neighborhood(extraction.id, NeighborhoodMode.CITATION, "two_d_codes")
-    content = catalog.neighborhood(extraction.id, NeighborhoodMode.CONTENT, "two_d_codes")
+    citation = catalog.neighborhood(
+        extraction.id, NeighborhoodMode.CITATION, "two_d_codes"
+    )
+    content = catalog.neighborhood(
+        extraction.id, NeighborhoodMode.CONTENT, "two_d_codes"
+    )
     generator = PathGenerator()
     research = generate_paths(
         catalog,
         PathRequest(
-            kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=extraction.id
+            kind=PathKind.RESEARCH_PATH,
+            subcategory="two_d_codes",
+            seed_work_id=extraction.id,
         ),
         generator,
     )
     patent = generate_paths(
         catalog,
         PathRequest(
-            kind=PathKind.PATENT_WHITESPACE, subcategory="two_d_codes", seed_work_id=extraction.id
+            kind=PathKind.PATENT_WHITESPACE,
+            subcategory="two_d_codes",
+            seed_work_id=extraction.id,
         ),
         generator,
     )
@@ -67,8 +75,12 @@ def run_demo() -> dict[str, object]:
         / "fixtures"
         / "slice.json"
     )
-    summary = summarize_runs(trials_from_payload(json.loads(fixture.read_text(encoding="utf-8"))))
-    matched = sum(1 for row in extraction.bibliography if row.matched_work_id is not None)
+    summary = summarize_runs(
+        trials_from_payload(json.loads(fixture.read_text(encoding="utf-8")))
+    )
+    matched = sum(
+        1 for row in extraction.bibliography if row.matched_work_id is not None
+    )
     return {
         "extraction": {
             "title": extraction.title,

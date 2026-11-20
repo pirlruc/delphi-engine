@@ -39,7 +39,11 @@ def build_container(
         ingest_records(catalog, load_fixture())
     if records_path is not None:
         payload = json.loads(records_path.read_text(encoding="utf-8"))
-        extra = payload["works"] if isinstance(payload, dict) and "works" in payload else payload
+        extra = (
+            payload["works"]
+            if isinstance(payload, dict) and "works" in payload
+            else payload
+        )
         ingest_records(catalog, list(extra))
     provider = build_provider(provider_settings_from_env())
     embedder = HashEmbedder(catalog, llm=provider)
