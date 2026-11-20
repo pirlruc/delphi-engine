@@ -30,13 +30,23 @@ jobs:
           persist-credentials: false
           submodules: false
 
-      - name: Checkout public analog submodules
-        run: git submodule update --init --depth 1
+      - name: Checkout analog submodules when a read token exists
+        env:
+          TOKEN: ${{ secrets.GUARDRAILS_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "GUARDRAILS_READ_TOKEN is unset. Analog repos are private, so this job parses YAML only."
+            exit 0
+          fi
+          auth="$(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic ${auth}" submodule update --init --depth 1
 
       - name: Install PyYAML
         run: python3 -m pip install --user pyyaml
 
       - name: Validate issues.yml
+        if: hashFiles('.github/scaffold/scripts/issues-sync.py') != ''
         run: python3 .github/scaffold/scripts/issues-sync.py --yaml docs/issues.yml --validate-only
 
       - name: Parse YAML configs
