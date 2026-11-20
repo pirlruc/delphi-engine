@@ -1,0 +1,140 @@
+# Unfixed Debian bookworm highs and criticals in python:3.13-slim-bookworm
+# sha256:a5a7017efc5969e00ae2b91c8eb0631049a569652aa4ffc4501769049ae45c72.
+# No fixed package is published. Review 2026-12-20 (vuln_ignore_max_days: 30).
+vulnerabilities:
+  - id: CVE-2025-13151
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2025-6020
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2025-69720
+    paths:
+      - 'var/lib/dpkg/info/libncursesw6:amd64.md5sums'
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2025-7458
+    paths:
+      - 'usr/share/doc/libsqlite3-0/copyright'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-102010
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-107493
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-107496
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-11824
+    paths:
+      - 'usr/share/doc/libsqlite3-0/copyright'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-119373
+    paths:
+      - 'usr/share/doc/libsqlite3-0/copyright'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-119374
+    paths:
+      - 'usr/share/doc/libsqlite3-0/copyright'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-119379
+    paths:
+      - 'usr/share/doc/libsqlite3-0/copyright'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-19499
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-41992
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-53613
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-53615
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-5435
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-54369
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-54370
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-5450
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-5928
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-78410
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-82560
+    paths:
+      - 'var/lib/dpkg/info/perl-base.list'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-84243
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-84786
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-85091
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-9538
+    paths:
+      - 'var/lib/dpkg/info/perl-base.list'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.
+  - id: CVE-2026-95619
+    paths:
+      - 'var/lib/dpkg/status'
+    expired_at: 2026-12-20
+    statement: Debian bookworm ships no fixed version of this package in the pinned python:3.13-slim-bookworm digest.

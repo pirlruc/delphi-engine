@@ -89,6 +89,8 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - Proposal guardrails were removed. Do not recreate `docs/proposal/`.
 
 - An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
-- Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`. Per-member configs are not used when CI runs from the repository root, and duplicate test module names otherwise fail the run.
+- Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`. Per-member configs are not used when CI runs from the repository root, and duplicate test module names otherwise fail the run. Do not set `plugins = ["pydantic.mypy"]` there: the quality image does not install Pydantic for that mypy process.
+- Postgres needs `cap_add` after `cap_drop: ALL`. KICS query `ce76b7d0` treats any `cap_add` as unrestricted, including the sample that also drops all capabilities, so `.github/kics.config` excludes it.
+- `.trivyignore.yaml` and `.grype.yaml` cover Debian bookworm highs and criticals with no fixed package in the pinned `python:3.13-slim-bookworm` digest. They expire 2026-12-20. uv is 0.13.4 so GHSA-hq85-5cpj-mr62 is not ignored.
 
 *Last updated: 2026-11-20 (CI runs on pull requests via pydevops, commondevops, and containerdevops).*
