@@ -44,7 +44,9 @@ def masked_context(
         seed=seed,
         mask_on=cut,
         held_out_ids=(held_out_id,),
-        neighborhood=Neighborhood(seed=seed, mode=NeighborhoodMode.UNION, neighbors=kept),
+        neighborhood=Neighborhood(
+            seed=seed, mode=NeighborhoodMode.UNION, neighbors=kept
+        ),
         subcategory=subcategory,
         kind=kind,
     )

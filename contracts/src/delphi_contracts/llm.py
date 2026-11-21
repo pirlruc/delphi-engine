@@ -197,7 +197,9 @@ def cosine(left: tuple[float, ...], right: tuple[float, ...]) -> float:
     right_norm = math.sqrt(sum(value * value for value in right))
     if left_norm == 0.0 or right_norm == 0.0:
         return 0.0
-    score = sum(a * b for a, b in zip(left, right, strict=True)) / (left_norm * right_norm)
+    score = sum(a * b for a, b in zip(left, right, strict=True)) / (
+        left_norm * right_norm
+    )
     return max(0.0, min(1.0, score))
 
 
@@ -291,7 +293,9 @@ class FakeProvider:
 class OpenAICompatibleProvider:
     """Cloud or local adapter talking to an OpenAI-compatible HTTP API."""
 
-    def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None) -> None:
+    def __init__(
+        self, settings: ProviderSettings, client: httpx.Client | None = None
+    ) -> None:
         """Store settings and an optional injected client.
 
         Args:
@@ -382,7 +386,9 @@ class OpenAICompatibleProvider:
         return dict(parsed) if isinstance(parsed, dict) else {}
 
 
-def provider_settings_from_env(environ: Mapping[str, str] | None = None) -> ProviderSettings:
+def provider_settings_from_env(
+    environ: Mapping[str, str] | None = None,
+) -> ProviderSettings:
     """Build provider settings from DELPHI_LLM_* environment variables.
 
     Args:
@@ -396,7 +402,11 @@ def provider_settings_from_env(environ: Mapping[str, str] | None = None) -> Prov
     kind = ProviderKind(raw_kind)
     defaults = {
         ProviderKind.FAKE: ("fake", "fake-hash", "https://api.openai.com/v1"),
-        ProviderKind.CLOUD: ("gpt-4o-mini", "text-embedding-3-small", "https://api.openai.com/v1"),
+        ProviderKind.CLOUD: (
+            "gpt-4o-mini",
+            "text-embedding-3-small",
+            "https://api.openai.com/v1",
+        ),
         ProviderKind.LOCAL: ("llama3", "nomic-embed-text", "http://127.0.0.1:11434/v1"),
     }
     model, embedding, base = defaults[kind]
@@ -475,8 +485,12 @@ def _fake_extract(blob: str) -> str:
         Extraction JSON.
     """
     title = _field(blob, "Title") or "Untitled work"
-    authors = tuple(part.strip() for part in _field(blob, "Authors").split(",") if part.strip())
-    keywords = tuple(part.strip() for part in _field(blob, "Keywords").split(",") if part.strip())
+    authors = tuple(
+        part.strip() for part in _field(blob, "Authors").split(",") if part.strip()
+    )
+    keywords = tuple(
+        part.strip() for part in _field(blob, "Keywords").split(",") if part.strip()
+    )
     body = blob
     return json.dumps({
         "title": title,
@@ -502,7 +516,9 @@ def _fake_generate(blob: str) -> str:
         flags=re.IGNORECASE,
     )
     cited = ids[:3]
-    kind = "patent_whitespace" if "patent_whitespace" in blob.lower() else "research_path"
+    kind = (
+        "patent_whitespace" if "patent_whitespace" in blob.lower() else "research_path"
+    )
     title = "Next step in the masked neighborhood"
     return json.dumps({
         "proposals": [

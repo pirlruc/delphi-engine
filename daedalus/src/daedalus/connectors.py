@@ -44,7 +44,9 @@ def from_patentsview(record: dict[str, Any], subcategory: str) -> Work:
     Returns:
         Catalog work.
     """
-    return _from_common(record, WorkKind.PATENT, IdentityKind.PATENT, "patent_id", subcategory)
+    return _from_common(
+        record, WorkKind.PATENT, IdentityKind.PATENT, "patent_id", subcategory
+    )
 
 
 def from_epo(record: dict[str, Any], subcategory: str) -> Work:
@@ -57,7 +59,9 @@ def from_epo(record: dict[str, Any], subcategory: str) -> Work:
     Returns:
         Catalog work.
     """
-    return _from_common(record, WorkKind.PATENT, IdentityKind.PATENT, "patent", subcategory)
+    return _from_common(
+        record, WorkKind.PATENT, IdentityKind.PATENT, "patent", subcategory
+    )
 
 
 def from_wipo(record: dict[str, Any], subcategory: str) -> Work:
@@ -128,7 +132,9 @@ def _from_common(
     known = {item.value for item in SubcategoryId}
     parsed = SubcategoryId(subcategory) if subcategory in known else None
     category = Category(
-        scheme=CategoryScheme.CPC if kind is WorkKind.PATENT else CategoryScheme.OPENALEX_TOPIC,
+        scheme=CategoryScheme.CPC
+        if kind is WorkKind.PATENT
+        else CategoryScheme.OPENALEX_TOPIC,
         code=subcategory,
         label=subcategory.replace("_", " "),
         subcategory=parsed,

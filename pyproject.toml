@@ -36,6 +36,7 @@ no_implicit_optional = true
 python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
+python_executable = ".venv/bin/python"
 mypy_path = [
     "contracts/src",
     "delphi/src",
@@ -63,3 +64,28 @@ module = [
 check_untyped_defs = false
 disallow_incomplete_defs = false
 disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "contracts/src",
+    "delphi/src",
+    "daedalus/src",
+    "prometheus/src",
+    "epimetheus/src",
+    "hermes/src",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.interrogate]
+fail-under = 95
+ignore-init-method = true
+ignore-nested-functions = true
+ignore-semiprivate = true
+ignore-private = true
+exclude = ["tests", "scripts", ".venv", "docs", ".github", ".devops"]
+
+[tool.pylint.main]
+init-hook = "import sys; from pathlib import Path; sys.path[:0] = [str(p) for p in Path('.venv/lib').glob('python*/site-packages')]"

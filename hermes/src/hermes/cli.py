@@ -227,7 +227,9 @@ def _print_upload(payload: object) -> None:
         return
     bibliography = extraction.get("bibliography", [])
     rows = bibliography if isinstance(bibliography, list) else []
-    matched = sum(1 for row in rows if isinstance(row, dict) and row.get("matched_work_id"))
+    matched = sum(
+        1 for row in rows if isinstance(row, dict) and row.get("matched_work_id")
+    )
     typer.echo(f"title: {extraction.get('title')}")
     typer.echo(f"authors: {extraction.get('authors')}")
     typer.echo(f"keywords: {extraction.get('keywords')}")
@@ -246,8 +248,12 @@ def _print_neighborhood(payload: object) -> None:
         return
     neighbors = payload.get("neighbors", [])
     rows = neighbors if isinstance(neighbors, list) else []
-    cites = sum(1 for row in rows if isinstance(row, dict) and row.get("edge_kind") == "cites")
+    cites = sum(
+        1 for row in rows if isinstance(row, dict) and row.get("edge_kind") == "cites"
+    )
     similar = sum(
-        1 for row in rows if isinstance(row, dict) and row.get("edge_kind") == "similar_to"
+        1
+        for row in rows
+        if isinstance(row, dict) and row.get("edge_kind") == "similar_to"
     )
     typer.echo(f"neighbors: {cites} cites, {similar} similar_to ({len(rows)} total)")

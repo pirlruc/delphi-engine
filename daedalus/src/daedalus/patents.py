@@ -52,11 +52,15 @@ PATENT_SEARCH: dict[str, str] = {
     SubcategoryId.STEGANOGRAPHY.value: (
         'steganography OR steganalysis OR watermarking OR "information hiding"'
     ),
-    SubcategoryId.TWO_D_CODES.value: 'QR OR "data matrix" OR barcode OR Aztec OR PDF417',
+    SubcategoryId.TWO_D_CODES.value: (
+        'QR OR "data matrix" OR barcode OR Aztec OR PDF417'
+    ),
 }
 
 
-def epo_access_token(client: httpx.Client, key: str, secret: str, attempts: int = 3) -> str:
+def epo_access_token(
+    client: httpx.Client, key: str, secret: str, attempts: int = 3
+) -> str:
     """Request an OPS OAuth2 client-credentials token.
 
     Args:
@@ -80,7 +84,9 @@ def epo_access_token(client: httpx.Client, key: str, secret: str, attempts: int 
     last: Exception | None = None
     for _attempt in range(max(attempts, 1)):
         try:
-            response = client.post(_EPO_TOKEN, content=data, headers=headers, timeout=30.0)
+            response = client.post(
+                _EPO_TOKEN, content=data, headers=headers, timeout=30.0
+            )
             response.raise_for_status()
             payload = response.json()
             token = payload.get("access_token") if isinstance(payload, dict) else None
@@ -233,7 +239,9 @@ def search_patsnap(
         Mapped patent records.
     """
     body = {"query_text": f"TACD: {query}", "limit": min(limit, 1000), "offset": 0}
-    return fetch_patsnap(_PATSNAP_SEARCH, subcategory, client, body=body, attempts=attempts)
+    return fetch_patsnap(
+        _PATSNAP_SEARCH, subcategory, client, body=body, attempts=attempts
+    )
 
 
 def fetch_lens(
@@ -282,9 +290,18 @@ def search_lens(
         Mapped patent records.
     """
     body = {
-        "query": {"query_string": {"query": query, "fields": ["title", "abstract", "claims"]}},
+        "query": {
+            "query_string": {"query": query, "fields": ["title", "abstract", "claims"]}
+        },
         "size": min(limit, 100),
-        "include": ["biblio", "claims", "date_published", "jurisdiction", "doc_number", "lens_id"],
+        "include": [
+            "biblio",
+            "claims",
+            "date_published",
+            "jurisdiction",
+            "doc_number",
+            "lens_id",
+        ],
     }
     return fetch_lens(_LENS_SEARCH, subcategory, client, body=body, attempts=attempts)
 
@@ -333,7 +350,13 @@ def fetch_patent_slice(
         if epo_token:
             with _header_scope(client, "Authorization", f"Bearer {epo_token}"):
                 bucket.extend(
-                    search_epo(query, subcategory, client, limit=per_subcategory, attempts=attempts)
+                    search_epo(
+                        query,
+                        subcategory,
+                        client,
+                        limit=per_subcategory,
+                        attempts=attempts,
+                    )
                 )
         if wipo_key:
             with _header_scope(client, "X-API-Key", wipo_key):
@@ -351,14 +374,22 @@ def fetch_patent_slice(
             with _header_scope(client, "Authorization", f"Bearer {patsnap_key}"):
                 bucket.extend(
                     search_patsnap(
-                        query, subcategory, client, limit=per_subcategory, attempts=attempts
+                        query,
+                        subcategory,
+                        client,
+                        limit=per_subcategory,
+                        attempts=attempts,
                     )
                 )
         if lens_token:
             with _header_scope(client, "Authorization", f"Bearer {lens_token}"):
                 bucket.extend(
                     search_lens(
-                        query, subcategory, client, limit=per_subcategory, attempts=attempts
+                        query,
+                        subcategory,
+                        client,
+                        limit=per_subcategory,
+                        attempts=attempts,
                     )
                 )
         kept = 0
@@ -414,7 +445,11 @@ def _get_json(url: str, client: httpx.Client, attempts: int) -> object:
     """
     try:
         return request_json(
-            client, "GET", url, attempts=attempts, headers={"Accept": "application/json"}
+            client,
+            "GET",
+            url,
+            attempts=attempts,
+            headers={"Accept": "application/json"},
         )
     except (httpx.HTTPError, ValueError) as exc:
         raise FetchError(f"fetch failed after retries: {url}") from exc
@@ -556,7 +591,9 @@ def _epo_items(payload: object) -> list[object]:
     if not isinstance(result, dict):
         return []
     docs = result.get("exchange-documents") or result.get("ops:publication-reference")
-    return _unwrap_named(docs, ("exchange-document", "ops:publication-reference", "document-id"))
+    return _unwrap_named(
+        docs, ("exchange-document", "ops:publication-reference", "document-id")
+    )
 
 
 def _epo_record(item: object, subcategory: str) -> dict[str, Any]:
@@ -658,7 +695,10 @@ def _wipo_record(item: object, subcategory: str) -> dict[str, Any]:
     )
     title = str(item.get("title") or item.get("inventionTitle") or "")
     published = str(
-        item.get("publicationDate") or item.get("publication_date") or item.get("date") or ""
+        item.get("publicationDate")
+        or item.get("publication_date")
+        or item.get("date")
+        or ""
     )
     abstract = str(item.get("abstract") or "")
     inventors = _name_list(item.get("inventors") or item.get("authors"))
@@ -702,7 +742,9 @@ def _patsnap_record(item: object, subcategory: str) -> dict[str, Any]:
     """
     if not isinstance(item, dict):
         raise TypeError("patsnap row must be an object")
-    patent_id = str(item.get("pn") or item.get("patent_number") or item.get("patent_id") or "")
+    patent_id = str(
+        item.get("pn") or item.get("patent_number") or item.get("patent_id") or ""
+    )
     title = str(item.get("title") or "")
     published = _patsnap_date(item.get("pbdt") or item.get("publication_date"))
     inventors_raw = item.get("inventor") or item.get("inventors") or ""
@@ -840,7 +882,9 @@ def _ops_text(node: object) -> str:
             if not text:
                 continue
             fallback = fallback or text
-            if isinstance(value, dict) and str(value.get("@lang", "")).lower().startswith("en"):
+            if isinstance(value, dict) and str(
+                value.get("@lang", "")
+            ).lower().startswith("en"):
                 english = text
         return english or fallback
     if isinstance(node, list):
@@ -851,7 +895,9 @@ def _ops_text(node: object) -> str:
             if not text:
                 continue
             fallback = fallback or text
-            if isinstance(item, dict) and str(item.get("@lang", "")).lower().startswith("en"):
+            if isinstance(item, dict) and str(item.get("@lang", "")).lower().startswith(
+                "en"
+            ):
                 english = text
         return english or fallback
     return str(node)
@@ -901,7 +947,9 @@ def _ops_inventors(biblio: dict[str, Any]) -> list[str]:
     Returns:
         Names.
     """
-    parties = biblio.get("parties") if isinstance(biblio.get("parties"), dict) else biblio
+    parties = (
+        biblio.get("parties") if isinstance(biblio.get("parties"), dict) else biblio
+    )
     inventors = parties.get("inventors") if isinstance(parties, dict) else None
     rows = _unwrap_named(inventors, ("inventor",))
     names: list[str] = []
@@ -994,7 +1042,9 @@ def _lens_abstract(biblio: dict[str, Any]) -> str:
         return str(abstracts.get("text") or "")
     if isinstance(abstracts, list):
         for row in abstracts:
-            if isinstance(row, dict) and str(row.get("lang", "")).lower().startswith("en"):
+            if isinstance(row, dict) and str(row.get("lang", "")).lower().startswith(
+                "en"
+            ):
                 return str(row.get("text") or "")
             if isinstance(row, dict) and row.get("text"):
                 return str(row["text"])
@@ -1041,7 +1091,11 @@ def _lens_cpc(biblio: dict[str, Any]) -> list[str]:
     rows = block.get("classifications")
     if not isinstance(rows, list):
         return []
-    return [str(row["symbol"]) for row in rows if isinstance(row, dict) and row.get("symbol")]
+    return [
+        str(row["symbol"])
+        for row in rows
+        if isinstance(row, dict) and row.get("symbol")
+    ]
 
 
 def _name_list(raw: object) -> list[str]:
@@ -1109,7 +1163,9 @@ def _claim_list(raw: object) -> list[str]:
         if isinstance(row, str) and row.strip():
             claims.append(row.strip())
         elif isinstance(row, dict):
-            text = str(row.get("claim_text") or row.get("text") or row.get("value") or "").strip()
+            text = str(
+                row.get("claim_text") or row.get("text") or row.get("value") or ""
+            ).strip()
             if text:
                 claims.append(text)
     return claims

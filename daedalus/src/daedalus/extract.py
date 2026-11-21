@@ -93,7 +93,9 @@ class PdfExtractor:
         raise ExtractError("extraction failed after retries") from last
 
 
-def _extraction_from_payload(payload: object, digest: str, filename: str, text: str) -> Extraction:
+def _extraction_from_payload(
+    payload: object, digest: str, filename: str, text: str
+) -> Extraction:
     """Build an Extraction from LLM JSON.
 
     Args:
@@ -111,15 +113,21 @@ def _extraction_from_payload(payload: object, digest: str, filename: str, text: 
     raw_rows = payload.get("bibliography", [])
     rows = raw_rows if isinstance(raw_rows, list) else []
     bibliography = tuple(
-        entry for entry in (_bibliography_entry(row) for row in rows) if entry is not None
+        entry
+        for entry in (_bibliography_entry(row) for row in rows)
+        if entry is not None
     )
     raw_authors = payload.get("authors", ())
     authors = (
-        tuple(str(item) for item in raw_authors) if isinstance(raw_authors, list | tuple) else ()
+        tuple(str(item) for item in raw_authors)
+        if isinstance(raw_authors, list | tuple)
+        else ()
     )
     raw_keywords = payload.get("keywords", ())
     keywords = (
-        tuple(str(item) for item in raw_keywords) if isinstance(raw_keywords, list | tuple) else ()
+        tuple(str(item) for item in raw_keywords)
+        if isinstance(raw_keywords, list | tuple)
+        else ()
     )
     return Extraction(
         id=uuid5(NAMESPACE_URL, digest),
@@ -145,7 +153,9 @@ def _bibliography_entry(row: object) -> BibliographyEntry | None:
         return None
     raw = str(row["raw"])
     doi_raw = row.get("doi")
-    doi = _canonical_doi(str(doi_raw) if isinstance(doi_raw, str) else None) or _canonical_doi(raw)
+    doi = _canonical_doi(
+        str(doi_raw) if isinstance(doi_raw, str) else None
+    ) or _canonical_doi(raw)
     identity = Identity(kind=IdentityKind.DOI, value=doi) if doi else None
     return BibliographyEntry(raw=raw, identity=identity)
 

@@ -45,7 +45,9 @@ def build_openapi() -> dict[str, Any]:
     Returns:
         OpenAPI document as a JSON-serializable dict.
     """
-    schemas = {name: model.model_json_schema() for name, model in _SCHEMA_MODELS.items()}
+    schemas = {
+        name: model.model_json_schema() for name, model in _SCHEMA_MODELS.items()
+    }
     return {
         "openapi": "3.1.0",
         "info": {
@@ -68,7 +70,9 @@ def write_openapi(path: Path | None = None) -> Path:
         Path written.
     """
     destination = path or openapi_path()
-    destination.write_text(json.dumps(build_openapi(), indent=2) + "\n", encoding="utf-8")
+    destination.write_text(
+        json.dumps(build_openapi(), indent=2) + "\n", encoding="utf-8"
+    )
     return destination
 
 
@@ -106,20 +110,26 @@ def _paths() -> dict[str, Any]:
                         "schema": {"enum": ["citation", "content", "union"]},
                     },
                 ],
-                "responses": {"200": {"description": "Dated neighbors tagged by edge kind"}},
+                "responses": {
+                    "200": {"description": "Dated neighbors tagged by edge kind"}
+                },
             }
         },
         "/v1/uploads": {
             "post": {
                 "operationId": "uploadPdf",
                 "summary": "Consented PDF upload",
-                "responses": {"200": {"description": "Extraction plus attached graphs"}},
+                "responses": {
+                    "200": {"description": "Extraction plus attached graphs"}
+                },
             }
         },
         "/v1/generate": {
             "post": {
                 "operationId": "generatePath",
-                "summary": "Research path or patent whitespace from a masked neighborhood",
+                "summary": (
+                    "Research path or patent whitespace from a masked neighborhood"
+                ),
                 "requestBody": json_body,
                 "responses": {"200": {"description": "Ranked proposals"}},
             }

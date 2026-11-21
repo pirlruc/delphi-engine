@@ -10,7 +10,16 @@ from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse
 from delphi_contracts.enums import NeighborhoodMode
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.paths import ContextLeakError, PathProposal, PathRequest
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import JSONResponse
 
 from delphi.catalog import Catalog, MemoryCatalog
@@ -59,7 +68,9 @@ class AppContainer:
         self.extractor = extractor
         self.embedder = embedder
         self.generator = generator
-        self.api_key = os.environ.get("DELPHI_API_KEY", "") if api_key is None else api_key
+        self.api_key = (
+            os.environ.get("DELPHI_API_KEY", "") if api_key is None else api_key
+        )
 
 
 def create_app(container: AppContainer | None = None) -> FastAPI:
@@ -144,7 +155,9 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
 
         """
         try:
-            return deps.catalog.neighborhood(work_id, mode, subcategory, as_of=as_of, k=k)
+            return deps.catalog.neighborhood(
+                work_id, mode, subcategory, as_of=as_of, k=k
+            )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="work not found") from exc
 

@@ -45,11 +45,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--patsnap-url", default=None)
     parser.add_argument("--lens-url", default=None)
     parser.add_argument("--subcategory", default="two_d_codes")
-    parser.add_argument("--live", action="store_true", help="Fetch SYS-009 OpenAlex pages")
+    parser.add_argument(
+        "--live", action="store_true", help="Fetch SYS-009 OpenAlex pages"
+    )
     parser.add_argument(
         "--live-patents",
         action="store_true",
-        help="Fetch SYS-009 patents from EPO/WIPO/PatSnap/Lens when credentials are set",
+        help=(
+            "Fetch SYS-009 patents from EPO/WIPO/PatSnap/Lens when credentials are set"
+        ),
     )
     parser.add_argument("--per-subcategory", type=int, default=25)
     parser.add_argument(
@@ -88,7 +92,9 @@ def main(argv: list[str] | None = None) -> int:
             records = fetch_lens(args.lens_url, args.subcategory, client)
         return _emit(records, args.output)
     if args.live:
-        with httpx.Client(headers={"User-Agent": f"delphi-engine ({args.mailto})"}) as client:
+        with httpx.Client(
+            headers={"User-Agent": f"delphi-engine ({args.mailto})"}
+        ) as client:
             records = fetch_named_slice(
                 client,
                 per_subcategory=args.per_subcategory,
@@ -96,7 +102,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         return _emit(records, args.output)
     if args.live_patents:
-        with httpx.Client(headers={"User-Agent": f"delphi-engine ({args.mailto})"}) as client:
+        with httpx.Client(
+            headers={"User-Agent": f"delphi-engine ({args.mailto})"}
+        ) as client:
             records = fetch_patent_slice(
                 client,
                 per_subcategory=args.per_subcategory,
@@ -136,7 +144,9 @@ def _emit(records: list[dict[str, Any]], output: Path | None) -> int:
         return 2
     print(len(records))
     if output is not None:
-        output.write_text(json.dumps({"works": records}, indent=2) + "\n", encoding="utf-8")
+        output.write_text(
+            json.dumps({"works": records}, indent=2) + "\n", encoding="utf-8"
+        )
     return 0
 
 

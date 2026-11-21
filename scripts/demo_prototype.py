@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""PROTO-007 demo: upload sample PDF, show dual graphs, generate both kinds, hindcast."""
+"""PROTO-007 demo.
+
+Upload a sample PDF, show both graphs, generate both kinds, and hindcast.
+"""
 
 from __future__ import annotations
 

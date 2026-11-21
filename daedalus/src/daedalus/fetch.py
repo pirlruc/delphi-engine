@@ -30,11 +30,15 @@ OPENALEX_SEARCH: dict[str, str] = {
     SubcategoryId.TRANSFORMERS_FOUNDATION_MODELS.value: (
         'transformer OR "foundation model" OR "vision transformer"'
     ),
-    SubcategoryId.COMPUTER_VISION.value: ('"document image" OR "camera capture" OR barcode OR QR'),
+    SubcategoryId.COMPUTER_VISION.value: (
+        '"document image" OR "camera capture" OR barcode OR QR'
+    ),
     SubcategoryId.STEGANOGRAPHY.value: (
         'steganography OR steganalysis OR watermarking OR "information hiding"'
     ),
-    SubcategoryId.TWO_D_CODES.value: 'QR OR "data matrix" OR "2D barcode" OR Aztec OR PDF417',
+    SubcategoryId.TWO_D_CODES.value: (
+        'QR OR "data matrix" OR "2D barcode" OR Aztec OR PDF417'
+    ),
 }
 
 
@@ -67,7 +71,11 @@ def reconstruct_abstract(index: object) -> str:
                 positions[loc] = str(word)
     if not positions:
         return ""
-    capped = {loc: word for loc, word in positions.items() if 0 <= loc < _MAX_ABSTRACT_POSITIONS}
+    capped = {
+        loc: word
+        for loc, word in positions.items()
+        if 0 <= loc < _MAX_ABSTRACT_POSITIONS
+    }
     if not capped:
         return ""
     size = max(capped) + 1
@@ -268,7 +276,9 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
         item.get("abstract_inverted_index")
     )
     cites = [
-        str(uuid5(NAMESPACE_URL, str(ref))) for ref in item.get("referenced_works") or () if ref
+        str(uuid5(NAMESPACE_URL, str(ref)))
+        for ref in item.get("referenced_works") or ()
+        if ref
     ]
     record: dict[str, Any] = {
         "id": work_id,
@@ -278,7 +288,8 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
         "published_on": published,
         "openalex": openalex_id,
         "authors": _string_names(item, "authors") or _authorship_names(item),
-        "keywords": _string_names(item, "keywords") or _display_names(item.get("concepts")),
+        "keywords": _string_names(item, "keywords")
+        or _display_names(item.get("concepts")),
         "subcategory": subcategory,
         "cites": cites,
     }
@@ -311,11 +322,16 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     if not title:
         raise KeyError("title")
     published = str(
-        item.get("patent_date") or item.get("publication_date") or item.get("published_on") or ""
+        item.get("patent_date")
+        or item.get("publication_date")
+        or item.get("published_on")
+        or ""
     )
     if not published:
         raise KeyError("publication_date")
-    claims_raw = item.get("claims") or item.get("claim_text") or item.get("independent_claims")
+    claims_raw = (
+        item.get("claims") or item.get("claim_text") or item.get("independent_claims")
+    )
     claims: list[str] = []
     if isinstance(claims_raw, list):
         for row in claims_raw:
@@ -473,7 +489,11 @@ def _cpc_codes(item: dict[str, Any]) -> list[str]:
         if isinstance(row, str):
             codes.append(row)
         elif isinstance(row, dict):
-            code = row.get("cpc_subclass_id") or row.get("symbol") or row.get("cpc_class_id")
+            code = (
+                row.get("cpc_subclass_id")
+                or row.get("symbol")
+                or row.get("cpc_class_id")
+            )
             if code:
                 codes.append(str(code))
     return codes

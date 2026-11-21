@@ -10,7 +10,13 @@ from delphi_contracts.enums import PathKind
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.work import Work
 
-__all__ = ["ContextLeakError", "MaskedContext", "PathKind", "PathProposal", "PathRequest"]
+__all__ = [
+    "ContextLeakError",
+    "MaskedContext",
+    "PathKind",
+    "PathProposal",
+    "PathRequest",
+]
 
 
 class ContextLeakError(ValueError):
@@ -105,6 +111,9 @@ class MaskedContext(BaseModel):
             for neighbor in self.neighborhood.neighbors
             if neighbor.work.published_on >= self.mask_on
         ]
-        present = {self.seed.id, *(item.work.id for item in self.neighborhood.neighbors)}
+        present = {
+            self.seed.id,
+            *(item.work.id for item in self.neighborhood.neighbors),
+        }
         held = frozenset(self.held_out_ids) & present
         return held | frozenset(leaked)

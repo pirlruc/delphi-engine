@@ -44,9 +44,13 @@ def score_proposal(
         "llm-as-judge novelty relevance accuracy. "
         f"proposal={proposal.title} held_out={held_out.title}"
     )
-    response = provider.chat(ChatRequest(messages=(ChatMessage(role="user", content=prompt),)))
+    response = provider.chat(
+        ChatRequest(messages=(ChatMessage(role="user", content=prompt),))
+    )
     payload = json.loads(response.content)
-    left = provider.embed(EmbedRequest(text=proposal.title + " " + " ".join(proposal.claims)))
+    left = provider.embed(
+        EmbedRequest(text=proposal.title + " " + " ".join(proposal.claims))
+    )
     right = provider.embed(EmbedRequest(text=f"{held_out.title} {held_out.abstract}"))
     scores = EvalScores(
         novelty=float(payload.get("novelty", 3)),

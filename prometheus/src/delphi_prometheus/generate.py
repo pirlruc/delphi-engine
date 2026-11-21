@@ -6,7 +6,12 @@ import json
 from uuid import UUID
 
 from delphi_contracts.llm import ChatMessage, ChatRequest, LlmProvider, build_provider
-from delphi_contracts.paths import ContextLeakError, MaskedContext, PathKind, PathProposal
+from delphi_contracts.paths import (
+    ContextLeakError,
+    MaskedContext,
+    PathKind,
+    PathProposal,
+)
 
 __all__ = ["PathGenerator", "assert_no_leak"]
 
@@ -18,7 +23,10 @@ def assert_no_leak(context: MaskedContext) -> None:
         context: Candidate generator input.
 
     """
-    present = {context.seed.id, *(item.work.id for item in context.neighborhood.neighbors)}
+    present = {
+        context.seed.id,
+        *(item.work.id for item in context.neighborhood.neighbors),
+    }
     leaked = (set(context.forbidden_ids()) | set(context.held_out_ids)) & present
     leaked.update(
         item.work.id
@@ -55,12 +63,18 @@ class PathGenerator:
             f"propose the next {context.kind.value} from this masked context. "
             f"mask_on={context.mask_on.isoformat()} "
             f"seed={context.seed.id} "
-            f"neighbors={[str(item.work.id) for item in context.neighborhood.neighbors]}"
+            "neighbors="
+            f"{[str(item.work.id) for item in context.neighborhood.neighbors]}"
         )
-        response = self._llm.chat(ChatRequest(messages=(ChatMessage(role="user", content=prompt),)))
+        response = self._llm.chat(
+            ChatRequest(messages=(ChatMessage(role="user", content=prompt),))
+        )
         payload = json.loads(response.content)
         rows = payload.get("proposals", [payload])
-        allowed = {context.seed.id, *(item.work.id for item in context.neighborhood.neighbors)}
+        allowed = {
+            context.seed.id,
+            *(item.work.id for item in context.neighborhood.neighbors),
+        }
         return tuple(_proposal(row, context.kind, allowed) for row in rows)
 
 

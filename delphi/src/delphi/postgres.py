@@ -84,7 +84,10 @@ def catalog_from_url(url: str | None) -> Catalog:
 
 
 class PostgresCatalog:
-    """Catalog stored in one Postgres database (works, cites, similar_to, embeddings)."""
+    """Catalog stored in one Postgres database.
+
+    The tables are works, cites, similar_to, and embeddings.
+    """
 
     def __init__(self, conninfo: str, *, reset: bool = False) -> None:
         """Connect and apply the prototype schema.
@@ -120,7 +123,8 @@ class PostgresCatalog:
             ).fetchone()
             if owner is not None and owner[0] != work.id:
                 raise ValueError(
-                    f"identity {identity.kind.value}:{identity.value} belongs to another work"
+                    "identity "
+                    f"{identity.kind.value}:{identity.value} belongs to another work"
                 )
         payload = Jsonb(work.model_dump(mode="json"))
         self._conn.execute(
@@ -150,7 +154,9 @@ class PostgresCatalog:
         Returns:
             The work, or None.
         """
-        row = self._conn.execute("SELECT payload FROM works WHERE id = %s", (work_id,)).fetchone()
+        row = self._conn.execute(
+            "SELECT payload FROM works WHERE id = %s", (work_id,)
+        ).fetchone()
         if row is None:
             return None
         return Work.model_validate(row[0])
@@ -175,7 +181,9 @@ class PostgresCatalog:
             """,
             (kinds, values),
         ).fetchall()
-        found = {(str(kind), str(value)): work_id for kind, value, work_id in found_rows}
+        found = {
+            (str(kind), str(value)): work_id for kind, value, work_id in found_rows
+        }
         rows = tuple(
             BatchCheckRow(
                 identity=identity,
@@ -213,7 +221,9 @@ class PostgresCatalog:
             Matching edges.
         """
         if kind is None:
-            result = self._conn.execute("SELECT from_work, to_work, kind, score FROM edges")
+            result = self._conn.execute(
+                "SELECT from_work, to_work, kind, score FROM edges"
+            )
         else:
             result = self._conn.execute(
                 "SELECT from_work, to_work, kind, score FROM edges WHERE kind = %s",
@@ -221,7 +231,9 @@ class PostgresCatalog:
             )
         return tuple(_edge_from_row(row) for row in result.fetchall())
 
-    def put_embedding(self, work_id: UUID, vector: tuple[float, ...], model_id: str) -> None:
+    def put_embedding(
+        self, work_id: UUID, vector: tuple[float, ...], model_id: str
+    ) -> None:
         """Store an embedding for a work.
 
         Args:
@@ -364,7 +376,8 @@ class PostgresCatalog:
             for row in edge_rows:
                 mirror.add_edge(_edge_from_row(row))
             vectors = self._conn.execute(
-                "SELECT work_id, vector, model_id FROM embeddings WHERE work_id = ANY(%s)",
+                "SELECT work_id, vector, model_id FROM embeddings "
+                "WHERE work_id = ANY(%s)",
                 (ids,),
             ).fetchall()
             for work_id, vector, model_id in vectors:
@@ -389,13 +402,25 @@ class PostgresCatalog:
             """,
             (EdgeKind.SIMILAR_TO.value, work_id),
         )
-        ranked = scored_neighbors(work_id, source, embeddings, models, models.get(work_id))
+        ranked = scored_neighbors(
+            work_id, source, embeddings, models, models.get(work_id)
+        )
         for other_id, score in ranked[:k]:
             self.add_edge(
-                Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                Edge(
+                    from_work=work_id,
+                    to_work=other_id,
+                    kind=EdgeKind.SIMILAR_TO,
+                    score=score,
+                )
             )
             self.add_edge(
-                Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                Edge(
+                    from_work=other_id,
+                    to_work=work_id,
+                    kind=EdgeKind.SIMILAR_TO,
+                    score=score,
+                )
             )
 
     def rebuild_all_similar_to(self, k: int = 8) -> None:
@@ -404,16 +429,30 @@ class PostgresCatalog:
         Args:
             k: Neighbor count per work.
         """
-        self._conn.execute("DELETE FROM edges WHERE kind = %s", (EdgeKind.SIMILAR_TO.value,))
+        self._conn.execute(
+            "DELETE FROM edges WHERE kind = %s", (EdgeKind.SIMILAR_TO.value,)
+        )
         embeddings, models = self._embedding_state()
         for work_id, source in embeddings.items():
-            ranked = scored_neighbors(work_id, source, embeddings, models, models.get(work_id))
+            ranked = scored_neighbors(
+                work_id, source, embeddings, models, models.get(work_id)
+            )
             for other_id, score in ranked[:k]:
                 self.add_edge(
-                    Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                    Edge(
+                        from_work=work_id,
+                        to_work=other_id,
+                        kind=EdgeKind.SIMILAR_TO,
+                        score=score,
+                    )
                 )
                 self.add_edge(
-                    Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                    Edge(
+                        from_work=other_id,
+                        to_work=work_id,
+                        kind=EdgeKind.SIMILAR_TO,
+                        score=score,
+                    )
                 )
 
     def _check_identity(self, identity: Identity) -> BatchCheckRow:
@@ -430,7 +469,9 @@ class PostgresCatalog:
             (identity.kind.value, identity.value),
         ).fetchone()
         work_id = row[0] if row is not None else None
-        return BatchCheckRow(identity=identity, known=work_id is not None, work_id=work_id)
+        return BatchCheckRow(
+            identity=identity, known=work_id is not None, work_id=work_id
+        )
 
     def _embedding_state(
         self,

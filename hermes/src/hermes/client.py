@@ -118,7 +118,9 @@ class DelphiClient:
         response.raise_for_status()
         return _object_body(response.json())
 
-    def upload(self, pdf_path: Path, destination: str, subcategory: str) -> dict[str, object]:
+    def upload(
+        self, pdf_path: Path, destination: str, subcategory: str
+    ) -> dict[str, object]:
         """POST a consented PDF.
 
         Args:

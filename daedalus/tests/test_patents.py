@@ -43,7 +43,9 @@ def _epo_payload() -> dict[str, object]:
                                     {"$": "Deutsch", "@lang": "de"},
                                 ],
                                 "parties": {
-                                    "inventors": {"inventor": {"inventor-name": {"$": "Ada"}}}
+                                    "inventors": {
+                                        "inventor": {"inventor-name": {"$": "Ada"}}
+                                    }
                                 },
                                 "classifications-cpc": {
                                     "classification-cpc": {"symbol": {"$": "G06K19/06"}}
@@ -59,7 +61,10 @@ def _epo_payload() -> dict[str, object]:
 
 
 def test_epo_token_and_biblio_mapping() -> None:
+    """Verify this behavior."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         if request.method == "POST":
             assert b"grant_type=client_credentials" in request.content
             return httpx.Response(200, json={"access_token": "tok"})
@@ -89,7 +94,10 @@ def test_epo_token_and_biblio_mapping() -> None:
 
 
 def test_wipo_patsnap_lens_and_poison_skip() -> None:
+    """Verify this behavior."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         url = str(request.url)
         if "wipo" in url or "patentscope" in url:
             return httpx.Response(
@@ -153,7 +161,9 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
                                 "classifications_cpc": {
                                     "classifications": [{"symbol": "G06K19/06"}]
                                 },
-                                "claims": [{"claim_text": "A method for overlaying a QR code."}],
+                                "claims": [
+                                    {"claim_text": "A method for overlaying a QR code."}
+                                ],
                                 "abstracts": [{"lang": "en", "text": "A method."}],
                             },
                         }
@@ -211,12 +221,16 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
 
 
 def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
-    empty = httpx.Client(transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={})))
+    """Verify this behavior."""
+    empty = httpx.Client(
+        transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={}))
+    )
     assert fetch_patent_slice(empty, per_subcategory=1) == []
 
     calls = {"n": 0}
 
     def flaky(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         calls["n"] += 1
         if request.method == "POST" and "accesstoken" in str(request.url):
             return httpx.Response(200, json={"access_token": "tok"})
@@ -260,7 +274,10 @@ def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
 
 
 def test_simple_payloads_token_miss_and_cv_filter() -> None:
+    """Verify this behavior."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"token_type": "Bearer"})
@@ -287,7 +304,11 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
             return httpx.Response(
                 200,
                 json={
-                    "data": {"results": [{"id": "WO1", "title": "Nested", "date": "2012-02-02"}]}
+                    "data": {
+                        "results": [
+                            {"id": "WO1", "title": "Nested", "date": "2012-02-02"}
+                        ]
+                    }
                 },
             )
         return httpx.Response(200, json=["nope"])
@@ -309,6 +330,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
     assert fetch_epo("https://ops.example/listish", "two_d_codes", client) == []
 
     def cv(_request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         if _request.method == "POST" and "accesstoken" in str(_request.url):
             return httpx.Response(200, json={"access_token": "t"})
         return httpx.Response(
@@ -334,6 +356,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
 
 
 def test_alternate_shapes_dedupe_and_header_restore() -> None:
+    """Verify this behavior."""
     iso_doc = {
         "document-id": [
             {
@@ -345,16 +368,21 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
         ],
         "invention-title": "ISO QR date",
         "parties": {"inventors": ["skip", {"name": "Pat"}]},
-        "patent-classifications": {"patent-classification": {"classification-symbol": "G06K"}},
+        "patent-classifications": {
+            "patent-classification": {"classification-symbol": "G06K"}
+        },
         "abstract": "barcode",
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"access_token": "tok"})
         if request.method == "GET" and "ops" in url:
-            return httpx.Response(200, json={"results": [iso_doc, True, {"title": "missing id"}]})
+            return httpx.Response(
+                200, json={"results": [iso_doc, True, {"title": "missing id"}]}
+            )
         if "patentscope" in url or "wipo" in url:
             return httpx.Response(
                 200,
@@ -427,7 +455,10 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
 
 
 def test_lens_abstract_variants_and_wipo_docs() -> None:
+    """Verify this behavior."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         url = str(request.url)
         if "abstract-str" in url:
             return httpx.Response(
@@ -441,7 +472,9 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
                             "date_published": "2011-01-01",
                             "title": "QR string abstract",
                             "biblio": {
-                                "invention_title": [{"text": "QR string abstract", "lang": "en"}],
+                                "invention_title": [
+                                    {"text": "QR string abstract", "lang": "en"}
+                                ],
                                 "abstracts": "plain abstract",
                                 "parties": {
                                     "inventors": [
@@ -478,7 +511,9 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
         if "wipo-docs" in url:
             return httpx.Response(
                 200,
-                json={"docs": [{"id": "WO2", "title": "Docs QR", "date": "2013-03-03"}]},
+                json={
+                    "docs": [{"id": "WO2", "title": "Docs QR", "date": "2013-03-03"}]
+                },
             )
         if "wipo-empty" in url:
             return httpx.Response(200, json={"meta": {}})
@@ -491,14 +526,21 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
     listed = fetch_lens("https://api.lens.org/abstract-list", "two_d_codes", client)
     assert listed[0]["title"] == "QR fallback title"
     assert listed[0]["abstract"] == "fallback abs"
-    assert fetch_wipo("https://wipo-docs.test/x", "two_d_codes", client)[0]["patent"] == "WO2"
+    assert (
+        fetch_wipo("https://wipo-docs.test/x", "two_d_codes", client)[0]["patent"]
+        == "WO2"
+    )
     assert fetch_wipo("https://wipo-empty.test/x", "two_d_codes", client) == []
     assert fetch_epo("https://ops.example/none", "two_d_codes", client) == []
-    assert fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client) == []
+    assert (
+        fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client) == []
+    )
     assert fetch_lens("https://api.lens.org/none", "two_d_codes", client) == []
 
 
 def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
+    """Verify this behavior."""
+
     class _CM:
         def __enter__(self):
             return object()
@@ -510,9 +552,13 @@ def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr("daedalus.cli._epo_bearer_headers", lambda: {})
     monkeypatch.setattr("daedalus.cli.fetch_epo", lambda *_a, **_k: [{"title": "e"}])
     monkeypatch.setattr("daedalus.cli.fetch_wipo", lambda *_a, **_k: [{"title": "w"}])
-    monkeypatch.setattr("daedalus.cli.fetch_patsnap", lambda *_a, **_k: [{"title": "p"}])
+    monkeypatch.setattr(
+        "daedalus.cli.fetch_patsnap", lambda *_a, **_k: [{"title": "p"}]
+    )
     monkeypatch.setattr("daedalus.cli.fetch_lens", lambda *_a, **_k: [{"title": "l"}])
-    monkeypatch.setattr("daedalus.cli.fetch_patent_slice", lambda *_a, **_k: [{"title": "s"}])
+    monkeypatch.setattr(
+        "daedalus.cli.fetch_patent_slice", lambda *_a, **_k: [{"title": "s"}]
+    )
     monkeypatch.setenv("LENS_API_TOKEN", "tok")
     monkeypatch.setenv("WIPO_API_KEY", "wk")
     monkeypatch.setenv("PATSNAP_API_KEY", "sk-x")
@@ -537,7 +583,10 @@ def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
 
 
 def test_remaining_payload_branches() -> None:
+    """Verify this behavior."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Verify this behavior."""
         url = str(request.url)
         if "epo-dict-id" in url:
             return httpx.Response(
@@ -566,10 +615,17 @@ def test_remaining_payload_branches() -> None:
                             "doc-number": "9",
                             "kind": "A1",
                             "date": "20150601",
-                            "invention-title": ["", {"$": "QR list title", "@lang": "en"}],
+                            "invention-title": [
+                                "",
+                                {"$": "QR list title", "@lang": "en"},
+                            ],
                             "inventors": [{"inventor-name": {"$": ""}}],
                         },
-                        {"patent_id": "EPX", "title": "", "publication_date": "2011-01-01"},
+                        {
+                            "patent_id": "EPX",
+                            "title": "",
+                            "publication_date": "2011-01-01",
+                        },
                         {"patent_id": "EPY", "title": "No date QR"},
                         True,
                     ]
@@ -630,7 +686,11 @@ def test_remaining_payload_branches() -> None:
                             "date_published": "2011-03-03",
                             "title": "QR lens mix",
                             "biblio": {
-                                "invention_title": ["skip", {"text": ""}, {"text": "QR lens mix"}],
+                                "invention_title": [
+                                    "skip",
+                                    {"text": ""},
+                                    {"text": "QR lens mix"},
+                                ],
                                 "abstracts": [{}, {"text": "second abs"}],
                                 "parties": {
                                     "inventors": [

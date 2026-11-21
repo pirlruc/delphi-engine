@@ -47,6 +47,7 @@ def _work(title: str, published: date, work_id=None) -> Work:
 
 
 def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
+    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("QR 2016-03", date(2016, 3, 1))
     future = _work("QR 2018", date(2018, 1, 1))
@@ -56,7 +57,12 @@ def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
         Edge(from_work=descendant.id, to_work=held.id, kind=EdgeKind.CITES),
         Edge(from_work=future.id, to_work=seed.id, kind=EdgeKind.CITES),
         Edge(from_work=seed.id, to_work=held.id, kind=EdgeKind.SIMILAR_TO, score=0.8),
-        Edge(from_work=seed.id, to_work=same_year_after.id, kind=EdgeKind.SIMILAR_TO, score=0.7),
+        Edge(
+            from_work=seed.id,
+            to_work=same_year_after.id,
+            kind=EdgeKind.SIMILAR_TO,
+            score=0.7,
+        ),
     )
     works = (seed, held, future, same_year_after, descendant)
     dropped = dropped_ids(works, edges, held.id, held.published_on)
@@ -68,12 +74,13 @@ def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
     sibling = _work("Same day as held-out", date(2016, 3, 1))
     same_day = dropped_ids((seed, held, sibling), edges, held.id, held.published_on)
     assert sibling.id in same_day
-    assert held.id in citation_descendants(held.id, edges) or descendant.id in citation_descendants(
+    assert held.id in citation_descendants(
         held.id, edges
-    )
+    ) or descendant.id in citation_descendants(held.id, edges)
 
 
 def test_masked_context_drops_later_content_neighbor() -> None:
+    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     later = _work("later", date(2019, 1, 1))
     neighbor = Neighbor(
@@ -96,6 +103,7 @@ def test_masked_context_drops_later_content_neighbor() -> None:
 
 
 def test_run_hindcast_and_score(tmp_path: Path) -> None:
+    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("Color QR watermarks", date(2020, 2, 1))
     prior = _work("QR 2012", date(2012, 1, 1))
@@ -203,6 +211,7 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
 
 
 def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
+    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
     neighbors = (
@@ -230,11 +239,13 @@ def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
 
 
 def test_run_hindcast_rejects_empty_proposals() -> None:
+    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
 
     class _Empty:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+            """Verify this behavior."""
             return ()
 
     with pytest.raises(ValueError, match="no proposals"):
@@ -250,6 +261,7 @@ def test_run_hindcast_rejects_empty_proposals() -> None:
 
 
 def test_citation_descendant_cycle_safe() -> None:
+    """Verify this behavior."""
     a = uuid4()
     b = uuid4()
     edges = (

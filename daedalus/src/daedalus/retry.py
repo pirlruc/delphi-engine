@@ -47,7 +47,9 @@ def request_json(
     for attempt in range(tries):
         try:
             if verb == "POST":
-                response = client.post(url, json=json_body, timeout=timeout, headers=headers)
+                response = client.post(
+                    url, json=json_body, timeout=timeout, headers=headers
+                )
             else:
                 response = client.get(url, timeout=timeout, headers=headers)
         except httpx.TransportError as exc:
@@ -63,7 +65,9 @@ def request_json(
             )
             if attempt + 1 >= tries:
                 break
-            wait = _retry_wait(response, delay) if response.status_code == 429 else delay
+            wait = (
+                _retry_wait(response, delay) if response.status_code == 429 else delay
+            )
             time.sleep(wait)
             delay = min(delay * 2, 4.0)
             continue

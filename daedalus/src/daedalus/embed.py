@@ -50,7 +50,9 @@ def compose_embed_text(work: Work, extra: str = "") -> str:
     return header if not tail else header + _SEP + tail
 
 
-def contextual_windows(work: Work, extra: str = "", size: int = _CHUNK_CHARS) -> list[str]:
+def contextual_windows(
+    work: Work, extra: str = "", size: int = _CHUNK_CHARS
+) -> list[str]:
     """Chunk long tails while repeating title and abstract on every window.
 
     Args:
@@ -74,7 +76,8 @@ def contextual_windows(work: Work, extra: str = "", size: int = _CHUNK_CHARS) ->
         room = max(size - len(title_tag), _MIN_TAIL_BUDGET)
         pieces = chunk_text(composed, size=room)
         return [
-            piece if piece.startswith(_kind_prefix(work)) else title_tag + piece for piece in pieces
+            piece if piece.startswith(_kind_prefix(work)) else title_tag + piece
+            for piece in pieces
         ]
     return [header + _SEP + piece for piece in chunk_text(tail, size=budget)]
 
@@ -252,7 +255,9 @@ def _capped_claims(work: Work) -> str:
     Returns:
         Claim block or empty string.
     """
-    claims = [claim.strip() for claim in work.claims if claim.strip()][:_MAX_CLAIM_COUNT]
+    claims = [claim.strip() for claim in work.claims if claim.strip()][
+        :_MAX_CLAIM_COUNT
+    ]
     if not claims:
         return ""
     return "claims: " + _clip(" ".join(claims), _MAX_CLAIMS_CHARS)

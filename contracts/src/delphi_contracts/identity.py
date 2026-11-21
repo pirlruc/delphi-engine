@@ -100,7 +100,11 @@ class Identity(BaseModel):
         kind_raw = data.get("kind")
         value = data.get("value")
         try:
-            kind = kind_raw if isinstance(kind_raw, IdentityKind) else IdentityKind(str(kind_raw))
+            kind = (
+                kind_raw
+                if isinstance(kind_raw, IdentityKind)
+                else IdentityKind(str(kind_raw))
+            )
         except ValueError:
             return data
         if not isinstance(value, str):

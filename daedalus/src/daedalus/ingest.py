@@ -81,7 +81,9 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
                 continue
             if other == work.id:
                 continue
-            catalog.add_edge(Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES))
+            catalog.add_edge(
+                Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES)
+            )
     return len(stored)
 
 
@@ -96,7 +98,11 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
     """
     subcategory = str(record["subcategory"])
     parsed = SubcategoryId(subcategory)
-    scheme = CategoryScheme.CPC if record["kind"] == "patent" else CategoryScheme.OPENALEX_TOPIC
+    scheme = (
+        CategoryScheme.CPC
+        if record["kind"] == "patent"
+        else CategoryScheme.OPENALEX_TOPIC
+    )
     identity = _identities(record)
     return Work(
         id=UUID(str(record["id"])),
@@ -105,7 +111,9 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
         authors=tuple(str(item) for item in record.get("authors", ())),
         keywords=tuple(str(item) for item in record.get("keywords", ())),
         abstract=str(record.get("abstract", "")),
-        claims=tuple(str(item) for item in record.get("claims", ()) if str(item).strip()),
+        claims=tuple(
+            str(item) for item in record.get("claims", ()) if str(item).strip()
+        ),
         published_on=date.fromisoformat(str(record["published_on"])),
         identities=identity,
         categories=(
