@@ -27,7 +27,9 @@ from delphi.postgres import PostgresCatalog, catalog_from_url
 
 _DSN = os.environ.get(
     "DELPHI_TEST_DATABASE_URL",
-    "postgresql://delphi:delphi@127.0.0.1:5432/delphi_test",
+    "postgresql://delphi:delphi@host.docker.internal:5432/delphi_test"
+    if os.environ.get("CI")
+    else "postgresql://delphi:delphi@127.0.0.1:5432/delphi_test",
 )
 
 

@@ -92,5 +92,6 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`, including `python_executable = ".venv/bin/python"`. The quality job runs its own mypy, and that setting is how it sees the workspace install. Do not set `plugins = ["pydantic.mypy"]`. Do not put `.venv` on `mypy_path`; mypy then treats installed modules as user code.
 - Postgres needs `cap_add` after `cap_drop: ALL`. KICS query `ce76b7d0` treats any `cap_add` as unrestricted, including the sample that also drops all capabilities, so `.github/kics.config` excludes it.
 - `.trivyignore.yaml` entries have no `paths`. Trivy reports these Debian findings against the image name, so a dpkg path never matches. `.grype.yaml` lists the same ids. Both expire 2026-12-20. The image removes pip, setuptools, and ensurepip after installing uv so those Python findings are not ignored.
+- python-quality is pydevops 3.7.2 (`6170cf0bc4c021be310df5c5fd05f62e2fdc55c1`). Compose tests publish `5432` and, when `CI` is set, connect through `host.docker.internal`. `--network host` cannot attach to the runner network.
 
-*Last updated: 2026-11-20 (quality mypy uses the workspace interpreter; Trivy ignores are id-scoped).*
+*Last updated: 2026-11-21 (python-quality pins pydevops 3.7.2; Compose tests use host.docker.internal).*

@@ -21,7 +21,7 @@ jobs:
       packages: read
       security-events: write
       pull-requests: write
-    uses: pirlruc/pydevops/.github/workflows/python-quality.yml@2b9bbf03b18309df42eec0af508ca82a8150686c
+    uses: pirlruc/pydevops/.github/workflows/python-quality.yml@6170cf0bc4c021be310df5c5fd05f62e2fdc55c1
     with:
       strictness_level: Medium
       docstring_format: Google
@@ -33,7 +33,7 @@ jobs:
       test_compose_file: tests/postgres-compose.yml
       test_compose_services: postgres
       devops_repository: pirlruc/pydevops
-      devops_ref: 2b9bbf03b18309df42eec0af508ca82a8150686c
+      devops_ref: 6170cf0bc4c021be310df5c5fd05f62e2fdc55c1
 
   infra-lint:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
