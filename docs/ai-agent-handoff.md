@@ -74,10 +74,9 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 
 ## Suggested next work
 
-1. Point Hermes at tag `0.1.0` and its `openapi.json` asset. Do not retag `0.1.0`.
-2. Run Compose on a Docker host: `bash scripts/compose-up.sh` and confirm `/health` plus Hermes against Postgres ([PROTO-002](issues.yml), [SYS-002](issues.yml)).
-3. Raise `--per-subcategory` / `--live-patents` toward SYS-009 caps once keys are configured ([PROTO-003](issues.yml), [PROD-001](issues.yml)).
-4. Non-Fake LLM for a live hindcast once a provider is configured (`DELPHI_LLM_KIND=cloud|local`, [SYS-006](issues.yml)).
+1. Run Compose on a Docker host: `bash scripts/compose-up.sh` and confirm `/health` plus Hermes against Postgres ([PROTO-002](issues.yml), [SYS-002](issues.yml)).
+2. Raise `--per-subcategory` / `--live-patents` toward SYS-009 caps once keys are configured ([PROTO-003](issues.yml), [PROD-001](issues.yml)).
+3. Non-Fake LLM for a live hindcast once a provider is configured (`DELPHI_LLM_KIND=cloud|local`, [SYS-006](issues.yml)).
 
 ## Known pitfalls
 
@@ -97,4 +96,4 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - python-quality is pydevops 3.7.4 (`5ada9b47f17f3cc17765885252024fb67ec79df6`). Compose tests publish `5432` on every interface and, when `CI` is set, connect through `host.docker.internal`. The `ports` block is a KICS ignore-block: query `451d79dc` wants `127.0.0.1`, which the runner gateway cannot reach. `container-iac` and `container-compose-smoke` pin containerdevops 6.6.1 so they do not cancel each other.
 - Medium mypy floors stay in force while the reports exist. On `0.1.0` (`bcbd588b3b997d598ca49f7146886e566185b137`) Job 5 reported imprecision 0.65% and any-expression density 1.433 per 1K SLOC (11 any / 7674 SLOC). The remaining anys are the sqlite row read, `json.loads`, and `headers.get` confined to `hermes/cache.py`, `delphi_contracts/json_tree.py`, and `daedalus/retry.py`. Do not drop the report flags. A lower floor needs an Epic and Engineering Lead approval in `docs/guardrail-deviations.yml`. Do not move tag `0.1.0`.
 
-*Last updated: 2026-11-21 (0.1.0 is the tag on bcbd588; the release includes openapi.json and the workspace distributions).*
+*Last updated: 2026-11-21 (Hermes reads the 0.1.0 OpenAPI asset; tag 0.1.0 stays on bcbd588).*
