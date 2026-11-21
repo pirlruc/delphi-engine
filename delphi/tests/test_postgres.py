@@ -154,7 +154,7 @@ def test_postgres_extractions_and_empty_vector(catalog: PostgresCatalog) -> None
     assert catalog.get_extraction(uuid4()) is None
     assert catalog.get_extraction_by_hash("a" * 64) is not None
     assert catalog.get_extraction_by_hash("z" * 64) is None
-    assert catalog.edges() == ()
+    assert not catalog.edges()
     from delphi.postgres import _vector
 
-    assert _vector("nope") == ()
+    assert not _vector("nope")

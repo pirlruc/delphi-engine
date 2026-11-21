@@ -90,8 +90,9 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 
 - An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
 - Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`, including `python_executable = ".venv/bin/python"`. The quality job runs its own mypy, and that setting is how it sees the workspace install. Do not set `plugins = ["pydantic.mypy"]`. Do not put `.venv` on `mypy_path`; mypy then treats installed modules as user code.
+- Pylint runs from the DevOps virtualenv, so `[tool.pylint.main] init-hook` must `site.addsitedir` the workspace `.venv`. Putting that directory on `sys.path` does not load the editable `.pth` files, and the score falls through the Medium floor.
 - Postgres needs `cap_add` after `cap_drop: ALL`. KICS query `ce76b7d0` treats any `cap_add` as unrestricted, including the sample that also drops all capabilities, so `.github/kics.config` excludes it.
 - `.trivyignore.yaml` entries have no `paths`. Trivy reports these Debian findings against the image name, so a dpkg path never matches. `.grype.yaml` lists the same ids. Both expire 2026-12-20. The image removes pip, setuptools, and ensurepip after installing uv so those Python findings are not ignored.
-- python-quality is pydevops 3.7.2 (`6170cf0bc4c021be310df5c5fd05f62e2fdc55c1`). Compose tests publish `5432` and, when `CI` is set, connect through `host.docker.internal`. `--network host` cannot attach to the runner network.
+- python-quality is pydevops 3.7.3 (`a30ff9f79b95d18093fa63b69bf881eb3e947998`). Compose tests publish `5432` and, when `CI` is set, connect through `host.docker.internal`. The job image has no Docker CLI, so 3.7.3 installs Compose 2.32.4. `container-iac` and `container-compose-smoke` pin containerdevops 6.6.1 so they do not cancel each other.
 
-*Last updated: 2026-11-21 (python-quality pins pydevops 3.7.2; Compose tests use host.docker.internal).*
+*Last updated: 2026-11-21 (python-quality pins pydevops 3.7.3; IaC and smoke pin containerdevops 6.6.1).*

@@ -21,7 +21,7 @@ jobs:
       packages: read
       security-events: write
       pull-requests: write
-    uses: pirlruc/pydevops/.github/workflows/python-quality.yml@6170cf0bc4c021be310df5c5fd05f62e2fdc55c1
+    uses: pirlruc/pydevops/.github/workflows/python-quality.yml@a30ff9f79b95d18093fa63b69bf881eb3e947998
     with:
       strictness_level: Medium
       docstring_format: Google
@@ -33,7 +33,7 @@ jobs:
       test_compose_file: tests/postgres-compose.yml
       test_compose_services: postgres
       devops_repository: pirlruc/pydevops
-      devops_ref: 6170cf0bc4c021be310df5c5fd05f62e2fdc55c1
+      devops_ref: a30ff9f79b95d18093fa63b69bf881eb3e947998
 
   infra-lint:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -151,24 +151,24 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: pirlruc/containerdevops/.github/workflows/container-iac.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    uses: pirlruc/containerdevops/.github/workflows/container-iac.yml@bfac8b59b407f7dd601c8d4f0f24770f8a2afa16
     with:
       blocking: true
       compose_files: docker-compose.yml
       env_files: tests/compose.env
-      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+      scripts_ref: bfac8b59b407f7dd601c8d4f0f24770f8a2afa16
 
   container-smoke:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
-    uses: pirlruc/containerdevops/.github/workflows/container-compose-smoke.yml@1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+    uses: pirlruc/containerdevops/.github/workflows/container-compose-smoke.yml@bfac8b59b407f7dd601c8d4f0f24770f8a2afa16
     with:
       blocking: true
       compose_files: docker-compose.yml
       env_files: tests/compose.env
       project_name: delphi-smoke
-      scripts_ref: 1098e68cb5f8bfb3c38f8b227ca215b260ed29fe
+      scripts_ref: bfac8b59b407f7dd601c8d4f0f24770f8a2afa16
 
   required:
     if: always()

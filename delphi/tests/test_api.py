@@ -164,7 +164,7 @@ def test_rebuild_similar_to_skips_missing_embedding() -> None:
     work = _work("none", date(2015, 1, 1))
     catalog.upsert_work(work)
     catalog.rebuild_similar_to(work.id)
-    assert catalog.edges(EdgeKind.SIMILAR_TO) == ()
+    assert not catalog.edges(EdgeKind.SIMILAR_TO)
 
 
 def test_self_loop_and_duplicate_edges_ignored() -> None:
@@ -383,7 +383,7 @@ def test_work_from_extraction_defaults_and_helpers() -> None:
     )
     work = work_from_extraction(extraction, "two_d_codes")
     assert work.published_on == date(1970, 1, 1)
-    assert work.keywords == ()
+    assert not work.keywords
     identity = Identity(kind=IdentityKind.DOI, value="10.1/x")
     assert work_id_for(identity)
     unknown = work_from_extraction(extraction, "not_a_real_subcategory")
@@ -412,7 +412,7 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
     neighborhood = catalog.neighborhood(
         work.id, NeighborhoodMode.CITATION, "two_d_codes"
     )
-    assert neighborhood.neighbors == ()
+    assert not neighborhood.neighbors
     assert catalog.get_extraction(extraction.id) is not None
     assert catalog.get_extraction(uuid4()) is None
     assert catalog.get_work(uuid4()) is None
@@ -474,7 +474,7 @@ def test_rebuild_all_and_skip_foreign_identity() -> None:
         owner.id, hash_embed("owner text"), catalog._embeddings, catalog._models, "m1"
     )
     assert thief.id not in {item[0] for item in ranked}
-    assert scored_neighbors(owner.id, (1.0,), {other.id: (1.0, 0.0)}) == []
+    assert not scored_neighbors(owner.id, (1.0,), {other.id: (1.0, 0.0)})
 
 
 def test_generate_holds_out_siblings_and_placeholder_dates() -> None:

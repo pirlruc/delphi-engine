@@ -225,7 +225,7 @@ def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
     empty = httpx.Client(
         transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={}))
     )
-    assert fetch_patent_slice(empty, per_subcategory=1) == []
+    assert not fetch_patent_slice(empty, per_subcategory=1)
 
     calls = {"n": 0}
 
@@ -323,11 +323,11 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
     simple = fetch_epo("https://ops.example/publications", "two_d_codes", client)
     assert simple[0]["title"] == "Simple QR"
     assert simple[0]["claims"] == ["A QR overlay on a carrier."]
-    assert fetch_patsnap("https://connect.patsnap.com/x", "two_d_codes", client) == []
-    assert fetch_lens("https://api.lens.org/patent/search", "two_d_codes", client) == []
+    assert not fetch_patsnap("https://connect.patsnap.com/x", "two_d_codes", client)
+    assert not fetch_lens("https://api.lens.org/patent/search", "two_d_codes", client)
     nested = fetch_wipo("https://wipo-nested.test/x", "two_d_codes", client)
     assert nested[0]["patent"] == "WO1"
-    assert fetch_epo("https://ops.example/listish", "two_d_codes", client) == []
+    assert not fetch_epo("https://ops.example/listish", "two_d_codes", client)
 
     def cv(_request: httpx.Request) -> httpx.Response:
         """Verify this behavior."""
@@ -445,7 +445,7 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
     assert client.headers["Authorization"] == "keep-me"
     patents = {row["patent"] for row in rows}
     assert "US991" in patents or "US99" in patents
-    assert fetch_epo("https://example.test/empty", "two_d_codes", client) == []
+    assert not fetch_epo("https://example.test/empty", "two_d_codes", client)
     docs = fetch_wipo("https://wipo.test/docs", "two_d_codes", client)
     assert docs
     snap = fetch_patsnap("https://connect.patsnap.com/list", "two_d_codes", client)
@@ -530,12 +530,10 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
         fetch_wipo("https://wipo-docs.test/x", "two_d_codes", client)[0]["patent"]
         == "WO2"
     )
-    assert fetch_wipo("https://wipo-empty.test/x", "two_d_codes", client) == []
-    assert fetch_epo("https://ops.example/none", "two_d_codes", client) == []
-    assert (
-        fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client) == []
-    )
-    assert fetch_lens("https://api.lens.org/none", "two_d_codes", client) == []
+    assert not fetch_wipo("https://wipo-empty.test/x", "two_d_codes", client)
+    assert not fetch_epo("https://ops.example/none", "two_d_codes", client)
+    assert not fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client)
+    assert not fetch_lens("https://api.lens.org/none", "two_d_codes", client)
 
 
 def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
@@ -570,16 +568,16 @@ def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
     out = tmp_path / "p.json"
     assert main(["--lens-url", "http://l", "--output", str(out)]) == 0
     assert out.is_file()
-    assert _header("X", "") == {}
+    assert not _header("X", "")
     assert _bearer("tok") == {"Authorization": "Bearer tok"}
-    assert _bearer("") == {}
+    assert not _bearer("")
     monkeypatch.setenv("EPO_OPS_KEY", "k")
     monkeypatch.setenv("EPO_OPS_SECRET", "s")
     monkeypatch.setattr("daedalus.cli.epo_access_token", lambda *_a, **_k: "tok")
     assert _epo_bearer_headers()["Authorization"] == "Bearer tok"
     monkeypatch.delenv("EPO_OPS_KEY")
     monkeypatch.delenv("EPO_OPS_SECRET")
-    assert _epo_bearer_headers() == {}
+    assert not _epo_bearer_headers()
 
 
 def test_remaining_payload_branches() -> None:
@@ -711,14 +709,14 @@ def test_remaining_payload_branches() -> None:
     titles = {row["title"] for row in epo}
     assert "QR dict title" in titles
     assert "QR list title" in titles
-    assert fetch_epo("https://ops.example/epo-pub-obj", "two_d_codes", client) == []
+    assert not fetch_epo("https://ops.example/epo-pub-obj", "two_d_codes", client)
     wipo = fetch_wipo("https://wipo-list.test/x", "two_d_codes", client)
     assert wipo[0]["patent"] == "WO3"
-    assert fetch_wipo("https://wipo-int.test/x", "two_d_codes", client) == []
-    assert fetch_patsnap("https://patsnap-int.test/x", "two_d_codes", client) == []
+    assert not fetch_wipo("https://wipo-int.test/x", "two_d_codes", client)
+    assert not fetch_patsnap("https://patsnap-int.test/x", "two_d_codes", client)
     snap = fetch_patsnap("https://patsnap-skip.test/x", "two_d_codes", client)
     assert snap[0]["published_on"] == "2016-06-06"
-    assert fetch_lens("https://lens-int.test/x", "two_d_codes", client) == []
+    assert not fetch_lens("https://lens-int.test/x", "two_d_codes", client)
     lens = fetch_lens("https://lens-skip.test/x", "two_d_codes", client)
     assert lens[0]["abstract"] == "second abs"
     assert "Ada" in lens[0]["authors"]

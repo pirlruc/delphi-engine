@@ -245,10 +245,10 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     packed = chunk_text("para1\n\n" + ("x" * 13000), size=4000)
     assert len(packed) >= 2
     assert len(chunk_text("abcdefghij\nxy", size=10)) == 2
-    assert mean_pool([]) == ()
+    assert not mean_pool([])
     assert mean_pool([(1.0, 3.0), (3.0, 5.0)]) == (2.0, 4.0)
     assert mean_pool([(1.0,), (1.0, 2.0)]) == (1.0,)
-    assert chunk_text("  ") == []
+    assert not chunk_text("  ")
     HashEmbedder(catalog).embed_and_link(seed, "qr body\n\n" + ("code " * 5000))
     assert isinstance(pdf_text(_blank_pdf()), str)
     assert main(["--dry-run"]) == 0

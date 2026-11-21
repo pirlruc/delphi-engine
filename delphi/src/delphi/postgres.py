@@ -1,5 +1,9 @@
 """Postgres 16 catalog behind the Catalog protocol (SYS-002)."""
 
+# psycopg's generic Connection is inferred as a typing special form, so
+# execute and close look missing. The calls are real.
+# pylint: disable=no-member
+
 from __future__ import annotations
 
 from datetime import date
