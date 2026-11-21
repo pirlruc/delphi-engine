@@ -92,7 +92,7 @@ quiet = false
 paths = ["src"]
 
 [tool.ruff]
-line-length = 100
+line-length = 88
 preview = true
 src = ["src", "tests"]
 target-version = "py313"

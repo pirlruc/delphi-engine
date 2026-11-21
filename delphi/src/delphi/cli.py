@@ -6,6 +6,7 @@ import argparse
 import os
 
 import uvicorn
+from delphi_contracts.json_tree import namespace_dict
 
 from delphi.app import AppContainer, create_app
 from delphi.postgres import catalog_from_url
@@ -30,7 +31,20 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("DELPHI_DATABASE_URL"),
         help="Postgres DSN; default memory catalog when unset",
     )
-    args = parser.parse_args(argv)
-    app = create_app(AppContainer(catalog=catalog_from_url(args.database_url)))
-    uvicorn.run(app, host=args.host, port=args.port)
+    raw = namespace_dict(parser.parse_args(argv))
+    database_url = raw.get("database_url")
+    host = raw.get("host")
+    port = raw.get("port")
+    app = create_app(
+        AppContainer(
+            catalog=catalog_from_url(
+                database_url if isinstance(database_url, str) else None
+            )
+        )
+    )
+    uvicorn.run(
+        app,
+        host=host if isinstance(host, str) else "127.0.0.1",
+        port=port if isinstance(port, int) and not isinstance(port, bool) else 8000,
+    )
     return 0

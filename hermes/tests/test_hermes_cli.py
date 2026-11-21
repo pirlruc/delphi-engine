@@ -3,6 +3,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from delphi_contracts.enums import IdentityKind, NeighborhoodMode, PathKind
 from delphi_contracts.identity import Identity
 from typer.testing import CliRunner
@@ -14,24 +15,37 @@ from hermes.client import DelphiClient
 
 class _Response:
     def __init__(self, payload: object, status: int = 200) -> None:
+        """Check the behavior under test."""
         self._payload = payload
         self.status_code = status
 
     def raise_for_status(self) -> None:
+        """Check the behavior under test."""
         if self.status_code >= 400:
             raise RuntimeError("http error")
 
     def json(self) -> object:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         return self._payload
 
 
 class _Http:
     def __init__(self) -> None:
+        """Check the behavior under test."""
         self.calls: list[str] = []
 
     def post(
         self, url: str, json: object = None, files: object = None, data: object = None
     ) -> _Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         self.calls.append(url)
         if url.endswith("batch-check"):
             return _Response({
@@ -50,7 +64,10 @@ class _Http:
                     "authors": ["Ada"],
                     "keywords": ["qr"],
                     "bibliography": [
-                        {"raw": "Prior", "matched_work_id": "11111111-1111-1111-1111-111111111111"}
+                        {
+                            "raw": "Prior",
+                            "matched_work_id": "11111111-1111-1111-1111-111111111111",
+                        }
                     ],
                 },
                 "neighborhood": {
@@ -65,14 +82,21 @@ class _Http:
         return _Response({})
 
     def get(self, url: str, params: object = None) -> _Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         self.calls.append(url)
         return _Response({"seed": {"title": "QR 2014"}, "neighbors": []})
 
     def close(self) -> None:
+        """Check the behavior under test."""
         self.calls.append("close")
 
 
 def test_cache_round_trip(tmp_path: Path) -> None:
+    """Check the behavior under test."""
     cache = ResultCache(tmp_path / "c.sqlite")
     cache.put("batch-check", {"ok": True})
     assert cache.get("batch-check") == {"ok": True}
@@ -80,6 +104,7 @@ def test_cache_round_trip(tmp_path: Path) -> None:
 
 
 def test_cli_refuses_upload_without_consent(tmp_path: Path) -> None:
+    """Check the behavior under test."""
     runner = CliRunner()
     pdf = tmp_path / "paper.pdf"
     pdf.write_bytes(b"%PDF")
@@ -90,7 +115,10 @@ def test_cli_refuses_upload_without_consent(tmp_path: Path) -> None:
     assert result.exit_code == 2
 
 
-def test_cli_batch_check_and_neighborhood(monkeypatch, tmp_path: Path) -> None:
+def test_cli_batch_check_and_neighborhood(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Check the behavior under test."""
     http = _Http()
     monkeypatch.setattr(
         "hermes.cli.DelphiClient",
@@ -130,7 +158,10 @@ def test_cli_batch_check_and_neighborhood(monkeypatch, tmp_path: Path) -> None:
     assert neighborhood.exit_code == 0
 
 
-def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
+def test_cli_generate_and_upload(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Check the behavior under test."""
     http = _Http()
     monkeypatch.setattr(
         "hermes.cli.DelphiClient",
@@ -209,7 +240,8 @@ def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
     assert missing.exit_code == 2
 
 
-def test_print_helpers_non_objects(capsys) -> None:
+def test_print_helpers_non_objects(capsys: pytest.CaptureFixture[str]) -> None:
+    """Check the behavior under test."""
     from hermes.cli import _print_neighborhood, _print_upload
 
     _print_upload("raw")
@@ -221,6 +253,7 @@ def test_print_helpers_non_objects(capsys) -> None:
 
 
 def test_batch_check_requires_identifier() -> None:
+    """Check the behavior under test."""
     runner = CliRunner()
     result = runner.invoke(app, ["batch-check"])
     assert result.exit_code != 0
@@ -229,7 +262,8 @@ def test_batch_check_requires_identifier() -> None:
     assert result.exit_code != 0
 
 
-def test_client_methods(monkeypatch, tmp_path: Path) -> None:
+def test_client_methods(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Check the behavior under test."""
     http = _Http()
     client = DelphiClient("http://delphi.local", client=http)
     client.batch_check((Identity(kind=IdentityKind.DOI, value="10.1/x"),))

@@ -26,5 +26,5 @@ PY
 echo "check-ci-local: ok"
 
 if [[ "${SKIP_PYTHON_GATES:-}" != "1" ]]; then
-  bash "$ROOT/scripts/python-gates.sh"
+	bash "$ROOT/scripts/python-gates.sh"
 fi

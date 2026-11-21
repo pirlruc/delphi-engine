@@ -1,0 +1,4 @@
+ignores:
+  - .agents/**
+  - .github/scaffold/**
+  - docs/guardrails/**

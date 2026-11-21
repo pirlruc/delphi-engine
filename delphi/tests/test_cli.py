@@ -1,12 +1,16 @@
 """Delphi CLI tests."""
 
+import pytest
+
 from delphi.cli import main
 
 
-def test_main_invokes_uvicorn(monkeypatch) -> None:
+def test_main_invokes_uvicorn(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check the behavior under test."""
     captured: dict[str, object] = {}
 
     def fake_run(app: object, host: str, port: int) -> None:
+        """Check the behavior under test."""
         captured["host"] = host
         captured["port"] = port
         captured["app"] = app

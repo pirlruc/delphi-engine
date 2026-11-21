@@ -4,11 +4,18 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from pathlib import Path
 
 import uvicorn
+from delphi_contracts.json_tree import (
+    as_dict,
+    as_list,
+    is_object_dict,
+    is_object_list,
+    namespace_dict,
+    parse_json,
+)
 from delphi_contracts.llm import build_provider, provider_settings_from_env
 
 from daedalus.embed import HashEmbedder
@@ -38,9 +45,14 @@ def build_container(
     if not skip_fixture:
         ingest_records(catalog, load_fixture())
     if records_path is not None:
-        payload = json.loads(records_path.read_text(encoding="utf-8"))
-        extra = payload["works"] if isinstance(payload, dict) and "works" in payload else payload
-        ingest_records(catalog, list(extra))
+        payload = parse_json(records_path.read_text(encoding="utf-8"))
+        if is_object_dict(payload) and "works" in payload:
+            extra = [as_dict(item) for item in as_list(payload.get("works"))]
+        elif is_object_list(payload):
+            extra = [as_dict(item) for item in payload]
+        else:
+            extra = []
+        ingest_records(catalog, extra)
     provider = build_provider(provider_settings_from_env())
     embedder = HashEmbedder(catalog, llm=provider)
     for work in catalog.list_works():
@@ -72,17 +84,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--records", type=Path, default=None)
     parser.add_argument("--skip-fixture", action="store_true")
-    args = parser.parse_args(argv)
+    raw = namespace_dict(parser.parse_args(argv))
+    database_url = raw.get("database_url")
+    records = raw.get("records")
+    host = raw.get("host")
+    port = raw.get("port")
     uvicorn.run(
         create_app(
             build_container(
-                database_url=args.database_url,
-                records_path=args.records,
-                skip_fixture=args.skip_fixture,
+                database_url=database_url if isinstance(database_url, str) else None,
+                records_path=records if isinstance(records, Path) else None,
+                skip_fixture=raw.get("skip_fixture") is True,
             )
         ),
-        host=args.host,
-        port=args.port,
+        host=host if isinstance(host, str) else "127.0.0.1",
+        port=port if isinstance(port, int) and not isinstance(port, bool) else 8000,
     )
     return 0
 

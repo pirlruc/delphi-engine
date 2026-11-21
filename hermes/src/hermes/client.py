@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Protocol
 from uuid import UUID
 
 import httpx
@@ -14,15 +15,62 @@ from delphi_contracts.paths import PathKind
 __all__ = ["DelphiClient"]
 
 
+class _HttpResponse(Protocol):
+    """The response methods the client actually uses."""
+
+    def raise_for_status(self) -> None:
+        """Raise when the status is an error."""
+
+    def json(self) -> object:
+        """Return the decoded body."""
+
+
+class _HttpTransport(Protocol):
+    """Minimal HTTP surface so tests can inject a fake client."""
+
+    def post(
+        self,
+        url: str,
+        *,
+        json: object = None,
+        files: object = None,
+        data: object = None,
+    ) -> _HttpResponse:
+        """POST ``url``."""
+
+    def get(self, url: str, *, params: object = None) -> _HttpResponse:
+        """GET ``url``."""
+
+    def close(self) -> None:
+        """Release the transport."""
+
+
+def _object_body(payload: object) -> dict[str, object]:
+    """Require a JSON object.
+
+    Args:
+        payload: Decoded response body.
+
+    Returns:
+        The body as a string-keyed mapping.
+
+    Raises:
+        TypeError: When the body is not a JSON object.
+    """
+    if not isinstance(payload, dict):
+        raise TypeError("expected a JSON object")
+    return dict(payload)
+
+
 class DelphiClient:
     """Thin HTTP wrapper used by the CLI."""
 
-    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+    def __init__(self, base_url: str, client: _HttpTransport | None = None) -> None:
         """Store base URL and optional injected client.
 
         Args:
             base_url: Delphi origin.
-            client: Injected httpx client for tests.
+            client: Injected HTTP client for tests.
         """
         self._base = base_url.rstrip("/")
         self._client = client or httpx.Client()
@@ -68,9 +116,11 @@ class DelphiClient:
             params={"mode": mode.value, "subcategory": subcategory},
         )
         response.raise_for_status()
-        return dict(response.json())
+        return _object_body(response.json())
 
-    def upload(self, pdf_path: Path, destination: str, subcategory: str) -> dict[str, object]:
+    def upload(
+        self, pdf_path: Path, destination: str, subcategory: str
+    ) -> dict[str, object]:
         """POST a consented PDF.
 
         Args:
@@ -88,7 +138,7 @@ class DelphiClient:
                 data={"consent_destination": destination, "subcategory": subcategory},
             )
         response.raise_for_status()
-        return dict(response.json())
+        return _object_body(response.json())
 
     def generate(
         self,

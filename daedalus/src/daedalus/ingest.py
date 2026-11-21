@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
+from collections.abc import Mapping, Sequence
 from datetime import date
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import TypedDict
 from uuid import UUID
 
 from delphi_contracts.category import Category
@@ -19,12 +19,32 @@ from delphi_contracts.enums import (
 )
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity
+from delphi_contracts.json_tree import as_dict, as_list, as_str_list, parse_json
 from delphi_contracts.work import Work
 
 from daedalus.caps import allowed_text, check_caps
 from daedalus.ports import CatalogWriter
 
-__all__ = ["fixture_path", "ingest_records", "load_fixture"]
+__all__ = ["IngestRecord", "fixture_path", "ingest_records", "load_fixture"]
+
+
+class IngestRecord(TypedDict, total=False):
+    """Fixture-shaped work dict shared by the fetchers and the catalog loader."""
+
+    id: str
+    kind: str
+    title: str
+    abstract: str
+    published_on: str
+    authors: list[str]
+    keywords: list[str]
+    claims: list[str]
+    subcategory: str
+    cites: list[str]
+    doi: str
+    patent: str
+    openalex: str
+    arxiv: str
 
 
 def fixture_path() -> Path:
@@ -36,7 +56,7 @@ def fixture_path() -> Path:
     return Path(str(files("daedalus.fixtures").joinpath("slice.json")))
 
 
-def load_fixture(path: Path | None = None) -> list[dict[str, Any]]:
+def load_fixture(path: Path | None = None) -> list[dict[str, object]]:
     """Load fixture records.
 
     Args:
@@ -45,11 +65,13 @@ def load_fixture(path: Path | None = None) -> list[dict[str, Any]]:
     Returns:
         Work dicts.
     """
-    payload = json.loads((path or fixture_path()).read_text(encoding="utf-8"))
-    return list(payload["works"])
+    payload = as_dict(parse_json((path or fixture_path()).read_text(encoding="utf-8")))
+    return [as_dict(item) for item in as_list(payload.get("works"))]
 
 
-def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int:
+def ingest_records(
+    catalog: CatalogWriter, records: Sequence[Mapping[str, object]]
+) -> int:
     """Upsert works and cites, enforcing SYS-009 caps.
 
     Args:
@@ -68,7 +90,7 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
         if not allowed_text(blob, subcategory):
             continue
         work = _work_from_fixture(record)
-        stored.append((work, [str(item) for item in record.get("cites", [])]))
+        stored.append((work, as_str_list(record.get("cites", []))))
         counts[subcategory] = counts.get(subcategory, 0) + 1
     check_caps(counts)
     for work, _cites in stored:
@@ -81,11 +103,13 @@ def ingest_records(catalog: CatalogWriter, records: list[dict[str, Any]]) -> int
                 continue
             if other == work.id:
                 continue
-            catalog.add_edge(Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES))
+            catalog.add_edge(
+                Edge(from_work=work.id, to_work=other, kind=EdgeKind.CITES)
+            )
     return len(stored)
 
 
-def _work_from_fixture(record: dict[str, Any]) -> Work:
+def _work_from_fixture(record: Mapping[str, object]) -> Work:
     """Build a Work from fixture JSON.
 
     Args:
@@ -96,16 +120,22 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
     """
     subcategory = str(record["subcategory"])
     parsed = SubcategoryId(subcategory)
-    scheme = CategoryScheme.CPC if record["kind"] == "patent" else CategoryScheme.OPENALEX_TOPIC
+    scheme = (
+        CategoryScheme.CPC
+        if record["kind"] == "patent"
+        else CategoryScheme.OPENALEX_TOPIC
+    )
     identity = _identities(record)
     return Work(
         id=UUID(str(record["id"])),
         kind=WorkKind(str(record["kind"])),
         title=str(record["title"]),
-        authors=tuple(str(item) for item in record.get("authors", ())),
-        keywords=tuple(str(item) for item in record.get("keywords", ())),
+        authors=tuple(as_str_list(record.get("authors", ()))),
+        keywords=tuple(as_str_list(record.get("keywords", ()))),
         abstract=str(record.get("abstract", "")),
-        claims=tuple(str(item) for item in record.get("claims", ()) if str(item).strip()),
+        claims=tuple(
+            item for item in as_str_list(record.get("claims", ())) if item.strip()
+        ),
         published_on=date.fromisoformat(str(record["published_on"])),
         identities=identity,
         categories=(
@@ -119,7 +149,7 @@ def _work_from_fixture(record: dict[str, Any]) -> Work:
     )
 
 
-def _identities(record: dict[str, Any]) -> tuple[Identity, ...]:
+def _identities(record: Mapping[str, object]) -> tuple[Identity, ...]:
     """Collect DOI, patent, OpenAlex, and arXiv identities.
 
     Args:

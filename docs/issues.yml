@@ -132,35 +132,48 @@ milestones:
               - rg -n 'guardrails/tree/1.15.0/node' README.md
 
       - id: GATE-001
-        status: open
-        title: GitHub Actions run only on workflow_dispatch
+        status: done
+        title: GitHub Actions run on pull requests and pushes to main
         overview:
           problem: >-
-            The repo is private and Actions minutes are scarce. Default
-            push/PR/schedule workflows would spend quota on every commit.
+            A dispatch-only workflow never runs at merge time, so a green
+            local script is the only gate. The repository is public, so
+            standard-runner minutes are not billed.
           goal: >-
-            In the context of a private prototype repo, facing limited
-            Actions minutes, we decided that CI workflows use
-            workflow_dispatch only, to keep quota for intentional runs,
-            accepting that PRs are not gated on GitHub until quota allows
-            push/PR triggers. Local parity is scripts/check-ci-local.sh
-            (CI-008).
+            In the context of a public prototype, facing checks that did
+            not exist at merge time, we decided to run CI on pull_request
+            and on pushes to main, with concurrency cancellation and one
+            aggregate job, to achieve a merge-time gate, accepting the
+            extra public-runner minutes. Local parity remains
+            scripts/check-ci-local.sh (CI-008).
         architecture:
           target: .github/workflows/quality.yml
           modules:
             - .github/workflows
             - scripts/check-ci-local.sh
         acceptance_criteria:
-          - No workflow uses on.push, on.pull_request, or on.schedule
-          - quality.yml uses workflow_dispatch only
+          - quality.yml and ci.yml run on pull_request and on pushes to main
+          - ci.yml cancels in-progress runs for the same ref
+          - ci.yml ends in an aggregate required job
+          - "Reusable callers pin a commit SHA and pass the same value as devops_ref or scripts_ref (CI-018, CI-034)"
           - Third-party actions are pinned by commit SHA (CI-001)
-          - "Top-level permissions are contents: read (CI-025)"
-          - bash scripts/check-ci-local.sh matches the workflow checks
+          - "Workflow permissions start empty and each job grants only what it needs (CI-025)"
+          - bash scripts/check-ci-local.sh matches the manifest checks
         guardrail_refs:
           - CI-001
           - CI-008
           - CI-025
         tasks:
+          - id: GATE-001-T2
+            status: done
+            title: Run CI on pull requests and pushes to main
+            instructions:
+              files:
+                - .github/workflows/ci.yml
+                - .github/workflows/quality.yml
+            verification:
+              - rg -n 'pull_request' .github/workflows/ci.yml
+              - rg -n 'required:' .github/workflows/ci.yml
           - id: GATE-001-T1
             status: done
             title: Add dispatch-only quality workflow and local parity script
@@ -171,12 +184,11 @@ milestones:
             verification:
               - bash scripts/check-ci-local.sh
               - rg -n 'workflow_dispatch' .github/workflows/quality.yml
-              - "! rg -n '^  (push|pull_request|schedule):' .github/workflows/*.yml"
 
   - name: Phase 0 — System decisions
     epics:
       - id: SYS-001
-        status: open
+        status: done
         title: Isolated-folder monorepo now, one-repo-per-library later
         overview:
           problem: >-
@@ -229,7 +241,7 @@ milestones:
               - test -f hermes/docs/ai-agent-handoff.md
 
       - id: SYS-002
-        status: open
+        status: done
         title: Prototype on Postgres and pgvector; defer distributed graph stores
         overview:
           problem: >-
@@ -269,7 +281,7 @@ milestones:
               - rg -n 'pgvector|Postgres' delphi/README.md
 
       - id: SYS-003
-        status: open
+        status: done
         title: Canonical work identity for batch existence checks
         overview:
           problem: >-
@@ -309,7 +321,7 @@ milestones:
               - rg -n 'DOI|OpenAlex|patent' contracts/README.md
 
       - id: SYS-004
-        status: open
+        status: done
         title: Consented PDF upload is required for a working prototype
         overview:
           problem: >-
@@ -361,7 +373,7 @@ milestones:
               - rg -n 'upload one PDF' hermes/README.md
 
       - id: SYS-005
-        status: open
+        status: done
         title: Six isolated components including Prometheus and contracts
         overview:
           problem: >-
@@ -406,7 +418,7 @@ milestones:
               - rg -n 'prometheus|epimetheus|daedalus' README.md
 
       - id: SYS-006
-        status: open
+        status: done
         title: LLM provider must run on cloud and on local runtimes
         overview:
           problem: >-
@@ -449,7 +461,7 @@ milestones:
               - rg -n 'Ollama|vLLM|Fake|cloud' prometheus/README.md daedalus/README.md
 
       - id: SYS-007
-        status: open
+        status: done
         title: Serve working scientists and patent searchers in the same prototype
         overview:
           problem: >-
@@ -487,7 +499,7 @@ milestones:
               - rg -n 'research_path|patent_whitespace' contracts/README.md prometheus/README.md
 
       - id: SYS-008
-        status: open
+        status: done
         title: Categories and subcategories are the query axis
         overview:
           problem: >-
@@ -527,7 +539,7 @@ milestones:
               - rg -n 'openalex_topic|cpc|subcategor' contracts/README.md
 
       - id: SYS-009
-        status: open
+        status: done
         title: First corpus is CV, 2D codes, steganography, and bounded transformers
         overview:
           problem: >-
@@ -582,7 +594,7 @@ milestones:
               - rg -n 'Named' docs/prototype-corpus.md
 
       - id: SYS-010
-        status: open
+        status: done
         title: Prototype builds citation and content graphs including other papers
         overview:
           problem: >-
@@ -1026,6 +1038,62 @@ milestones:
               - cd daedalus && uv run pytest
               - cd delphi && uv run pytest
 
+      - id: SEC-001
+        status: open
+        title: Authenticate the API and publish the image only from CI
+        decision: >-
+          In the context of a workstation API that accepts PDFs and calls
+          external hosts, facing unauthenticated writes and untrusted model
+          output, we decided to require an API key and to validate every
+          external payload before it reaches the catalog, to achieve a
+          prototype that can run outside a throwaway process, accepting
+          that every caller must send the key.
+        overview:
+          problem: >-
+            The walking skeleton accepted uploads and fetches with no
+            caller identity, no size bound, and no check that model output
+            matched the schema.
+          goal: >-
+            Keep the shipped controls, and publish the image to GHCR only
+            through the release workflow.
+        architecture:
+          target: delphi API and the runtime image
+          modules:
+            - delphi
+            - daedalus
+        acceptance_criteria:
+          - /v1 routes require an API key
+          - PDF uploads are size-limited and parsed from a temporary file
+          - LLM output is schema-checked and is not concatenated into the instruction
+          - WIPO, OpenAlex, and the LLM base URL are HTTPS and allowlisted
+          - The image is published to GHCR by the release workflow, not by a local docker push
+        guardrail_refs:
+          - PY-SEC-006
+          - DOCKER-BUILD-003
+        tasks:
+          - id: SEC-001-T1
+            status: done
+            title: Require an API key and bound untrusted inputs
+            instructions:
+              files:
+                - delphi/src
+                - daedalus/src
+            verification:
+              - cd delphi && uv run pytest
+              - cd daedalus && uv run pytest
+            guardrail_refs:
+              - PY-SEC-006
+          - id: SEC-001-T2
+            status: open
+            title: Publish the image to GHCR from the release workflow
+            instructions:
+              files:
+                - .github/workflows
+            verification:
+              - The release workflow pushes the digest-pinned image to GHCR
+            guardrail_refs:
+              - DOCKER-BUILD-003
+
   - name: Phase 2 — Product slice
     epics:
       - id: PROD-001
@@ -1152,7 +1220,11 @@ milestones:
               - cd delphi && uv run pytest
 
       - id: PROD-004
-        status: open
+        status: rejected
+        resolution: >-
+          The desktop app is pirlruc/hermes-desktop. Its backlog is
+          HD-001 through HD-006 in
+          https://github.com/pirlruc/hermes-desktop/blob/main/docs/issues.yml.
         title: Hermes desktop with Zotero import and explicit PDF consent
         overview:
           problem: >-
@@ -1181,7 +1253,10 @@ milestones:
           - PY-API-002
         tasks:
           - id: PROD-004-T1
-            status: open
+            status: rejected
+            resolution: >-
+              Tracked as the hermes-desktop foundation tasks, starting at
+              https://github.com/pirlruc/hermes-desktop/blob/main/docs/issues.yml.
             title: Specify desktop stack and Zotero reader against the batch-check API
             instructions:
               files:
@@ -1333,39 +1408,33 @@ milestones:
 
       - id: SCALE-003
         status: open
-        title: Split component folders into standalone repositories
+        title: Split a member out only when a measured trigger is met
         overview:
           problem: >-
-            Guardrails prefer one repo per library. The folder layout exists
-            so this split is mechanical once contracts are stable.
+            Splitting daedalus or epimetheus into new repositories before
+            there is a separate deploy, a stable contracts release, or a
+            separate owner adds release coupling without a measured need.
           goal: >-
-            Extract contracts, delphi, daedalus, prometheus, epimetheus, and
-            hermes into standalone git repositories, each pinning guardrails
-            and github-scaffold, and consuming contracts as a versioned
-            package.
+            Keep this repository one uv workspace until one of those three
+            triggers is true, then extract only the member that triggered it.
         architecture:
-          target: New GitHub repos under pirlruc, this repo becomes the workspace or Delphi home
+          target: this repository, until a trigger is recorded
           modules:
-            - contracts
-            - delphi
             - daedalus
-            - prometheus
             - epimetheus
-            - hermes
         acceptance_criteria:
-          - Each extracted repo has its own docs/issues.yml for later work
-          - Cross-repo links are GitHub URLs pinned by tag (cross-repo-links rule)
-          - This repo either remains Delphi or becomes a thin aggregator README
+          - A split cites which trigger fired and the measurement behind it
+          - The extracted repo pins guardrails and consumes contracts by version
+          - Cross-repo links are GitHub URLs pinned by tag
         guardrail_refs:
           - PY-API-002
           - PY-DELIV-001
         tasks:
           - id: SCALE-003-T1
             status: open
-            title: Define extract order starting with contracts
+            title: Record the trigger before opening an extract pull request
             instructions:
               files:
-                - README.md
                 - docs/ai-agent-handoff.md
             verification:
-              - README states extract order and that contracts publishes first
+              - The handoff names the trigger and the member to extract

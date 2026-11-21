@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""PROTO-007 demo: upload sample PDF, show dual graphs, generate both kinds, hindcast."""
+"""PROTO-007 demo.
+
+Upload a sample PDF, show both graphs, generate both kinds, and hindcast.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +18,7 @@ from daedalus.ingest import ingest_records, load_fixture
 from delphi.catalog import MemoryCatalog
 from delphi.services import generate_paths, upload_pdf
 from delphi_contracts.enums import NeighborhoodMode, PathKind
+from delphi_contracts.json_tree import as_dict, namespace_dict, parse_json
 from delphi_contracts.paths import PathRequest
 from delphi_prometheus import PathGenerator
 from epimetheus.trials import summarize_runs, trials_from_payload
@@ -42,20 +46,28 @@ def run_demo() -> dict[str, object]:
         PdfExtractor(),
         embedder,
     )
-    citation = catalog.neighborhood(extraction.id, NeighborhoodMode.CITATION, "two_d_codes")
-    content = catalog.neighborhood(extraction.id, NeighborhoodMode.CONTENT, "two_d_codes")
+    citation = catalog.neighborhood(
+        extraction.id, NeighborhoodMode.CITATION, "two_d_codes"
+    )
+    content = catalog.neighborhood(
+        extraction.id, NeighborhoodMode.CONTENT, "two_d_codes"
+    )
     generator = PathGenerator()
     research = generate_paths(
         catalog,
         PathRequest(
-            kind=PathKind.RESEARCH_PATH, subcategory="two_d_codes", seed_work_id=extraction.id
+            kind=PathKind.RESEARCH_PATH,
+            subcategory="two_d_codes",
+            seed_work_id=extraction.id,
         ),
         generator,
     )
     patent = generate_paths(
         catalog,
         PathRequest(
-            kind=PathKind.PATENT_WHITESPACE, subcategory="two_d_codes", seed_work_id=extraction.id
+            kind=PathKind.PATENT_WHITESPACE,
+            subcategory="two_d_codes",
+            seed_work_id=extraction.id,
         ),
         generator,
     )
@@ -67,8 +79,12 @@ def run_demo() -> dict[str, object]:
         / "fixtures"
         / "slice.json"
     )
-    summary = summarize_runs(trials_from_payload(json.loads(fixture.read_text(encoding="utf-8"))))
-    matched = sum(1 for row in extraction.bibliography if row.matched_work_id is not None)
+    summary = summarize_runs(
+        trials_from_payload(as_dict(parse_json(fixture.read_text(encoding="utf-8"))))
+    )
+    matched = sum(
+        1 for row in extraction.bibliography if row.matched_work_id is not None
+    )
     return {
         "extraction": {
             "title": extraction.title,
@@ -99,10 +115,14 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(description="Delphi prototype demo")
     parser.add_argument("--output", type=Path, default=Path("docs/prototype-demo.json"))
-    args = parser.parse_args(argv)
+    raw = namespace_dict(parser.parse_args(argv))
+    output = raw.get("output")
+    destination = (
+        output if isinstance(output, Path) else Path("docs/prototype-demo.json")
+    )
     artifact = run_demo()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(artifact, indent=2))
     return 0
 

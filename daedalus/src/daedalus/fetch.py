@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 from urllib.parse import urlencode
 from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 from delphi_contracts.enums import SubcategoryId
 from delphi_contracts.identity import normalize_doi, normalize_patent
+from delphi_contracts.json_tree import as_list, is_object_dict, is_object_list
 
 from daedalus.caps import allowed_text
+from daedalus.ingest import IngestRecord
 from daedalus.retry import request_json
 
 __all__ = [
@@ -30,11 +31,15 @@ OPENALEX_SEARCH: dict[str, str] = {
     SubcategoryId.TRANSFORMERS_FOUNDATION_MODELS.value: (
         'transformer OR "foundation model" OR "vision transformer"'
     ),
-    SubcategoryId.COMPUTER_VISION.value: ('"document image" OR "camera capture" OR barcode OR QR'),
+    SubcategoryId.COMPUTER_VISION.value: (
+        '"document image" OR "camera capture" OR barcode OR QR'
+    ),
     SubcategoryId.STEGANOGRAPHY.value: (
         'steganography OR steganalysis OR watermarking OR "information hiding"'
     ),
-    SubcategoryId.TWO_D_CODES.value: 'QR OR "data matrix" OR "2D barcode" OR Aztec OR PDF417',
+    SubcategoryId.TWO_D_CODES.value: (
+        'QR OR "data matrix" OR "2D barcode" OR Aztec OR PDF417'
+    ),
 }
 
 
@@ -56,18 +61,22 @@ def reconstruct_abstract(index: object) -> str:
     """
     if isinstance(index, str):
         return index
-    if not isinstance(index, dict) or not index:
+    if not is_object_dict(index) or not index:
         return ""
     positions: dict[int, str] = {}
     for word, locs in index.items():
-        if not isinstance(locs, list):
+        if not is_object_list(locs):
             continue
         for loc in locs:
             if isinstance(loc, int):
                 positions[loc] = str(word)
     if not positions:
         return ""
-    capped = {loc: word for loc, word in positions.items() if 0 <= loc < _MAX_ABSTRACT_POSITIONS}
+    capped = {
+        loc: word
+        for loc, word in positions.items()
+        if 0 <= loc < _MAX_ABSTRACT_POSITIONS
+    }
     if not capped:
         return ""
     size = max(capped) + 1
@@ -79,7 +88,7 @@ def fetch_openalex(
     subcategory: str,
     client: httpx.Client,
     attempts: int = 3,
-) -> list[dict[str, Any]]:
+) -> list[IngestRecord]:
     """Fetch one OpenAlex works page and map ingest records.
 
     Args:
@@ -92,8 +101,8 @@ def fetch_openalex(
         Records ready for ingest_records. Poison rows are skipped.
     """
     payload = _get_json(url, client, attempts)
-    results = payload.get("results", []) if isinstance(payload, dict) else []
-    rows = results if isinstance(results, list) else []
+    results = payload.get("results", []) if is_object_dict(payload) else []
+    rows = results if is_object_list(results) else []
     return _map_openalex_rows(rows, subcategory)
 
 
@@ -102,7 +111,7 @@ def fetch_patentsview(
     subcategory: str,
     client: httpx.Client,
     attempts: int = 3,
-) -> list[dict[str, Any]]:
+) -> list[IngestRecord]:
     """Fetch one PatentsView patents page and map ingest records.
 
     Args:
@@ -115,9 +124,9 @@ def fetch_patentsview(
         Records ready for ingest_records. Poison rows are skipped.
     """
     payload = _get_json(url, client, attempts)
-    patents = payload.get("patents", []) if isinstance(payload, dict) else []
-    rows = patents if isinstance(patents, list) else []
-    records: list[dict[str, Any]] = []
+    patents = payload.get("patents", []) if is_object_dict(payload) else []
+    rows = patents if is_object_list(patents) else []
+    records: list[IngestRecord] = []
     for item in rows:
         try:
             records.append(_patentsview_record(item, subcategory))
@@ -131,7 +140,7 @@ def fetch_named_slice(
     per_subcategory: int = 25,
     mailto: str = "delphi-engine@localhost",
     attempts: int = 3,
-) -> list[dict[str, Any]]:
+) -> list[IngestRecord]:
     """Page OpenAlex for all four SYS-009 subcategories.
 
     Args:
@@ -143,7 +152,7 @@ def fetch_named_slice(
     Returns:
         Fixture-shaped records. Does not hit tens-of-thousands caps by default.
     """
-    collected: list[dict[str, Any]] = []
+    collected: list[IngestRecord] = []
     for subcategory, query in OPENALEX_SEARCH.items():
         collected.extend(
             _search_openalex(
@@ -165,7 +174,7 @@ def _search_openalex(
     limit: int,
     mailto: str,
     attempts: int,
-) -> list[dict[str, Any]]:
+) -> list[IngestRecord]:
     """Cursor-page one OpenAlex search until limit.
 
     Args:
@@ -179,7 +188,7 @@ def _search_openalex(
     Returns:
         Mapped records that pass allowed_text.
     """
-    records: list[dict[str, Any]] = []
+    records: list[IngestRecord] = []
     cursor: str | None = "*"
     while cursor and len(records) < limit:
         remaining = min(50, limit - len(records))
@@ -192,10 +201,10 @@ def _search_openalex(
         }
         url = f"{_OPENALEX_WORKS}?{urlencode(params)}"
         payload = _get_json(url, client, attempts)
-        if not isinstance(payload, dict):
+        if not is_object_dict(payload):
             break
         results = payload.get("results", [])
-        rows = results if isinstance(results, list) else []
+        rows = results if is_object_list(results) else []
         for item in _map_openalex_rows(rows, subcategory):
             blob = f"{item.get('title', '')} {item.get('abstract', '')}"
             if allowed_text(blob, subcategory):
@@ -203,13 +212,13 @@ def _search_openalex(
             if len(records) >= limit:
                 break
         raw_meta = payload.get("meta")
-        meta = raw_meta if isinstance(raw_meta, dict) else {}
+        meta = raw_meta if is_object_dict(raw_meta) else {}
         nxt = meta.get("next_cursor")
         cursor = str(nxt) if nxt else None
     return records[:limit]
 
 
-def _map_openalex_rows(rows: list[object], subcategory: str) -> list[dict[str, Any]]:
+def _map_openalex_rows(rows: list[object], subcategory: str) -> list[IngestRecord]:
     """Map OpenAlex JSON rows, skipping poison.
 
     Args:
@@ -219,7 +228,7 @@ def _map_openalex_rows(rows: list[object], subcategory: str) -> list[dict[str, A
     Returns:
         Ingest records.
     """
-    records: list[dict[str, Any]] = []
+    records: list[IngestRecord] = []
     for item in rows:
         try:
             records.append(_openalex_record(item, subcategory))
@@ -245,7 +254,7 @@ def _get_json(url: str, client: httpx.Client, attempts: int) -> object:
         raise FetchError(f"fetch failed after retries: {url}") from exc
 
 
-def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
+def _openalex_record(item: object, subcategory: str) -> IngestRecord:
     """Map one OpenAlex work (live API or simplified fixture shape).
 
     Args:
@@ -255,7 +264,7 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
     Returns:
         Fixture-shaped record.
     """
-    if not isinstance(item, dict):
+    if not is_object_dict(item):
         raise TypeError("openalex row must be an object")
     openalex_id = str(item["id"])
     work_id = str(uuid5(NAMESPACE_URL, openalex_id))
@@ -268,9 +277,11 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
         item.get("abstract_inverted_index")
     )
     cites = [
-        str(uuid5(NAMESPACE_URL, str(ref))) for ref in item.get("referenced_works") or () if ref
+        str(uuid5(NAMESPACE_URL, str(ref)))
+        for ref in as_list(item.get("referenced_works"))
+        if ref
     ]
-    record: dict[str, Any] = {
+    record: IngestRecord = {
         "id": work_id,
         "kind": "paper",
         "title": title,
@@ -278,7 +289,8 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
         "published_on": published,
         "openalex": openalex_id,
         "authors": _string_names(item, "authors") or _authorship_names(item),
-        "keywords": _string_names(item, "keywords") or _display_names(item.get("concepts")),
+        "keywords": _string_names(item, "keywords")
+        or _display_names(item.get("concepts")),
         "subcategory": subcategory,
         "cites": cites,
     }
@@ -290,7 +302,7 @@ def _openalex_record(item: object, subcategory: str) -> dict[str, Any]:
     return record
 
 
-def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
+def _patentsview_record(item: object, subcategory: str) -> IngestRecord:
     """Map one PatentsView patent (live or simplified shape).
 
     Args:
@@ -300,7 +312,7 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     Returns:
         Fixture-shaped record.
     """
-    if not isinstance(item, dict):
+    if not is_object_dict(item):
         raise TypeError("patentsview row must be an object")
     patent_id = str(item.get("patent_id") or item.get("patent_number") or "")
     if not patent_id:
@@ -311,17 +323,22 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     if not title:
         raise KeyError("title")
     published = str(
-        item.get("patent_date") or item.get("publication_date") or item.get("published_on") or ""
+        item.get("patent_date")
+        or item.get("publication_date")
+        or item.get("published_on")
+        or ""
     )
     if not published:
         raise KeyError("publication_date")
-    claims_raw = item.get("claims") or item.get("claim_text") or item.get("independent_claims")
+    claims_raw = (
+        item.get("claims") or item.get("claim_text") or item.get("independent_claims")
+    )
     claims: list[str] = []
-    if isinstance(claims_raw, list):
+    if is_object_list(claims_raw):
         for row in claims_raw:
             if isinstance(row, str) and row.strip():
                 claims.append(row.strip())
-            elif isinstance(row, dict):
+            elif is_object_dict(row):
                 text = str(row.get("claim_text") or row.get("text") or "").strip()
                 if text:
                     claims.append(text)
@@ -342,7 +359,7 @@ def _patentsview_record(item: object, subcategory: str) -> dict[str, Any]:
     }
 
 
-def _publication_date(item: dict[str, Any]) -> str:
+def _publication_date(item: dict[str, object]) -> str:
     """Return an ISO date string.
 
     Args:
@@ -358,8 +375,8 @@ def _publication_date(item: dict[str, Any]) -> str:
     if published:
         return str(published)
     year = item.get("publication_year")
-    if year:
-        return f"{int(year)}-01-01"
+    if isinstance(year, int) and not isinstance(year, bool):
+        return f"{year}-01-01"
     raise KeyError("publication_date")
 
 
@@ -377,7 +394,7 @@ def _doi_value(doi: object) -> str | None:
     return normalize_doi(str(doi)) or None
 
 
-def _string_names(item: dict[str, Any], key: str) -> list[str]:
+def _string_names(item: dict[str, object], key: str) -> list[str]:
     """Return a list of strings stored under key.
 
     Args:
@@ -388,9 +405,9 @@ def _string_names(item: dict[str, Any], key: str) -> list[str]:
         Names when the field is already a list of strings.
     """
     raw = item.get(key)
-    if isinstance(raw, list) and raw and all(isinstance(value, str) for value in raw):
+    if is_object_list(raw) and raw and all(isinstance(value, str) for value in raw):
         return [str(value) for value in raw]
-    if isinstance(raw, list):
+    if is_object_list(raw):
         names = _display_names(raw)
         if names:
             return names
@@ -407,15 +424,15 @@ def _display_names(rows: object) -> list[str]:
         Display names.
     """
     names: list[str] = []
-    if not isinstance(rows, list):
+    if not is_object_list(rows):
         return names
     for row in rows:
-        if isinstance(row, dict) and row.get("display_name"):
+        if is_object_dict(row) and row.get("display_name"):
             names.append(str(row["display_name"]))
     return names
 
 
-def _authorship_names(item: dict[str, Any]) -> list[str]:
+def _authorship_names(item: dict[str, object]) -> list[str]:
     """Authors from OpenAlex authorships.
 
     Args:
@@ -425,17 +442,18 @@ def _authorship_names(item: dict[str, Any]) -> list[str]:
         Author display names.
     """
     names: list[str] = []
-    for row in item.get("authorships") or ():
-        if not isinstance(row, dict):
+    for row in as_list(item.get("authorships")):
+        if not is_object_dict(row):
             continue
-        author = row.get("author") if isinstance(row.get("author"), dict) else {}
-        name = (author or {}).get("display_name") or row.get("raw_author_name")
+        author_raw = row.get("author")
+        author = author_raw if is_object_dict(author_raw) else {}
+        name = author.get("display_name") or row.get("raw_author_name")
         if name:
             names.append(str(name))
     return names
 
 
-def _inventor_names(item: dict[str, Any]) -> list[str]:
+def _inventor_names(item: dict[str, object]) -> list[str]:
     """Inventors from PatentsView nested objects.
 
     Args:
@@ -445,11 +463,11 @@ def _inventor_names(item: dict[str, Any]) -> list[str]:
         Inventor names.
     """
     names: list[str] = []
-    for row in item.get("inventors") or ():
+    for row in as_list(item.get("inventors")):
         if isinstance(row, str):
             names.append(row)
             continue
-        if not isinstance(row, dict):
+        if not is_object_dict(row):
             continue
         first = str(row.get("inventor_first_name") or row.get("first_name") or "")
         last = str(row.get("inventor_last_name") or row.get("last_name") or "")
@@ -459,7 +477,7 @@ def _inventor_names(item: dict[str, Any]) -> list[str]:
     return names
 
 
-def _cpc_codes(item: dict[str, Any]) -> list[str]:
+def _cpc_codes(item: dict[str, object]) -> list[str]:
     """CPC class symbols when present.
 
     Args:
@@ -469,17 +487,21 @@ def _cpc_codes(item: dict[str, Any]) -> list[str]:
         CPC codes.
     """
     codes: list[str] = []
-    for row in item.get("cpc_current") or item.get("cpcs") or ():
+    for row in as_list(item.get("cpc_current") or item.get("cpcs")):
         if isinstance(row, str):
             codes.append(row)
-        elif isinstance(row, dict):
-            code = row.get("cpc_subclass_id") or row.get("symbol") or row.get("cpc_class_id")
+        elif is_object_dict(row):
+            code = (
+                row.get("cpc_subclass_id")
+                or row.get("symbol")
+                or row.get("cpc_class_id")
+            )
             if code:
                 codes.append(str(code))
     return codes
 
 
-def _nested_id(item: dict[str, Any], key: str) -> str | None:
+def _nested_id(item: dict[str, object], key: str) -> str | None:
     """Read ids.<key> when present.
 
     Args:
@@ -490,6 +512,6 @@ def _nested_id(item: dict[str, Any], key: str) -> str | None:
         Identifier or None.
     """
     ids = item.get("ids")
-    if isinstance(ids, dict) and ids.get(key):
+    if is_object_dict(ids) and ids.get(key):
         return str(ids[key])
     return None

@@ -5,4 +5,4 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="${HOME}/.local/bin:${PATH}"
 cd "$ROOT"
 uv run --project delphi --with "$ROOT/daedalus" --with "$ROOT/prometheus" \
-  python "$ROOT/scripts/serve_prototype.py" "$@"
+	python "$ROOT/scripts/serve_prototype.py" "$@"

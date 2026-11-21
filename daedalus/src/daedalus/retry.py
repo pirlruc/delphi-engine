@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import time
-from typing import Any
 
 import httpx
+from delphi_contracts.json_tree import parse_json
 
-__all__ = ["request_json"]
+__all__ = ["header_text", "request_json"]
 
 _MAX_SLEEP = 8.0
 
@@ -18,7 +18,7 @@ def request_json(
     url: str,
     *,
     attempts: int = 3,
-    json_body: dict[str, Any] | None = None,
+    json_body: dict[str, object] | None = None,
     headers: dict[str, str] | None = None,
     timeout: float = 30.0,
 ) -> object:
@@ -47,7 +47,9 @@ def request_json(
     for attempt in range(tries):
         try:
             if verb == "POST":
-                response = client.post(url, json=json_body, timeout=timeout, headers=headers)
+                response = client.post(
+                    url, json=json_body, timeout=timeout, headers=headers
+                )
             else:
                 response = client.get(url, timeout=timeout, headers=headers)
         except httpx.TransportError as exc:
@@ -63,15 +65,33 @@ def request_json(
             )
             if attempt + 1 >= tries:
                 break
-            wait = _retry_wait(response, delay) if response.status_code == 429 else delay
+            wait = (
+                _retry_wait(response, delay) if response.status_code == 429 else delay
+            )
             time.sleep(wait)
             delay = min(delay * 2, 4.0)
             continue
         response.raise_for_status()
-        return response.json()
+        return parse_json(response.content)
     if last is None:  # pragma: no cover
         raise RuntimeError(f"request failed: {url}")
     raise last
+
+
+def header_text(headers: httpx.Headers, name: str) -> str | None:
+    """Read one HTTP header.
+
+    Args:
+        headers: Header mapping.
+        name: Header name.
+
+    Returns:
+        The header text, or None when it is absent.
+    """
+    value = headers.get(name)
+    if isinstance(value, str) and value:
+        return value
+    return None
 
 
 def _retry_wait(response: httpx.Response, fallback: float) -> float:
@@ -84,7 +104,7 @@ def _retry_wait(response: httpx.Response, fallback: float) -> float:
     Returns:
         Sleep seconds, capped.
     """
-    raw = response.headers.get("Retry-After", "")
+    raw = header_text(response.headers, "Retry-After") or ""
     try:
         return min(float(raw), _MAX_SLEEP)
     except ValueError:

@@ -1,6 +1,10 @@
 """Contracts unit tests."""
 
+import json
+from collections.abc import Callable
 from datetime import date
+from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 import httpx
@@ -23,6 +27,7 @@ from delphi_contracts.enums import (
 from delphi_contracts.extraction import CONSENT_DESTINATION, PdfUpload
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity, normalize_identity
+from delphi_contracts.json_tree import as_dict
 from delphi_contracts.llm import (
     ChatMessage,
     ChatRequest,
@@ -43,6 +48,11 @@ from delphi_contracts.work import Work
 
 
 def _work(title: str, published: date) -> Work:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     return Work(
         id=uuid4(),
         kind=WorkKind.PAPER,
@@ -61,11 +71,13 @@ def _work(title: str, published: date) -> Work:
 
 
 def test_identity_rejects_empty_value() -> None:
+    """Check the behavior under test."""
     with pytest.raises(ValidationError):
         Identity(kind=IdentityKind.DOI, value="")
 
 
 def test_identity_normalizes_doi_and_patent() -> None:
+    """Check the behavior under test."""
     doi = Identity(kind=IdentityKind.DOI, value="https://doi.org/10.1000/QR-2014")
     assert doi.value == "10.1000/qr-2014"
     patent = Identity(kind=IdentityKind.PATENT, value="US-1234567-A")
@@ -75,17 +87,23 @@ def test_identity_normalizes_doi_and_patent() -> None:
     hashed = Identity(kind=IdentityKind.CONTENT_HASH, value=" abc ")
     assert hashed.value == "abc"
     assert normalize_identity(IdentityKind.OPENALEX, " W1 ") == "W1"
-    assert Identity._canonicalize("raw") == "raw"
-    assert Identity._canonicalize({"kind": "nope", "value": "x"}) == {"kind": "nope", "value": "x"}
-    assert Identity._canonicalize({"kind": "doi", "value": 12}) == {"kind": "doi", "value": 12}
+    canonicalize = cast(Callable[[object], object], Identity._canonicalize)
+    assert canonicalize("raw") == "raw"
+    assert canonicalize({"kind": "nope", "value": "x"}) == {
+        "kind": "nope",
+        "value": "x",
+    }
+    assert canonicalize({"kind": "doi", "value": 12}) == {"kind": "doi", "value": 12}
 
 
 def test_batch_check_request_requires_rows() -> None:
+    """Check the behavior under test."""
     with pytest.raises(ValidationError):
         BatchCheckRequest(identities=())
 
 
 def test_batch_check_rejects_more_than_500_identities() -> None:
+    """Check the behavior under test."""
     identities = tuple(
         Identity(kind=IdentityKind.DOI, value=f"10.1/{index}") for index in range(501)
     )
@@ -94,6 +112,7 @@ def test_batch_check_rejects_more_than_500_identities() -> None:
 
 
 def test_batch_check_row_unknown() -> None:
+    """Check the behavior under test."""
     identity = Identity(kind=IdentityKind.ARXIV, value="1605.00000")
     row = BatchCheckRow(identity=identity, known=False)
     assert row.work_id is None
@@ -101,6 +120,7 @@ def test_batch_check_row_unknown() -> None:
 
 
 def test_pdf_upload_consent_constant() -> None:
+    """Check the behavior under test."""
     upload = PdfUpload(
         consent_destination=CONSENT_DESTINATION,
         filename="paper.pdf",
@@ -110,6 +130,7 @@ def test_pdf_upload_consent_constant() -> None:
 
 
 def test_path_request_kinds() -> None:
+    """Check the behavior under test."""
     request = PathRequest(
         kind=PathKind.PATENT_WHITESPACE,
         subcategory="two_d_codes",
@@ -121,6 +142,7 @@ def test_path_request_kinds() -> None:
 
 
 def test_masked_context_forbidden_ignores_absent_held_out() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2015, 1, 1))
     absent = uuid4()
     neighborhood = Neighborhood(seed=seed, mode=NeighborhoodMode.UNION, neighbors=())
@@ -136,6 +158,7 @@ def test_masked_context_forbidden_ignores_absent_held_out() -> None:
 
 
 def test_masked_context_forbidden_includes_later_neighbors() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2015, 1, 1))
     later = _work("later", date(2018, 1, 1))
     neighborhood = Neighborhood(
@@ -162,6 +185,7 @@ def test_masked_context_forbidden_includes_later_neighbors() -> None:
 
 
 def test_masked_context_same_day_neighbor_is_forbidden() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2015, 1, 1))
     sibling = _work("sibling", date(2016, 1, 1))
     neighborhood = Neighborhood(
@@ -188,6 +212,7 @@ def test_masked_context_same_day_neighbor_is_forbidden() -> None:
 
 
 def test_hash_embed_is_deterministic_and_normalized() -> None:
+    """Check the behavior under test."""
     left = hash_embed("qr data matrix barcode", dim=16)
     right = hash_embed("qr data matrix barcode", dim=16)
     assert left == right
@@ -195,6 +220,7 @@ def test_hash_embed_is_deterministic_and_normalized() -> None:
 
 
 def test_cosine_clamps_and_matches_self() -> None:
+    """Check the behavior under test."""
     vector = hash_embed("steganography watermark")
     assert cosine(vector, vector) == pytest.approx(1.0)
     assert cosine(vector, tuple(-value for value in vector)) == 0.0
@@ -208,12 +234,15 @@ def test_cosine_clamps_and_matches_self() -> None:
 
 
 def test_dropped_ids_includes_same_day_siblings() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 3, 1))
     sibling = _work("sib", date(2016, 3, 1))
     citer = _work("citer", date(2016, 4, 1))
     edges = (Edge(from_work=citer.id, to_work=held.id, kind=EdgeKind.CITES),)
-    dropped = dropped_ids((seed, held, sibling, citer), edges, held.id, held.published_on)
+    dropped = dropped_ids(
+        (seed, held, sibling, citer), edges, held.id, held.published_on
+    )
     assert held.id in dropped
     assert sibling.id in dropped
     assert citer.id in dropped
@@ -225,11 +254,13 @@ def test_dropped_ids_includes_same_day_siblings() -> None:
 
 
 def test_hash_embed_empty_tokens_is_zero() -> None:
+    """Check the behavior under test."""
     vector = hash_embed("!!!", dim=8)
     assert vector == tuple(0.0 for _ in range(8))
 
 
 def test_fake_provider_extract_generate_judge() -> None:
+    """Check the behavior under test."""
     provider = FakeProvider()
     extract = provider.chat(
         ChatRequest(
@@ -253,7 +284,10 @@ def test_fake_provider_extract_generate_judge() -> None:
             messages=(
                 ChatMessage(
                     role="user",
-                    content="Extract bibliographic metadata\n1. Kim. QR. doi:10.1000/qr-2014\n",
+                    content=(
+                        "Extract bibliographic metadata\n"
+                        "1. Kim. QR. doi:10.1000/qr-2014\n"
+                    ),
                 ),
             )
         )
@@ -266,13 +300,17 @@ def test_fake_provider_extract_generate_judge() -> None:
                     role="system",
                     content="propose the next patent_whitespace",
                 ),
-                ChatMessage(role="user", content="seed 123e4567-e89b-12d3-a456-426614174000"),
+                ChatMessage(
+                    role="user", content="seed 123e4567-e89b-12d3-a456-426614174000"
+                ),
             )
         )
     )
     assert "patent_whitespace" in generate.content
     judge = provider.chat(
-        ChatRequest(messages=(ChatMessage(role="user", content="novelty llm-as-judge"),))
+        ChatRequest(
+            messages=(ChatMessage(role="user", content="novelty llm-as-judge"),)
+        )
     )
     assert "4" in judge.content
     embedded = provider.embed(EmbedRequest(text="qr codes"))
@@ -283,9 +321,13 @@ def test_fake_provider_extract_generate_judge() -> None:
 def test_provider_settings_from_env_defaults_and_overrides(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Check the behavior under test."""
     fake = provider_settings_from_env({})
     assert fake.kind is ProviderKind.FAKE
-    cloud = provider_settings_from_env({"DELPHI_LLM_KIND": "cloud", "DELPHI_LLM_API_KEY": "sk"})
+    cloud = provider_settings_from_env({
+        "DELPHI_LLM_KIND": "cloud",
+        "DELPHI_LLM_API_KEY": "sk",
+    })
     assert cloud.kind is ProviderKind.CLOUD
     assert cloud.api_key == "sk"
     local = provider_settings_from_env({
@@ -310,21 +352,39 @@ def test_provider_settings_from_env_defaults_and_overrides(
 
 
 def test_openai_post_without_injected_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check the behavior under test."""
     captured: dict[str, object] = {}
 
     class _Response:
         def raise_for_status(self) -> None:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return None
 
-        def json(self) -> dict[str, object]:
-            return {
+        @property
+        def content(self) -> bytes:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
+            body = {
                 "model": "cloud",
                 "choices": [{"message": {"content": "{}"}}],
             }
+            return json.dumps(body).encode()
 
     def fake_post(
         url: str, json: dict[str, object], headers: dict[str, str], timeout: float
     ) -> _Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         captured["url"] = url
         captured["json"] = json
         captured["headers"] = headers
@@ -347,18 +407,24 @@ def test_openai_post_without_injected_client(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_fake_chat_defaults_to_generate_and_untitled_extract() -> None:
+    """Check the behavior under test."""
     provider = FakeProvider()
-    generate = provider.chat(ChatRequest(messages=(ChatMessage(role="user", content="hello"),)))
+    generate = provider.chat(
+        ChatRequest(messages=(ChatMessage(role="user", content="hello"),))
+    )
     assert "research_path" in generate.content
     extract = provider.chat(
         ChatRequest(
-            messages=(ChatMessage(role="user", content="Extract bibliographic metadata only"),)
+            messages=(
+                ChatMessage(role="user", content="Extract bibliographic metadata only"),
+            )
         )
     )
     assert "Untitled work" in extract.content
 
 
 def test_eval_run_scores_round_trip() -> None:
+    """Check the behavior under test."""
     from delphi_contracts.eval_run import EvalRun, EvalScores
 
     run = EvalRun(
@@ -375,6 +441,7 @@ def test_eval_run_scores_round_trip() -> None:
 
 
 def test_context_leak_error_is_value_error() -> None:
+    """Check the behavior under test."""
     from delphi_contracts.paths import ContextLeakError
 
     with pytest.raises(ContextLeakError):
@@ -382,7 +449,14 @@ def test_context_leak_error_is_value_error() -> None:
 
 
 def test_openai_compatible_chat_and_embed() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         if request.url.path.endswith("/chat/completions"):
             return httpx.Response(
                 200,
@@ -407,34 +481,46 @@ def test_openai_compatible_chat_and_embed() -> None:
     )
     provider = build_provider(settings, client=client)
     assert provider.model_id == "local-model"
-    chat = provider.chat(ChatRequest(messages=(ChatMessage(role="user", content="hi"),)))
+    chat = provider.chat(
+        ChatRequest(messages=(ChatMessage(role="user", content="hi"),))
+    )
     assert chat.model == "local-model"
     embedded = provider.embed(EmbedRequest(text="hello"))
     assert embedded.vector == (0.0, 1.0)
 
 
 def test_openai_handles_empty_payloads() -> None:
+    """Check the behavior under test."""
+
     def handler(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         return httpx.Response(200, json={"choices": [], "data": "nope"})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     settings = ProviderSettings(kind=ProviderKind.LOCAL, model="m", api_key="k")
     provider = build_provider(settings, client=client)
-    chat = provider.chat(ChatRequest(messages=(ChatMessage(role="user", content="hi"),)))
+    chat = provider.chat(
+        ChatRequest(messages=(ChatMessage(role="user", content="hi"),))
+    )
     assert chat.content == "{}"
     embedded = provider.embed(EmbedRequest(text="hello"))
     assert embedded.vector == ()
 
 
-def test_openapi_includes_required_paths_and_schemas(tmp_path) -> None:
+def test_openapi_includes_required_paths_and_schemas(tmp_path: Path) -> None:
+    """Check the behavior under test."""
     document = build_openapi()
-    assert document["openapi"].startswith("3.")
-    paths = document["paths"]
+    assert str(document["openapi"]).startswith("3.")
+    paths = as_dict(document["paths"])
     assert "/v1/works:batch-check" in paths
     assert "/v1/works/{work_id}/neighborhood" in paths
     assert "/v1/uploads" in paths
     assert "/v1/generate" in paths
-    schemas = document["components"]["schemas"]
+    schemas = as_dict(as_dict(document["components"]).get("schemas"))
     for name in (
         "Work",
         "BatchCheckRequest",

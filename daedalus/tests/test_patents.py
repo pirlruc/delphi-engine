@@ -1,8 +1,10 @@
 """Patent-office connector tests."""
 
+from pathlib import Path
 from uuid import UUID
 
 import httpx
+import pytest
 from delphi_contracts.enums import WorkKind
 
 from daedalus.cli import _bearer, _epo_bearer_headers, _header, main
@@ -23,6 +25,11 @@ from daedalus.patents import (
 
 
 def _epo_payload() -> dict[str, object]:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     return {
         "ops:world-patent-data": {
             "ops:biblio-search": {
@@ -43,7 +50,9 @@ def _epo_payload() -> dict[str, object]:
                                     {"$": "Deutsch", "@lang": "de"},
                                 ],
                                 "parties": {
-                                    "inventors": {"inventor": {"inventor-name": {"$": "Ada"}}}
+                                    "inventors": {
+                                        "inventor": {"inventor-name": {"$": "Ada"}}
+                                    }
                                 },
                                 "classifications-cpc": {
                                     "classification-cpc": {"symbol": {"$": "G06K19/06"}}
@@ -59,7 +68,14 @@ def _epo_payload() -> dict[str, object]:
 
 
 def test_epo_token_and_biblio_mapping() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         if request.method == "POST":
             assert b"grant_type=client_credentials" in request.content
             return httpx.Response(200, json={"access_token": "tok"})
@@ -89,7 +105,14 @@ def test_epo_token_and_biblio_mapping() -> None:
 
 
 def test_wipo_patsnap_lens_and_poison_skip() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "wipo" in url or "patentscope" in url:
             return httpx.Response(
@@ -153,7 +176,9 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
                                 "classifications_cpc": {
                                     "classifications": [{"symbol": "G06K19/06"}]
                                 },
-                                "claims": [{"claim_text": "A method for overlaying a QR code."}],
+                                "claims": [
+                                    {"claim_text": "A method for overlaying a QR code."}
+                                ],
                                 "abstracts": [{"lang": "en", "text": "A method."}],
                             },
                         }
@@ -211,12 +236,20 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
 
 
 def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
-    empty = httpx.Client(transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={})))
-    assert fetch_patent_slice(empty, per_subcategory=1) == []
+    """Check the behavior under test."""
+    empty = httpx.Client(
+        transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={}))
+    )
+    assert not fetch_patent_slice(empty, per_subcategory=1)
 
     calls = {"n": 0}
 
     def flaky(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         if request.method == "POST" and "accesstoken" in str(request.url):
             return httpx.Response(200, json={"access_token": "tok"})
@@ -260,7 +293,14 @@ def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
 
 
 def test_simple_payloads_token_miss_and_cv_filter() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"token_type": "Bearer"})
@@ -287,7 +327,11 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
             return httpx.Response(
                 200,
                 json={
-                    "data": {"results": [{"id": "WO1", "title": "Nested", "date": "2012-02-02"}]}
+                    "data": {
+                        "results": [
+                            {"id": "WO1", "title": "Nested", "date": "2012-02-02"}
+                        ]
+                    }
                 },
             )
         return httpx.Response(200, json=["nope"])
@@ -302,13 +346,18 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
     simple = fetch_epo("https://ops.example/publications", "two_d_codes", client)
     assert simple[0]["title"] == "Simple QR"
     assert simple[0]["claims"] == ["A QR overlay on a carrier."]
-    assert fetch_patsnap("https://connect.patsnap.com/x", "two_d_codes", client) == []
-    assert fetch_lens("https://api.lens.org/patent/search", "two_d_codes", client) == []
+    assert not fetch_patsnap("https://connect.patsnap.com/x", "two_d_codes", client)
+    assert not fetch_lens("https://api.lens.org/patent/search", "two_d_codes", client)
     nested = fetch_wipo("https://wipo-nested.test/x", "two_d_codes", client)
     assert nested[0]["patent"] == "WO1"
-    assert fetch_epo("https://ops.example/listish", "two_d_codes", client) == []
+    assert not fetch_epo("https://ops.example/listish", "two_d_codes", client)
 
     def cv(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         if _request.method == "POST" and "accesstoken" in str(_request.url):
             return httpx.Response(200, json={"access_token": "t"})
         return httpx.Response(
@@ -334,6 +383,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
 
 
 def test_alternate_shapes_dedupe_and_header_restore() -> None:
+    """Check the behavior under test."""
     iso_doc = {
         "document-id": [
             {
@@ -345,16 +395,25 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
         ],
         "invention-title": "ISO QR date",
         "parties": {"inventors": ["skip", {"name": "Pat"}]},
-        "patent-classifications": {"patent-classification": {"classification-symbol": "G06K"}},
+        "patent-classifications": {
+            "patent-classification": {"classification-symbol": "G06K"}
+        },
         "abstract": "barcode",
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"access_token": "tok"})
         if request.method == "GET" and "ops" in url:
-            return httpx.Response(200, json={"results": [iso_doc, True, {"title": "missing id"}]})
+            return httpx.Response(
+                200, json={"results": [iso_doc, True, {"title": "missing id"}]}
+            )
         if "patentscope" in url or "wipo" in url:
             return httpx.Response(
                 200,
@@ -417,7 +476,7 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
     assert client.headers["Authorization"] == "keep-me"
     patents = {row["patent"] for row in rows}
     assert "US991" in patents or "US99" in patents
-    assert fetch_epo("https://example.test/empty", "two_d_codes", client) == []
+    assert not fetch_epo("https://example.test/empty", "two_d_codes", client)
     docs = fetch_wipo("https://wipo.test/docs", "two_d_codes", client)
     assert docs
     snap = fetch_patsnap("https://connect.patsnap.com/list", "two_d_codes", client)
@@ -427,7 +486,14 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
 
 
 def test_lens_abstract_variants_and_wipo_docs() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "abstract-str" in url:
             return httpx.Response(
@@ -441,7 +507,9 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
                             "date_published": "2011-01-01",
                             "title": "QR string abstract",
                             "biblio": {
-                                "invention_title": [{"text": "QR string abstract", "lang": "en"}],
+                                "invention_title": [
+                                    {"text": "QR string abstract", "lang": "en"}
+                                ],
                                 "abstracts": "plain abstract",
                                 "parties": {
                                     "inventors": [
@@ -478,7 +546,9 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
         if "wipo-docs" in url:
             return httpx.Response(
                 200,
-                json={"docs": [{"id": "WO2", "title": "Docs QR", "date": "2013-03-03"}]},
+                json={
+                    "docs": [{"id": "WO2", "title": "Docs QR", "date": "2013-03-03"}]
+                },
             )
         if "wipo-empty" in url:
             return httpx.Response(200, json={"meta": {}})
@@ -491,28 +561,47 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
     listed = fetch_lens("https://api.lens.org/abstract-list", "two_d_codes", client)
     assert listed[0]["title"] == "QR fallback title"
     assert listed[0]["abstract"] == "fallback abs"
-    assert fetch_wipo("https://wipo-docs.test/x", "two_d_codes", client)[0]["patent"] == "WO2"
-    assert fetch_wipo("https://wipo-empty.test/x", "two_d_codes", client) == []
-    assert fetch_epo("https://ops.example/none", "two_d_codes", client) == []
-    assert fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client) == []
-    assert fetch_lens("https://api.lens.org/none", "two_d_codes", client) == []
+    assert (
+        fetch_wipo("https://wipo-docs.test/x", "two_d_codes", client)[0]["patent"]
+        == "WO2"
+    )
+    assert not fetch_wipo("https://wipo-empty.test/x", "two_d_codes", client)
+    assert not fetch_epo("https://ops.example/none", "two_d_codes", client)
+    assert not fetch_patsnap("https://connect.patsnap.com/none", "two_d_codes", client)
+    assert not fetch_lens("https://api.lens.org/none", "two_d_codes", client)
 
 
-def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
+def test_cli_patent_flags(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Check the behavior under test."""
+
     class _CM:
-        def __enter__(self):
+        def __enter__(self) -> object:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return object()
 
-        def __exit__(self, *_args):
+        def __exit__(self, *_args: object) -> None:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return None
 
     monkeypatch.setattr("daedalus.cli.httpx.Client", lambda **_k: _CM())
     monkeypatch.setattr("daedalus.cli._epo_bearer_headers", lambda: {})
     monkeypatch.setattr("daedalus.cli.fetch_epo", lambda *_a, **_k: [{"title": "e"}])
     monkeypatch.setattr("daedalus.cli.fetch_wipo", lambda *_a, **_k: [{"title": "w"}])
-    monkeypatch.setattr("daedalus.cli.fetch_patsnap", lambda *_a, **_k: [{"title": "p"}])
+    monkeypatch.setattr(
+        "daedalus.cli.fetch_patsnap", lambda *_a, **_k: [{"title": "p"}]
+    )
     monkeypatch.setattr("daedalus.cli.fetch_lens", lambda *_a, **_k: [{"title": "l"}])
-    monkeypatch.setattr("daedalus.cli.fetch_patent_slice", lambda *_a, **_k: [{"title": "s"}])
+    monkeypatch.setattr(
+        "daedalus.cli.fetch_patent_slice", lambda *_a, **_k: [{"title": "s"}]
+    )
     monkeypatch.setenv("LENS_API_TOKEN", "tok")
     monkeypatch.setenv("WIPO_API_KEY", "wk")
     monkeypatch.setenv("PATSNAP_API_KEY", "sk-x")
@@ -524,20 +613,27 @@ def test_cli_patent_flags(monkeypatch, tmp_path) -> None:
     out = tmp_path / "p.json"
     assert main(["--lens-url", "http://l", "--output", str(out)]) == 0
     assert out.is_file()
-    assert _header("X", "") == {}
+    assert not _header("X", "")
     assert _bearer("tok") == {"Authorization": "Bearer tok"}
-    assert _bearer("") == {}
+    assert not _bearer("")
     monkeypatch.setenv("EPO_OPS_KEY", "k")
     monkeypatch.setenv("EPO_OPS_SECRET", "s")
     monkeypatch.setattr("daedalus.cli.epo_access_token", lambda *_a, **_k: "tok")
     assert _epo_bearer_headers()["Authorization"] == "Bearer tok"
     monkeypatch.delenv("EPO_OPS_KEY")
     monkeypatch.delenv("EPO_OPS_SECRET")
-    assert _epo_bearer_headers() == {}
+    assert not _epo_bearer_headers()
 
 
 def test_remaining_payload_branches() -> None:
+    """Check the behavior under test."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "epo-dict-id" in url:
             return httpx.Response(
@@ -566,10 +662,17 @@ def test_remaining_payload_branches() -> None:
                             "doc-number": "9",
                             "kind": "A1",
                             "date": "20150601",
-                            "invention-title": ["", {"$": "QR list title", "@lang": "en"}],
+                            "invention-title": [
+                                "",
+                                {"$": "QR list title", "@lang": "en"},
+                            ],
                             "inventors": [{"inventor-name": {"$": ""}}],
                         },
-                        {"patent_id": "EPX", "title": "", "publication_date": "2011-01-01"},
+                        {
+                            "patent_id": "EPX",
+                            "title": "",
+                            "publication_date": "2011-01-01",
+                        },
                         {"patent_id": "EPY", "title": "No date QR"},
                         True,
                     ]
@@ -630,7 +733,11 @@ def test_remaining_payload_branches() -> None:
                             "date_published": "2011-03-03",
                             "title": "QR lens mix",
                             "biblio": {
-                                "invention_title": ["skip", {"text": ""}, {"text": "QR lens mix"}],
+                                "invention_title": [
+                                    "skip",
+                                    {"text": ""},
+                                    {"text": "QR lens mix"},
+                                ],
                                 "abstracts": [{}, {"text": "second abs"}],
                                 "parties": {
                                     "inventors": [
@@ -651,14 +758,14 @@ def test_remaining_payload_branches() -> None:
     titles = {row["title"] for row in epo}
     assert "QR dict title" in titles
     assert "QR list title" in titles
-    assert fetch_epo("https://ops.example/epo-pub-obj", "two_d_codes", client) == []
+    assert not fetch_epo("https://ops.example/epo-pub-obj", "two_d_codes", client)
     wipo = fetch_wipo("https://wipo-list.test/x", "two_d_codes", client)
     assert wipo[0]["patent"] == "WO3"
-    assert fetch_wipo("https://wipo-int.test/x", "two_d_codes", client) == []
-    assert fetch_patsnap("https://patsnap-int.test/x", "two_d_codes", client) == []
+    assert not fetch_wipo("https://wipo-int.test/x", "two_d_codes", client)
+    assert not fetch_patsnap("https://patsnap-int.test/x", "two_d_codes", client)
     snap = fetch_patsnap("https://patsnap-skip.test/x", "two_d_codes", client)
     assert snap[0]["published_on"] == "2016-06-06"
-    assert fetch_lens("https://lens-int.test/x", "two_d_codes", client) == []
+    assert not fetch_lens("https://lens-int.test/x", "two_d_codes", client)
     lens = fetch_lens("https://lens-skip.test/x", "two_d_codes", client)
     assert lens[0]["abstract"] == "second abs"
     assert "Ada" in lens[0]["authors"]

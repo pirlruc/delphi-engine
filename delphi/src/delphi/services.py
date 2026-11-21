@@ -16,7 +16,11 @@ from delphi_contracts.enums import (
     SubcategoryId,
     WorkKind,
 )
-from delphi_contracts.extraction import CONSENT_DESTINATION, BibliographyEntry, Extraction
+from delphi_contracts.extraction import (
+    CONSENT_DESTINATION,
+    BibliographyEntry,
+    Extraction,
+)
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity
 from delphi_contracts.mask import dropped_ids
@@ -110,7 +114,11 @@ def attach_bibliography(
         resolved.append(matched)
         if matched.matched_work_id is not None:
             catalog.add_edge(
-                Edge(from_work=from_work, to_work=matched.matched_work_id, kind=EdgeKind.CITES)
+                Edge(
+                    from_work=from_work,
+                    to_work=matched.matched_work_id,
+                    kind=EdgeKind.CITES,
+                )
             )
     return tuple(resolved)
 
@@ -145,13 +153,17 @@ def upload_pdf(
     digest = content_hash(pdf_bytes)
     existing = catalog.get_extraction_by_hash(digest)
     if existing is not None:
-        work = catalog.get_work(existing.id) or work_from_extraction(existing, subcategory)
+        work = catalog.get_work(existing.id) or work_from_extraction(
+            existing, subcategory
+        )
         catalog.upsert_work(work)
         resolved = attach_bibliography(catalog, work.id, existing.bibliography)
         extraction = existing.model_copy(update={"bibliography": resolved})
         catalog.put_extraction(extraction)
         embedder.embed_and_link(work, extraction.body_text)
-        neighborhood = catalog.neighborhood(work.id, NeighborhoodMode.UNION, subcategory)
+        neighborhood = catalog.neighborhood(
+            work.id, NeighborhoodMode.UNION, subcategory
+        )
         return extraction, neighborhood
     extraction = extractor.extract(pdf_bytes, filename)
     if not extraction.suggested_categories:
@@ -188,7 +200,9 @@ def build_masked_context(
     seed = _seed_work(catalog, request)
     if not has_subcategory(seed, request.subcategory):
         raise ValueError("seed is not in the requested subcategory")
-    mask_on, inclusive_as_of, blocked = _mask_bounds(catalog, request, seed, held_out_ids)
+    mask_on, inclusive_as_of, blocked = _mask_bounds(
+        catalog, request, seed, held_out_ids
+    )
     neighborhood = catalog.neighborhood(
         seed.id,
         NeighborhoodMode.UNION,

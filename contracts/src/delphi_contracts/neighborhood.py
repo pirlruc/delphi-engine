@@ -1,6 +1,9 @@
 """Neighborhood query results."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+
+from annotated_types import Ge, Le
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.enums import EdgeKind, NeighborDirection, NeighborhoodMode
 from delphi_contracts.work import Work
@@ -23,7 +26,7 @@ class Neighbor(BaseModel):
     work: Work
     edge_kind: EdgeKind
     direction: NeighborDirection
-    score: float | None = Field(default=None, ge=0.0, le=1.0)
+    score: Annotated[float | None, Ge(0.0), Le(1.0)] = None
 
 
 class Neighborhood(BaseModel):

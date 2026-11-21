@@ -1,0 +1,62 @@
+# Same unfixed Debian findings as .trivyignore.yaml. Review 2026-12-20.
+ignore:
+  - vulnerability: CVE-2025-13151
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2025-6020
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2025-69720
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2025-7458
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-102010
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-107493
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-107496
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-11824
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-119373
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-119374
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-119379
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-19499
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-41992
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-53613
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-53615
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-5435
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-54369
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-54370
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-5450
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-5928
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-78410
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-82560
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-84243
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-84786
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-85091
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-9538
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-95619
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2023-45853
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-11822
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.
+  - vulnerability: CVE-2026-16742
+    reason: Debian bookworm has no fixed package in the pinned python:3.13-slim-bookworm digest. Review 2026-12-20.

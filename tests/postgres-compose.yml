@@ -1,0 +1,29 @@
+# Postgres for python-quality. The password is a test value, not an operator secret.
+services:
+  postgres:
+    image: pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f
+    environment:
+      POSTGRES_USER: delphi
+      POSTGRES_PASSWORD: delphi
+      POSTGRES_DB: delphi_test
+    # 0.0.0.0 so the quality container can use host.docker.internal.
+    # 127.0.0.1 is not reachable through the runner gateway.
+    # kics-scan ignore-block
+    ports:
+      - "5432:5432"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delphi -d delphi_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

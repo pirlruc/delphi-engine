@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel
 
 from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse
 from delphi_contracts.eval_run import EvalRun
 from delphi_contracts.extraction import Extraction, PdfUpload
+from delphi_contracts.json_tree import as_dict
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.paths import PathProposal, PathRequest
 from delphi_contracts.work import Work
@@ -39,13 +39,16 @@ def openapi_path() -> Path:
     return Path(__file__).with_name("openapi.json")
 
 
-def build_openapi() -> dict[str, Any]:
+def build_openapi() -> dict[str, object]:
     """Build an OpenAPI 3.1 document for the prototype REST surface.
 
     Returns:
         OpenAPI document as a JSON-serializable dict.
     """
-    schemas = {name: model.model_json_schema() for name, model in _SCHEMA_MODELS.items()}
+    schemas = {
+        name: as_dict(model.model_json_schema())
+        for name, model in _SCHEMA_MODELS.items()
+    }
     return {
         "openapi": "3.1.0",
         "info": {
@@ -68,11 +71,13 @@ def write_openapi(path: Path | None = None) -> Path:
         Path written.
     """
     destination = path or openapi_path()
-    destination.write_text(json.dumps(build_openapi(), indent=2) + "\n", encoding="utf-8")
+    destination.write_text(
+        json.dumps(build_openapi(), indent=2) + "\n", encoding="utf-8"
+    )
     return destination
 
 
-def _paths() -> dict[str, Any]:
+def _paths() -> dict[str, object]:
     """Return prototype path items.
 
     Returns:
@@ -106,20 +111,26 @@ def _paths() -> dict[str, Any]:
                         "schema": {"enum": ["citation", "content", "union"]},
                     },
                 ],
-                "responses": {"200": {"description": "Dated neighbors tagged by edge kind"}},
+                "responses": {
+                    "200": {"description": "Dated neighbors tagged by edge kind"}
+                },
             }
         },
         "/v1/uploads": {
             "post": {
                 "operationId": "uploadPdf",
                 "summary": "Consented PDF upload",
-                "responses": {"200": {"description": "Extraction plus attached graphs"}},
+                "responses": {
+                    "200": {"description": "Extraction plus attached graphs"}
+                },
             }
         },
         "/v1/generate": {
             "post": {
                 "operationId": "generatePath",
-                "summary": "Research path or patent whitespace from a masked neighborhood",
+                "summary": (
+                    "Research path or patent whitespace from a masked neighborhood"
+                ),
                 "requestBody": json_body,
                 "responses": {"200": {"description": "Ranked proposals"}},
             }

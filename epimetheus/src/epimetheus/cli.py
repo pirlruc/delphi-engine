@@ -18,6 +18,7 @@ from delphi_contracts.enums import (
     WorkKind,
 )
 from delphi_contracts.graph import Edge
+from delphi_contracts.json_tree import as_dict, namespace_dict, parse_json
 from delphi_contracts.neighborhood import Neighbor
 from delphi_contracts.work import Work
 
@@ -39,14 +40,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Epimetheus hindcast")
     parser.add_argument("--output", type=Path, default=Path("evalrun.json"))
     parser.add_argument("--works-json", type=Path, default=None)
-    args = parser.parse_args(argv)
-    if args.works_json is not None:
-        payload = json.loads(args.works_json.read_text(encoding="utf-8"))
+    raw = namespace_dict(parser.parse_args(argv))
+    output = raw.get("output")
+    destination = output if isinstance(output, Path) else Path("evalrun.json")
+    works_json = raw.get("works_json")
+    if isinstance(works_json, Path):
+        payload = as_dict(parse_json(works_json.read_text(encoding="utf-8")))
         summary = summarize_runs(trials_from_payload(payload))
-        args.output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        destination.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         return 0
     run = run_hindcast(*_builtin_trial())
-    args.output.write_text(run.model_dump_json(indent=2), encoding="utf-8")
+    destination.write_text(run.model_dump_json(indent=2), encoding="utf-8")
     return 0
 
 

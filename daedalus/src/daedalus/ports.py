@@ -31,7 +31,9 @@ class CatalogWriter(Protocol):
             edge: cites or similar_to.
         """
 
-    def put_embedding(self, work_id: UUID, vector: tuple[float, ...], model_id: str) -> None:
+    def put_embedding(
+        self, work_id: UUID, vector: tuple[float, ...], model_id: str
+    ) -> None:
         """Store a vector.
 
         Args:

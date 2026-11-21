@@ -89,5 +89,11 @@ JavaScript and TypeScript gates are the org `node/` pack ([TOOL-002](issues.yml)
 - Proposal guardrails were removed. Do not recreate `docs/proposal/`.
 
 - An undated seed (`1970-01-01`) refuses generate unless the request sets `as_of`. `mask_on` is the first forbidden date.
+- Root `mypy .` needs the workspace `[tool.mypy]` in `pyproject.toml`, including `python_executable = ".venv/bin/python"`. The quality job runs its own mypy, and that setting is how it sees the workspace install. Do not set `plugins = ["pydantic.mypy"]`. Do not put `.venv` on `mypy_path`; mypy then treats installed modules as user code.
+- Pylint runs from the DevOps virtualenv, so `[tool.pylint.main] init-hook` must `site.addsitedir` the workspace `.venv`. Putting that directory on `sys.path` does not load the editable `.pth` files, and the score falls through the Medium floor.
+- Postgres needs `cap_add` after `cap_drop: ALL`. KICS query `ce76b7d0` treats any `cap_add` as unrestricted, including the sample that also drops all capabilities, so `.github/kics.config` excludes it.
+- `.trivyignore.yaml` entries have no `paths`. Trivy reports these Debian findings against the image name, so a dpkg path never matches. `.grype.yaml` lists the same ids. Both expire 2026-12-20. The image removes pip, setuptools, and ensurepip after installing uv so those Python findings are not ignored.
+- python-quality is pydevops 3.7.4 (`5ada9b47f17f3cc17765885252024fb67ec79df6`). Compose tests publish `5432` on every interface and, when `CI` is set, connect through `host.docker.internal`. The `ports` block is a KICS ignore-block: query `451d79dc` wants `127.0.0.1`, which the runner gateway cannot reach. `container-iac` and `container-compose-smoke` pin containerdevops 6.6.1 so they do not cancel each other.
+- Medium mypy floors stay in force while the reports exist. Local mypy 2.4.1 reports 0.64% imprecision (76/11881 lines) and 11 any-expressions. On the previous 7385 SLOC that density is 1.49 per 1K, under the Medium cap of 2.0; the tree grew, so cloc SLOC is higher. The remaining anys are the sqlite row read, `json.loads`, and `headers.get` confined to `hermes/cache.py`, `delphi_contracts/json_tree.py`, and `daedalus/retry.py`. Do not drop the report flags. A lower floor needs an Epic and Engineering Lead approval in `docs/guardrail-deviations.yml`. Do not tag 0.1.0 while `required` is red.
 
-*Last updated: 2026-11-20 (hindcast mask uses one cut rule)*
+*Last updated: 2026-11-21 (local Medium mypy reports are under the floors; 0.1.0 waits on a green `required` check).*

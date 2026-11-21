@@ -1,0 +1,7 @@
+schemaVersion: "2.0.0"
+metadataTest:
+  user: "10001"
+fileExistenceTests:
+  - name: app
+    path: /app
+    shouldExist: true

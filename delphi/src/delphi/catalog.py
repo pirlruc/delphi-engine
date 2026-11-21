@@ -68,7 +68,9 @@ class Catalog(Protocol):
             Matching edges.
         """
 
-    def put_embedding(self, work_id: UUID, vector: tuple[float, ...], model_id: str) -> None:
+    def put_embedding(
+        self, work_id: UUID, vector: tuple[float, ...], model_id: str
+    ) -> None:
         """Store an embedding for a work.
 
         Args:
@@ -203,7 +205,8 @@ class MemoryCatalog:
             owner = self._identities.get(key)
             if owner is not None and owner != work.id:
                 raise ValueError(
-                    f"identity {identity.kind.value}:{identity.value} belongs to another work"
+                    "identity "
+                    f"{identity.kind.value}:{identity.value} belongs to another work"
                 )
         self._works[work.id] = work
         stale = [key for key, owner in self._identities.items() if owner == work.id]
@@ -233,7 +236,9 @@ class MemoryCatalog:
         Returns:
             Known/unknown rows in the same order.
         """
-        rows = tuple(_row_for(identity, self._identities) for identity in request.identities)
+        rows = tuple(
+            _row_for(identity, self._identities) for identity in request.identities
+        )
         return BatchCheckResponse(rows=rows)
 
     def add_edge(self, edge: Edge) -> None:
@@ -268,7 +273,9 @@ class MemoryCatalog:
             return tuple(self._edges)
         return tuple(edge for edge in self._edges if edge.kind is kind)
 
-    def put_embedding(self, work_id: UUID, vector: tuple[float, ...], model_id: str) -> None:
+    def put_embedding(
+        self, work_id: UUID, vector: tuple[float, ...], model_id: str
+    ) -> None:
         """Store an embedding for a work.
 
         Args:
@@ -381,7 +388,11 @@ class MemoryCatalog:
         self._replace_similar_to(
             work_id,
             scored_neighbors(
-                work_id, source, self._embeddings, self._models, self._models.get(work_id)
+                work_id,
+                source,
+                self._embeddings,
+                self._models,
+                self._models.get(work_id),
             ),
             k,
         )
@@ -392,20 +403,38 @@ class MemoryCatalog:
         Args:
             k: Neighbor count per work.
         """
-        self._edges = [edge for edge in self._edges if edge.kind is not EdgeKind.SIMILAR_TO]
+        self._edges = [
+            edge for edge in self._edges if edge.kind is not EdgeKind.SIMILAR_TO
+        ]
         for work_id, source in self._embeddings.items():
             ranked = scored_neighbors(
-                work_id, source, self._embeddings, self._models, self._models.get(work_id)
+                work_id,
+                source,
+                self._embeddings,
+                self._models,
+                self._models.get(work_id),
             )
             for other_id, score in ranked[:k]:
                 self.add_edge(
-                    Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                    Edge(
+                        from_work=work_id,
+                        to_work=other_id,
+                        kind=EdgeKind.SIMILAR_TO,
+                        score=score,
+                    )
                 )
                 self.add_edge(
-                    Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                    Edge(
+                        from_work=other_id,
+                        to_work=work_id,
+                        kind=EdgeKind.SIMILAR_TO,
+                        score=score,
+                    )
                 )
 
-    def _replace_similar_to(self, work_id: UUID, ranked: list[tuple[UUID, float]], k: int) -> None:
+    def _replace_similar_to(
+        self, work_id: UUID, ranked: list[tuple[UUID, float]], k: int
+    ) -> None:
         """Drop this work's outgoing similar_to edges, then write its top-k pairs.
 
         Args:
@@ -420,10 +449,20 @@ class MemoryCatalog:
         ]
         for other_id, score in ranked[:k]:
             self.add_edge(
-                Edge(from_work=work_id, to_work=other_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                Edge(
+                    from_work=work_id,
+                    to_work=other_id,
+                    kind=EdgeKind.SIMILAR_TO,
+                    score=score,
+                )
             )
             self.add_edge(
-                Edge(from_work=other_id, to_work=work_id, kind=EdgeKind.SIMILAR_TO, score=score)
+                Edge(
+                    from_work=other_id,
+                    to_work=work_id,
+                    kind=EdgeKind.SIMILAR_TO,
+                    score=score,
+                )
             )
 
     def _citation_neighbors(
@@ -550,7 +589,9 @@ def _visible(
     return as_of is None or work.published_on <= as_of
 
 
-def _edge_neighbor(edge: Edge, seed_id: UUID, works: dict[UUID, Work]) -> Neighbor | None:
+def _edge_neighbor(
+    edge: Edge, seed_id: UUID, works: dict[UUID, Work]
+) -> Neighbor | None:
     """Map an edge onto a Neighbor relative to the seed.
 
     Args:
@@ -571,7 +612,9 @@ def _edge_neighbor(edge: Edge, seed_id: UUID, works: dict[UUID, Work]) -> Neighb
     other = works.get(other_id)
     if other is None:
         return None
-    return Neighbor(work=other, edge_kind=edge.kind, direction=direction, score=edge.score)
+    return Neighbor(
+        work=other, edge_kind=edge.kind, direction=direction, score=edge.score
+    )
 
 
 def scored_neighbors(
@@ -597,7 +640,11 @@ def scored_neighbors(
     for other_id, vector in embeddings.items():
         if other_id == work_id:
             continue
-        if model_id is not None and models is not None and models.get(other_id) != model_id:
+        if (
+            model_id is not None
+            and models is not None
+            and models.get(other_id) != model_id
+        ):
             continue
         if len(vector) != len(source):
             continue

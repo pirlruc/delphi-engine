@@ -25,3 +25,70 @@ daedalus = { workspace = true }
 delphi-prometheus = { workspace = true }
 epimetheus = { workspace = true }
 hermes = { workspace = true }
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+explicit_package_bases = true
+namespace_packages = true
+no_implicit_optional = true
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+python_executable = ".venv/bin/python"
+mypy_path = [
+    "contracts/src",
+    "delphi/src",
+    "daedalus/src",
+    "prometheus/src",
+    "epimetheus/src",
+    "hermes/src",
+]
+exclude = [
+    "^docs/guardrails/",
+    "^\\.github/",
+    "^\\.devops/",
+    "^\\.venv/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "contracts.tests.*",
+    "delphi.tests.*",
+    "daedalus.tests.*",
+    "prometheus.tests.*",
+    "epimetheus.tests.*",
+    "hermes.tests.*",
+]
+check_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "contracts/src",
+    "delphi/src",
+    "daedalus/src",
+    "prometheus/src",
+    "epimetheus/src",
+    "hermes/src",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.interrogate]
+fail-under = 95
+ignore-init-method = true
+ignore-nested-functions = true
+ignore-semiprivate = true
+ignore-private = true
+exclude = ["tests", "scripts", ".venv", "docs", ".github", ".devops"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", ".github", "docs/guardrails"]
+
+[tool.pylint.main]
+init-hook = "import site; from pathlib import Path; [site.addsitedir(str(p)) for p in Path('.venv/lib').glob('python*/site-packages')]"

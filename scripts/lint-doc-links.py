@@ -26,15 +26,29 @@ ABS_PREFIXES = ("http://", "https://", "mailto:", "tel:", "#")
 REF_DEF = re.compile(r"^\s*\[[^\]]+\]:\s+(\S+)")
 
 
-def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    """Parse CLI arguments."""
+class _RootArgs(argparse.Namespace):
+    """Typed ``--root`` value."""
+
+    root: Path | None
+
+
+def parse_args(argv: list[str] | None) -> Path | None:
+    """Parse CLI arguments.
+
+    Args:
+        argv: Argument vector, or None for ``sys.argv``.
+
+    Returns:
+        The ``--root`` path when the caller passed one.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
         type=Path,
         help="Repository root to scan (overrides env and git detection)",
     )
-    return parser.parse_args(argv)
+    parsed = parser.parse_args(argv, namespace=_RootArgs())
+    return parsed.root
 
 
 def git_toplevel(cwd: Path) -> Path | None:
@@ -256,7 +270,10 @@ def check_file(md_file: Path, root: Path) -> list[str]:
         path_only = path_from_destination(raw)
         if path_only is None:
             continue
-        if any(target_ok(candidate) for candidate in candidate_targets(md_file, path_only, root)):
+        if any(
+            target_ok(candidate)
+            for candidate in candidate_targets(md_file, path_only, root)
+        ):
             continue
         target = (md_file.parent / path_only).resolve()
         if is_repo_relative(path_only):
@@ -270,11 +287,13 @@ def check_file(md_file: Path, root: Path) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     """Lint relative links; return 0 on success, 1 on failures."""
-    args = parse_args(argv)
-    root = resolve_root(args.root)
+    root = resolve_root(parse_args(argv))
     doc_files = collect_doc_files(root)
     if not doc_files:
-        print(f"ERROR: no markdown or Cursor-rule files found under {root}", file=sys.stderr)
+        print(
+            f"ERROR: no markdown or Cursor-rule files found under {root}",
+            file=sys.stderr,
+        )
         return 1
     failures: list[str] = []
     for md_file in doc_files:

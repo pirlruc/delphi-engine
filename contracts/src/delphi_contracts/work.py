@@ -1,9 +1,11 @@
 """Catalog work records."""
 
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from annotated_types import MinLen
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.category import Category
 from delphi_contracts.enums import WorkKind
@@ -32,7 +34,7 @@ class Work(BaseModel):
 
     id: UUID
     kind: WorkKind
-    title: str = Field(min_length=1)
+    title: Annotated[str, MinLen(1)]
     authors: tuple[str, ...] = ()
     keywords: tuple[str, ...] = ()
     abstract: str = ""
