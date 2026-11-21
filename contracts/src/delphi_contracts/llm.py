@@ -8,13 +8,21 @@ import math
 import os
 import re
 from collections.abc import Mapping
-from typing import Any, Protocol, runtime_checkable
+from typing import Annotated, Protocol, runtime_checkable
 from urllib.parse import urlparse
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field
+from annotated_types import MinLen
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.enums import ProviderKind
+from delphi_contracts.json_tree import (
+    as_dict,
+    as_floats,
+    is_object_dict,
+    is_object_list,
+    parse_json,
+)
 
 __all__ = [
     "ChatMessage",
@@ -70,7 +78,7 @@ class ChatRequest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    messages: tuple[ChatMessage, ...] = Field(min_length=1)
+    messages: Annotated[tuple[ChatMessage, ...], MinLen(1)]
     json_mode: bool = True
 
 
@@ -100,7 +108,7 @@ class EmbedRequest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    text: str = Field(min_length=1)
+    text: Annotated[str, MinLen(1)]
     model: str | None = None
 
 
@@ -155,7 +163,8 @@ def hash_embed(text: str, dim: int = 32) -> tuple[float, ...]:
         Unit-length vector so cosine similarity is a dot product.
     """
     counts = [0.0] * dim
-    for token in _TOKEN_RE.findall(text.lower()):
+    tokens: list[str] = _TOKEN_RE.findall(text.lower())
+    for token in tokens:
         digest = hashlib.sha256(token.encode("utf-8")).digest()
         index = int.from_bytes(digest[:4], "big") % dim
         counts[index] += 1.0
@@ -332,9 +341,9 @@ class OpenAICompatibleProvider:
             payload["response_format"] = {"type": "json_object"}
         data = self._post("/chat/completions", payload)
         choices = data.get("choices", [])
-        first = choices[0] if isinstance(choices, list) and choices else {}
-        raw_message = first.get("message") if isinstance(first, dict) else {}
-        message = raw_message if isinstance(raw_message, dict) else {}
+        first = choices[0] if is_object_list(choices) and choices else {}
+        message_raw = first.get("message") if is_object_dict(first) else {}
+        message = message_raw if is_object_dict(message_raw) else {}
         content = str(message.get("content", "{}"))
         model = str(data.get("model", self._settings.model))
         return ChatResponse(content=content, model=model, provider=self.kind)
@@ -351,14 +360,13 @@ class OpenAICompatibleProvider:
         model = request.model or self._settings.embedding_model
         payload: dict[str, object] = {"model": model, "input": request.text}
         data = self._post("/embeddings", payload)
-        raw = data["data"]
-        first = raw[0] if isinstance(raw, list) else {}
-        embedding = first.get("embedding") if isinstance(first, dict) else []
-        values = embedding if isinstance(embedding, list) else []
-        vector = tuple(float(value) for value in values)
+        raw = data.get("data")
+        first = raw[0] if is_object_list(raw) and raw else {}
+        embedding = first.get("embedding") if is_object_dict(first) else []
+        vector = as_floats(embedding)
         return EmbedResponse(vector=vector, model=model, provider=self.kind)
 
-    def _post(self, path: str, payload: dict[str, object]) -> dict[str, Any]:
+    def _post(self, path: str, payload: dict[str, object]) -> dict[str, object]:
         """POST JSON to the configured base URL.
 
         Args:
@@ -382,8 +390,7 @@ class OpenAICompatibleProvider:
                 timeout=self._settings.timeout_s,
             )
         response.raise_for_status()
-        parsed = response.json()
-        return dict(parsed) if isinstance(parsed, dict) else {}
+        return as_dict(parse_json(response.content))
 
 
 def provider_settings_from_env(

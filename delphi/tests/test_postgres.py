@@ -69,14 +69,12 @@ def _work(title: str, published: date, doi: str | None = None) -> Work:
 
 @pytest.fixture
 def catalog() -> Generator[PostgresCatalog]:
-    """Verify this behavior."""
     store = PostgresCatalog(_DSN, reset=True)
     yield store
     store.close()
 
 
 def test_catalog_from_url_defaults_to_memory() -> None:
-    """Verify this behavior."""
     assert isinstance(catalog_from_url(None), MemoryCatalog)
     pg = catalog_from_url(_DSN)
     assert isinstance(pg, PostgresCatalog)
@@ -86,7 +84,6 @@ def test_catalog_from_url_defaults_to_memory() -> None:
 def test_postgres_works_edges_embeddings_and_neighborhood(
     catalog: PostgresCatalog,
 ) -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/a")
     cited = _work("QR 2012", date(2012, 1, 1), "10.1/b")
     later = _work("QR 2018", date(2018, 1, 1), "10.1/c")
@@ -129,7 +126,6 @@ def test_postgres_works_edges_embeddings_and_neighborhood(
 def test_postgres_rejects_identity_theft_and_updates_edge_score(
     catalog: PostgresCatalog,
 ) -> None:
-    """Verify this behavior."""
     owner = _work("owner", date(2014, 1, 1), "10.1/own")
     catalog.upsert_work(owner)
     thief = _work("thief", date(2015, 1, 1), "10.1/own")
@@ -144,7 +140,6 @@ def test_postgres_rejects_identity_theft_and_updates_edge_score(
 
 
 def test_postgres_extractions_and_empty_vector(catalog: PostgresCatalog) -> None:
-    """Verify this behavior."""
     extraction = Extraction(
         id=uuid4(), content_hash="a" * 64, title="PDF", body_text="x"
     )

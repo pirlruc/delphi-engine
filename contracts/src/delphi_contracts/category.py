@@ -1,6 +1,9 @@
 """Category and subcategory filters."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+
+from annotated_types import MinLen
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.enums import CategoryScheme, SubcategoryId
 
@@ -21,7 +24,7 @@ class Category(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     scheme: CategoryScheme
-    code: str = Field(min_length=1)
-    label: str = Field(min_length=1)
+    code: Annotated[str, MinLen(1)]
+    label: Annotated[str, MinLen(1)]
     subcategory: SubcategoryId | None = None
     parent_code: str | None = None

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from uuid import UUID, uuid4
 
 from delphi_contracts.eval_run import EvalRun, EvalScores
+from delphi_contracts.json_tree import as_dict, parse_json
 from delphi_contracts.llm import (
     ChatMessage,
     ChatRequest,
@@ -18,6 +18,21 @@ from delphi_contracts.paths import PathProposal
 from delphi_contracts.work import Work
 
 __all__ = ["score_proposal"]
+
+
+def _judge_score(value: object, default: float) -> float:
+    """Read a numeric judge score.
+
+    Args:
+        value: JSON value.
+        default: Score when the value is not a number.
+
+    Returns:
+        The score.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    return float(value)
 
 
 def score_proposal(
@@ -47,15 +62,15 @@ def score_proposal(
     response = provider.chat(
         ChatRequest(messages=(ChatMessage(role="user", content=prompt),))
     )
-    payload = json.loads(response.content)
+    payload = as_dict(parse_json(response.content))
     left = provider.embed(
         EmbedRequest(text=proposal.title + " " + " ".join(proposal.claims))
     )
     right = provider.embed(EmbedRequest(text=f"{held_out.title} {held_out.abstract}"))
     scores = EvalScores(
-        novelty=float(payload.get("novelty", 3)),
-        relevance=float(payload.get("relevance", 3)),
-        accuracy=float(payload.get("accuracy", 3)),
+        novelty=_judge_score(payload.get("novelty"), 3.0),
+        relevance=_judge_score(payload.get("relevance"), 3.0),
+        accuracy=_judge_score(payload.get("accuracy"), 3.0),
         embedding_similarity=cosine(left.vector, right.vector),
     )
     return EvalRun(

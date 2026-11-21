@@ -11,6 +11,7 @@ from uuid import NAMESPACE_URL, uuid5
 from delphi_contracts.enums import IdentityKind
 from delphi_contracts.extraction import BibliographyEntry, Extraction
 from delphi_contracts.identity import Identity, normalize_doi
+from delphi_contracts.json_tree import is_object_dict, is_object_list, parse_json
 from delphi_contracts.llm import ChatMessage, ChatRequest, LlmProvider, build_provider
 from pypdf import PdfReader
 
@@ -86,7 +87,7 @@ class PdfExtractor:
                     )
                 )
                 return _extraction_from_payload(
-                    json.loads(response.content), digest, filename, text
+                    parse_json(response.content), digest, filename, text
                 )
             except (json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
                 last = exc
@@ -108,10 +109,10 @@ def _extraction_from_payload(
         Extraction.
 
     """
-    if not isinstance(payload, dict):
+    if not is_object_dict(payload):
         raise TypeError("extraction payload must be an object")
     raw_rows = payload.get("bibliography", [])
-    rows = raw_rows if isinstance(raw_rows, list) else []
+    rows = raw_rows if is_object_list(raw_rows) else []
     bibliography = tuple(
         entry
         for entry in (_bibliography_entry(row) for row in rows)
@@ -149,7 +150,7 @@ def _bibliography_entry(row: object) -> BibliographyEntry | None:
     Returns:
         Entry or None when the row is unusable.
     """
-    if not isinstance(row, dict) or "raw" not in row:
+    if not is_object_dict(row) or "raw" not in row:
         return None
     raw = str(row["raw"])
     doi_raw = row.get("doi")

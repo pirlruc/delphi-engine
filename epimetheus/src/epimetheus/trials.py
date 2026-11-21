@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from datetime import date
-from typing import Any
 from uuid import UUID
 
 from delphi_contracts.category import Category
@@ -16,6 +16,7 @@ from delphi_contracts.enums import (
     WorkKind,
 )
 from delphi_contracts.graph import Edge
+from delphi_contracts.json_tree import as_dict, as_list, as_str_list
 from delphi_contracts.neighborhood import Neighbor
 from delphi_contracts.work import Work
 
@@ -24,7 +25,7 @@ from epimetheus.run import run_hindcast
 __all__ = ["summarize_runs", "trials_from_payload"]
 
 
-def trials_from_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
+def trials_from_payload(payload: Mapping[str, object]) -> list[dict[str, object]]:
     """Run one earliest-vs-latest hindcast per subcategory.
 
     Args:
@@ -34,7 +35,7 @@ def trials_from_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
         EvalRun dicts plus trial metadata.
     """
     works, edges, by_sub = _load(payload)
-    results: list[dict[str, Any]] = []
+    results: list[dict[str, object]] = []
     for subcategory, group in sorted(by_sub.items()):
         papers = sorted(group, key=lambda work: work.published_on)
         if len(papers) < 2:
@@ -46,14 +47,14 @@ def trials_from_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
         run = run_hindcast(
             seed, held, works, edges, neighbors, subcategory, PathKind.RESEARCH_PATH
         )
-        dumped = run.model_dump(mode="json")
+        dumped = as_dict(run.model_dump(mode="json"))
         dumped["seed_title"] = seed.title
         dumped["held_out_title"] = held.title
         results.append(dumped)
     return results
 
 
-def summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
+def summarize_runs(runs: Sequence[Mapping[str, object]]) -> dict[str, object]:
     """Aggregate trial count and mean scores.
 
     Args:
@@ -72,12 +73,10 @@ def summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
             "mean_embedding_similarity": 0.0,
             "runs": [],
         }
-    novelty = sum(float(run["scores"]["novelty"]) for run in runs) / count
-    relevance = sum(float(run["scores"]["relevance"]) for run in runs) / count
-    accuracy = sum(float(run["scores"]["accuracy"]) for run in runs) / count
-    similarity = (
-        sum(float(run["scores"]["embedding_similarity"]) for run in runs) / count
-    )
+    novelty = _mean_score(runs, "novelty")
+    relevance = _mean_score(runs, "relevance")
+    accuracy = _mean_score(runs, "accuracy")
+    similarity = _mean_score(runs, "embedding_similarity")
     return {
         "trial_count": count,
         "mean_novelty": novelty,
@@ -88,8 +87,28 @@ def summarize_runs(runs: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _mean_score(runs: Sequence[Mapping[str, object]], name: str) -> float:
+    """Average one score across trials.
+
+    Args:
+        runs: EvalRun dicts.
+        name: Score field.
+
+    Returns:
+        Mean, treating missing values as zero.
+    """
+    total = 0.0
+    for run in runs:
+        scores = as_dict(run.get("scores"))
+        value = scores.get(name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        total += float(value)
+    return total / len(runs)
+
+
 def _load(
-    payload: dict[str, Any],
+    payload: Mapping[str, object],
 ) -> tuple[tuple[Work, ...], tuple[Edge, ...], dict[str, list[Work]]]:
     """Parse works and cites.
 
@@ -99,23 +118,24 @@ def _load(
     Returns:
         Works, cites edges, works grouped by subcategory.
     """
-    records = payload["works"]
+    records = as_list(payload.get("works"))
     works: list[Work] = []
     edges: list[Edge] = []
     by_sub: dict[str, list[Work]] = {}
-    for record in records:
+    for item in records:
+        record = as_dict(item)
         work = _work(record)
         works.append(work)
-        subcategory = str(record["subcategory"])
+        subcategory = str(record.get("subcategory", ""))
         by_sub.setdefault(subcategory, []).append(work)
-        for target in record.get("cites", []):
+        for target in as_str_list(record.get("cites", [])):
             edges.append(
-                Edge(from_work=work.id, to_work=UUID(str(target)), kind=EdgeKind.CITES)
+                Edge(from_work=work.id, to_work=UUID(target), kind=EdgeKind.CITES)
             )
     return tuple(works), tuple(edges), by_sub
 
 
-def _work(record: dict[str, Any]) -> Work:
+def _work(record: Mapping[str, object]) -> Work:
     """Build a Work from a fixture row.
 
     Args:

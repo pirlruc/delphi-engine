@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel
 
 from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse
 from delphi_contracts.eval_run import EvalRun
 from delphi_contracts.extraction import Extraction, PdfUpload
+from delphi_contracts.json_tree import as_dict
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.paths import PathProposal, PathRequest
 from delphi_contracts.work import Work
@@ -39,14 +39,15 @@ def openapi_path() -> Path:
     return Path(__file__).with_name("openapi.json")
 
 
-def build_openapi() -> dict[str, Any]:
+def build_openapi() -> dict[str, object]:
     """Build an OpenAPI 3.1 document for the prototype REST surface.
 
     Returns:
         OpenAPI document as a JSON-serializable dict.
     """
     schemas = {
-        name: model.model_json_schema() for name, model in _SCHEMA_MODELS.items()
+        name: as_dict(model.model_json_schema())
+        for name, model in _SCHEMA_MODELS.items()
     }
     return {
         "openapi": "3.1.0",
@@ -76,7 +77,7 @@ def write_openapi(path: Path | None = None) -> Path:
     return destination
 
 
-def _paths() -> dict[str, Any]:
+def _paths() -> dict[str, object]:
     """Return prototype path items.
 
     Returns:

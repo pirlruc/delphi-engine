@@ -319,6 +319,7 @@
             "items": {
               "$ref": "#/$defs/Identity"
             },
+            "maxItems": 500,
             "minItems": 1,
             "title": "Identities",
             "type": "array"

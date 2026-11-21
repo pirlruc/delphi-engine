@@ -1,7 +1,9 @@
 """Contracts unit tests."""
 
+import json
 from collections.abc import Callable
 from datetime import date
+from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
@@ -25,6 +27,7 @@ from delphi_contracts.enums import (
 from delphi_contracts.extraction import CONSENT_DESTINATION, PdfUpload
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity, normalize_identity
+from delphi_contracts.json_tree import as_dict
 from delphi_contracts.llm import (
     ChatMessage,
     ChatRequest,
@@ -63,13 +66,11 @@ def _work(title: str, published: date) -> Work:
 
 
 def test_identity_rejects_empty_value() -> None:
-    """Verify this behavior."""
     with pytest.raises(ValidationError):
         Identity(kind=IdentityKind.DOI, value="")
 
 
 def test_identity_normalizes_doi_and_patent() -> None:
-    """Verify this behavior."""
     doi = Identity(kind=IdentityKind.DOI, value="https://doi.org/10.1000/QR-2014")
     assert doi.value == "10.1000/qr-2014"
     patent = Identity(kind=IdentityKind.PATENT, value="US-1234567-A")
@@ -89,13 +90,11 @@ def test_identity_normalizes_doi_and_patent() -> None:
 
 
 def test_batch_check_request_requires_rows() -> None:
-    """Verify this behavior."""
     with pytest.raises(ValidationError):
         BatchCheckRequest(identities=())
 
 
 def test_batch_check_rejects_more_than_500_identities() -> None:
-    """Verify this behavior."""
     identities = tuple(
         Identity(kind=IdentityKind.DOI, value=f"10.1/{index}") for index in range(501)
     )
@@ -104,7 +103,6 @@ def test_batch_check_rejects_more_than_500_identities() -> None:
 
 
 def test_batch_check_row_unknown() -> None:
-    """Verify this behavior."""
     identity = Identity(kind=IdentityKind.ARXIV, value="1605.00000")
     row = BatchCheckRow(identity=identity, known=False)
     assert row.work_id is None
@@ -112,7 +110,6 @@ def test_batch_check_row_unknown() -> None:
 
 
 def test_pdf_upload_consent_constant() -> None:
-    """Verify this behavior."""
     upload = PdfUpload(
         consent_destination=CONSENT_DESTINATION,
         filename="paper.pdf",
@@ -122,7 +119,6 @@ def test_pdf_upload_consent_constant() -> None:
 
 
 def test_path_request_kinds() -> None:
-    """Verify this behavior."""
     request = PathRequest(
         kind=PathKind.PATENT_WHITESPACE,
         subcategory="two_d_codes",
@@ -134,7 +130,6 @@ def test_path_request_kinds() -> None:
 
 
 def test_masked_context_forbidden_ignores_absent_held_out() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2015, 1, 1))
     absent = uuid4()
     neighborhood = Neighborhood(seed=seed, mode=NeighborhoodMode.UNION, neighbors=())
@@ -150,7 +145,6 @@ def test_masked_context_forbidden_ignores_absent_held_out() -> None:
 
 
 def test_masked_context_forbidden_includes_later_neighbors() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2015, 1, 1))
     later = _work("later", date(2018, 1, 1))
     neighborhood = Neighborhood(
@@ -177,7 +171,6 @@ def test_masked_context_forbidden_includes_later_neighbors() -> None:
 
 
 def test_masked_context_same_day_neighbor_is_forbidden() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2015, 1, 1))
     sibling = _work("sibling", date(2016, 1, 1))
     neighborhood = Neighborhood(
@@ -204,7 +197,6 @@ def test_masked_context_same_day_neighbor_is_forbidden() -> None:
 
 
 def test_hash_embed_is_deterministic_and_normalized() -> None:
-    """Verify this behavior."""
     left = hash_embed("qr data matrix barcode", dim=16)
     right = hash_embed("qr data matrix barcode", dim=16)
     assert left == right
@@ -212,7 +204,6 @@ def test_hash_embed_is_deterministic_and_normalized() -> None:
 
 
 def test_cosine_clamps_and_matches_self() -> None:
-    """Verify this behavior."""
     vector = hash_embed("steganography watermark")
     assert cosine(vector, vector) == pytest.approx(1.0)
     assert cosine(vector, tuple(-value for value in vector)) == 0.0
@@ -226,7 +217,6 @@ def test_cosine_clamps_and_matches_self() -> None:
 
 
 def test_dropped_ids_includes_same_day_siblings() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 3, 1))
     sibling = _work("sib", date(2016, 3, 1))
@@ -246,13 +236,11 @@ def test_dropped_ids_includes_same_day_siblings() -> None:
 
 
 def test_hash_embed_empty_tokens_is_zero() -> None:
-    """Verify this behavior."""
     vector = hash_embed("!!!", dim=8)
     assert vector == tuple(0.0 for _ in range(8))
 
 
 def test_fake_provider_extract_generate_judge() -> None:
-    """Verify this behavior."""
     provider = FakeProvider()
     extract = provider.chat(
         ChatRequest(
@@ -313,7 +301,6 @@ def test_fake_provider_extract_generate_judge() -> None:
 def test_provider_settings_from_env_defaults_and_overrides(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify this behavior."""
     fake = provider_settings_from_env({})
     assert fake.kind is ProviderKind.FAKE
     cloud = provider_settings_from_env({
@@ -344,25 +331,23 @@ def test_provider_settings_from_env_defaults_and_overrides(
 
 
 def test_openai_post_without_injected_client(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify this behavior."""
     captured: dict[str, object] = {}
 
     class _Response:
         def raise_for_status(self) -> None:
-            """Verify this behavior."""
             return None
 
-        def json(self) -> dict[str, object]:
-            """Verify this behavior."""
-            return {
+        @property
+        def content(self) -> bytes:
+            body = {
                 "model": "cloud",
                 "choices": [{"message": {"content": "{}"}}],
             }
+            return json.dumps(body).encode()
 
     def fake_post(
         url: str, json: dict[str, object], headers: dict[str, str], timeout: float
     ) -> _Response:
-        """Verify this behavior."""
         captured["url"] = url
         captured["json"] = json
         captured["headers"] = headers
@@ -385,7 +370,6 @@ def test_openai_post_without_injected_client(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_fake_chat_defaults_to_generate_and_untitled_extract() -> None:
-    """Verify this behavior."""
     provider = FakeProvider()
     generate = provider.chat(
         ChatRequest(messages=(ChatMessage(role="user", content="hello"),))
@@ -402,7 +386,6 @@ def test_fake_chat_defaults_to_generate_and_untitled_extract() -> None:
 
 
 def test_eval_run_scores_round_trip() -> None:
-    """Verify this behavior."""
     from delphi_contracts.eval_run import EvalRun, EvalScores
 
     run = EvalRun(
@@ -419,7 +402,6 @@ def test_eval_run_scores_round_trip() -> None:
 
 
 def test_context_leak_error_is_value_error() -> None:
-    """Verify this behavior."""
     from delphi_contracts.paths import ContextLeakError
 
     with pytest.raises(ContextLeakError):
@@ -427,10 +409,8 @@ def test_context_leak_error_is_value_error() -> None:
 
 
 def test_openai_compatible_chat_and_embed() -> None:
-    """Verify this behavior."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         if request.url.path.endswith("/chat/completions"):
             return httpx.Response(
                 200,
@@ -464,10 +444,8 @@ def test_openai_compatible_chat_and_embed() -> None:
 
 
 def test_openai_handles_empty_payloads() -> None:
-    """Verify this behavior."""
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         return httpx.Response(200, json={"choices": [], "data": "nope"})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
@@ -481,16 +459,15 @@ def test_openai_handles_empty_payloads() -> None:
     assert embedded.vector == ()
 
 
-def test_openapi_includes_required_paths_and_schemas(tmp_path) -> None:
-    """Verify this behavior."""
+def test_openapi_includes_required_paths_and_schemas(tmp_path: Path) -> None:
     document = build_openapi()
-    assert document["openapi"].startswith("3.")
-    paths = document["paths"]
+    assert str(document["openapi"]).startswith("3.")
+    paths = as_dict(document["paths"])
     assert "/v1/works:batch-check" in paths
     assert "/v1/works/{work_id}/neighborhood" in paths
     assert "/v1/uploads" in paths
     assert "/v1/generate" in paths
-    schemas = document["components"]["schemas"]
+    schemas = as_dict(as_dict(document["components"]).get("schemas"))
     for name in (
         "Work",
         "BatchCheckRequest",

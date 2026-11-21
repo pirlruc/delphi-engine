@@ -1,7 +1,7 @@
 """Prometheus leak-proof generation tests."""
 
 from datetime import date
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from delphi_contracts.category import Category
@@ -40,7 +40,10 @@ def _work(title: str, published: date) -> Work:
 
 
 def _context(
-    seed: Work, neighbors: tuple[Neighbor, ...], mask_on: date, held_out=()
+    seed: Work,
+    neighbors: tuple[Neighbor, ...],
+    mask_on: date,
+    held_out: tuple[UUID, ...] = (),
 ) -> MaskedContext:
     return MaskedContext(
         seed=seed,
@@ -55,7 +58,6 @@ def _context(
 
 
 def test_generate_from_clean_context() -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     neighbor = _work("QR 2012", date(2012, 1, 1))
     context = _context(
@@ -75,7 +77,6 @@ def test_generate_from_clean_context() -> None:
 
 
 def test_leak_future_and_held_out() -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     future = _work("QR 2018", date(2018, 1, 1))
     context = _context(
@@ -96,7 +97,6 @@ def test_leak_future_and_held_out() -> None:
 
 
 def test_same_day_neighbor_is_a_leak() -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     sibling = _work("same day", date(2016, 3, 1))
     context = _context(
@@ -116,13 +116,11 @@ def test_same_day_neighbor_is_a_leak() -> None:
 
 
 def test_assert_no_leak_clean() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     assert_no_leak(_context(seed, (), date(2016, 1, 1)))
 
 
 def test_held_out_absent_from_neighbors_is_not_a_leak() -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("Color QR watermarks", date(2020, 2, 1))
     context = _context(seed, (), date(2016, 1, 1), held_out=(held.id,))
@@ -131,7 +129,6 @@ def test_held_out_absent_from_neighbors_is_not_a_leak() -> None:
 
 
 def test_proposal_fallbacks() -> None:
-    """Verify this behavior."""
     from delphi_prometheus.generate import _proposal
 
     proposal = _proposal(

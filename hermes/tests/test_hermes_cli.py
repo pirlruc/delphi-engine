@@ -3,6 +3,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from delphi_contracts.enums import IdentityKind, NeighborhoodMode, PathKind
 from delphi_contracts.identity import Identity
 from typer.testing import CliRunner
@@ -18,12 +19,10 @@ class _Response:
         self.status_code = status
 
     def raise_for_status(self) -> None:
-        """Verify this behavior."""
         if self.status_code >= 400:
             raise RuntimeError("http error")
 
     def json(self) -> object:
-        """Verify this behavior."""
         return self._payload
 
 
@@ -34,7 +33,6 @@ class _Http:
     def post(
         self, url: str, json: object = None, files: object = None, data: object = None
     ) -> _Response:
-        """Verify this behavior."""
         self.calls.append(url)
         if url.endswith("batch-check"):
             return _Response({
@@ -71,17 +69,14 @@ class _Http:
         return _Response({})
 
     def get(self, url: str, params: object = None) -> _Response:
-        """Verify this behavior."""
         self.calls.append(url)
         return _Response({"seed": {"title": "QR 2014"}, "neighbors": []})
 
     def close(self) -> None:
-        """Verify this behavior."""
         self.calls.append("close")
 
 
 def test_cache_round_trip(tmp_path: Path) -> None:
-    """Verify this behavior."""
     cache = ResultCache(tmp_path / "c.sqlite")
     cache.put("batch-check", {"ok": True})
     assert cache.get("batch-check") == {"ok": True}
@@ -89,7 +84,6 @@ def test_cache_round_trip(tmp_path: Path) -> None:
 
 
 def test_cli_refuses_upload_without_consent(tmp_path: Path) -> None:
-    """Verify this behavior."""
     runner = CliRunner()
     pdf = tmp_path / "paper.pdf"
     pdf.write_bytes(b"%PDF")
@@ -100,8 +94,9 @@ def test_cli_refuses_upload_without_consent(tmp_path: Path) -> None:
     assert result.exit_code == 2
 
 
-def test_cli_batch_check_and_neighborhood(monkeypatch, tmp_path: Path) -> None:
-    """Verify this behavior."""
+def test_cli_batch_check_and_neighborhood(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     http = _Http()
     monkeypatch.setattr(
         "hermes.cli.DelphiClient",
@@ -141,8 +136,9 @@ def test_cli_batch_check_and_neighborhood(monkeypatch, tmp_path: Path) -> None:
     assert neighborhood.exit_code == 0
 
 
-def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
-    """Verify this behavior."""
+def test_cli_generate_and_upload(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     http = _Http()
     monkeypatch.setattr(
         "hermes.cli.DelphiClient",
@@ -221,8 +217,7 @@ def test_cli_generate_and_upload(monkeypatch, tmp_path: Path) -> None:
     assert missing.exit_code == 2
 
 
-def test_print_helpers_non_objects(capsys) -> None:
-    """Verify this behavior."""
+def test_print_helpers_non_objects(capsys: pytest.CaptureFixture[str]) -> None:
     from hermes.cli import _print_neighborhood, _print_upload
 
     _print_upload("raw")
@@ -234,7 +229,6 @@ def test_print_helpers_non_objects(capsys) -> None:
 
 
 def test_batch_check_requires_identifier() -> None:
-    """Verify this behavior."""
     runner = CliRunner()
     result = runner.invoke(app, ["batch-check"])
     assert result.exit_code != 0
@@ -243,8 +237,7 @@ def test_batch_check_requires_identifier() -> None:
     assert result.exit_code != 0
 
 
-def test_client_methods(monkeypatch, tmp_path: Path) -> None:
-    """Verify this behavior."""
+def test_client_methods(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     http = _Http()
     client = DelphiClient("http://delphi.local", client=http)
     client.batch_check((Identity(kind=IdentityKind.DOI, value="10.1/x"),))

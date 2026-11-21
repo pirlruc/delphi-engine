@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
-from typing import Any
 from uuid import UUID
 
 from delphi_contracts.category import Category
 from delphi_contracts.enums import CategoryScheme, IdentityKind, SubcategoryId, WorkKind
 from delphi_contracts.identity import Identity
+from delphi_contracts.json_tree import as_str_list
 from delphi_contracts.work import Work
 
 __all__ = [
@@ -21,7 +22,7 @@ __all__ = [
 ]
 
 
-def from_openalex(record: dict[str, Any], subcategory: str) -> Work:
+def from_openalex(record: Mapping[str, object], subcategory: str) -> Work:
     """Map an OpenAlex-like dict to a Work.
 
     Args:
@@ -34,7 +35,7 @@ def from_openalex(record: dict[str, Any], subcategory: str) -> Work:
     return _from_common(record, WorkKind.PAPER, IdentityKind.DOI, "doi", subcategory)
 
 
-def from_patentsview(record: dict[str, Any], subcategory: str) -> Work:
+def from_patentsview(record: Mapping[str, object], subcategory: str) -> Work:
     """Map a PatentsView-like dict to a Work.
 
     Args:
@@ -49,7 +50,7 @@ def from_patentsview(record: dict[str, Any], subcategory: str) -> Work:
     )
 
 
-def from_epo(record: dict[str, Any], subcategory: str) -> Work:
+def from_epo(record: Mapping[str, object], subcategory: str) -> Work:
     """Map an EPO OPS ingest dict to a Work.
 
     Args:
@@ -64,7 +65,7 @@ def from_epo(record: dict[str, Any], subcategory: str) -> Work:
     )
 
 
-def from_wipo(record: dict[str, Any], subcategory: str) -> Work:
+def from_wipo(record: Mapping[str, object], subcategory: str) -> Work:
     """Map a WIPO PATENTSCOPE ingest dict to a Work.
 
     Args:
@@ -77,7 +78,7 @@ def from_wipo(record: dict[str, Any], subcategory: str) -> Work:
     return from_epo(record, subcategory)
 
 
-def from_patsnap(record: dict[str, Any], subcategory: str) -> Work:
+def from_patsnap(record: Mapping[str, object], subcategory: str) -> Work:
     """Map a PatSnap ingest dict to a Work.
 
     Args:
@@ -90,7 +91,7 @@ def from_patsnap(record: dict[str, Any], subcategory: str) -> Work:
     return from_epo(record, subcategory)
 
 
-def from_lens(record: dict[str, Any], subcategory: str) -> Work:
+def from_lens(record: Mapping[str, object], subcategory: str) -> Work:
     """Map a Lens.org ingest dict to a Work.
 
     Args:
@@ -104,7 +105,7 @@ def from_lens(record: dict[str, Any], subcategory: str) -> Work:
 
 
 def _from_common(
-    record: dict[str, Any],
+    record: Mapping[str, object],
     kind: WorkKind,
     identity_kind: IdentityKind,
     identity_key: str,
@@ -126,9 +127,11 @@ def _from_common(
     ident_value = str(
         record.get(identity_key) or record.get("doi") or record.get("patent") or work_id
     )
-    authors = tuple(str(item) for item in record.get("authors", ()))
-    keywords = tuple(str(item) for item in record.get("keywords", ()))
-    claims = tuple(str(item) for item in record.get("claims", ()) if str(item).strip())
+    authors = tuple(as_str_list(record.get("authors", ())))
+    keywords = tuple(as_str_list(record.get("keywords", ())))
+    claims = tuple(
+        item for item in as_str_list(record.get("claims", ())) if item.strip()
+    )
     known = {item.value for item in SubcategoryId}
     parsed = SubcategoryId(subcategory) if subcategory in known else None
     category = Category(

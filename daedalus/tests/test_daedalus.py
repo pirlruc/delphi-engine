@@ -38,7 +38,6 @@ def _blank_pdf() -> bytes:
 
 
 def test_caps_and_cv_blocklist() -> None:
-    """Verify this behavior."""
     assert allowed_text("qr codes", "two_d_codes") is True
     assert allowed_text("autonomous driving detector", "computer_vision") is False
     assert allowed_text("document images", "computer_vision") is True
@@ -51,7 +50,6 @@ def test_caps_and_cv_blocklist() -> None:
 
 
 def test_ingest_fixture_into_memory_catalog() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     count = ingest_records(catalog, load_fixture())
     assert count == 8
@@ -72,7 +70,6 @@ def test_ingest_fixture_into_memory_catalog() -> None:
 
 
 def test_ingest_hash_identity_and_caps_error() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     records = [
         {
@@ -132,7 +129,6 @@ def test_ingest_hash_identity_and_caps_error() -> None:
 
 
 def test_connectors_map_records() -> None:
-    """Verify this behavior."""
     paper = from_openalex(
         {
             "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -169,7 +165,6 @@ def test_connectors_map_records() -> None:
 
 
 def test_extract_embed_and_cli(tmp_path: Path) -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     ingest_records(catalog, load_fixture())
     extractor = PdfExtractor(FakeProvider())
@@ -262,8 +257,9 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
     assert ingest_records(catalog2, load_fixture(extra)) == 1
 
 
-def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
-    """Verify this behavior."""
+def test_sample_pdf_retries_and_fetch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     from delphi_contracts.enums import ProviderKind
     from delphi_contracts.llm import ChatResponse, EmbedResponse
 
@@ -283,7 +279,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
         n = 0
 
         def chat(self, request):
-            """Verify this behavior."""
             self.n += 1
             if self.n == 1:
                 return ChatResponse(
@@ -296,7 +291,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
             return FakeProvider().chat(request)
 
         def embed(self, request):
-            """Verify this behavior."""
             return FakeProvider().embed(request)
 
     recovered = PdfExtractor(llm=_Flaky()).extract(_blank_pdf(), "x.pdf")
@@ -307,7 +301,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
         model_id = "payload"
 
         def chat(self, request):
-            """Verify this behavior."""
             payload = {
                 "title": "From list bib",
                 "authors": "bad",
@@ -326,7 +319,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
             )
 
         def embed(self, request):
-            """Verify this behavior."""
             return FakeProvider().embed(request)
 
     parsed = PdfExtractor(llm=_Payload()).extract(_blank_pdf(), "x.pdf")
@@ -338,13 +330,11 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
         model_id = "dead"
 
         def chat(self, request):
-            """Verify this behavior."""
             return ChatResponse(
                 content="not-json", model="dead", provider=ProviderKind.FAKE
             )
 
         def embed(self, request):
-            """Verify this behavior."""
             return EmbedResponse(vector=(), model="dead", provider=ProviderKind.FAKE)
 
     try:
@@ -357,7 +347,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
     calls = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         calls["n"] += 1
         if "openalex" in str(request.url):
             if calls["n"] < 2:
@@ -402,7 +391,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
     assert patents[0]["patent"] == "US1"
 
     def boom(_request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         return httpx.Response(500)
 
     dead = httpx.Client(transport=httpx.MockTransport(boom))
@@ -414,10 +402,10 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
         raise AssertionError("expected FetchError")
 
     class _CM:
-        def __enter__(self):
+        def __enter__(self) -> object:
             return object()
 
-        def __exit__(self, *_args):
+        def __exit__(self, *_args: object) -> None:
             return None
 
     monkeypatch.setattr("daedalus.cli.httpx.Client", lambda **_k: _CM())
@@ -436,7 +424,6 @@ def test_sample_pdf_retries_and_fetch(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_live_openalex_mapping_and_slice_pages() -> None:
-    """Verify this behavior."""
     from daedalus.fetch import (
         fetch_named_slice,
         fetch_openalex,
@@ -458,7 +445,6 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
     pages = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         pages["n"] += 1
         url = str(request.url)
         if "patents" in url:
@@ -530,11 +516,9 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
 
 
 def test_named_slice_drops_blocked_computer_vision() -> None:
-    """Verify this behavior."""
     from daedalus.fetch import fetch_named_slice
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         return httpx.Response(
             200,
             json={
@@ -555,15 +539,13 @@ def test_named_slice_drops_blocked_computer_vision() -> None:
     assert len(rows) == 3
 
 
-def test_request_json_retries_429(monkeypatch) -> None:
-    """Verify this behavior."""
+def test_request_json_retries_429(monkeypatch: pytest.MonkeyPatch) -> None:
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         calls["n"] += 1
         if calls["n"] == 1:
             return httpx.Response(429, headers={"Retry-After": "0"})
@@ -575,15 +557,15 @@ def test_request_json_retries_429(monkeypatch) -> None:
     assert calls["n"] == 2
 
 
-def test_request_json_does_not_retry_client_errors(monkeypatch) -> None:
-    """Verify this behavior."""
+def test_request_json_does_not_retry_client_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         calls["n"] += 1
         return httpx.Response(404, json={"missing": True})
 
@@ -593,15 +575,15 @@ def test_request_json_does_not_retry_client_errors(monkeypatch) -> None:
     assert calls["n"] == 1
 
 
-def test_request_json_retries_transport_and_server_errors(monkeypatch) -> None:
-    """Verify this behavior."""
+def test_request_json_retries_transport_and_server_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         calls["n"] += 1
         if calls["n"] == 1:
             raise httpx.ConnectError("down", request=request)
@@ -619,14 +601,14 @@ def test_request_json_retries_transport_and_server_errors(monkeypatch) -> None:
     assert calls["n"] == 4
 
 
-def test_request_json_raises_after_retry_budget(monkeypatch) -> None:
-    """Verify this behavior."""
+def test_request_json_raises_after_retry_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Verify this behavior."""
         raise httpx.ConnectError("down", request=request)
 
     client = httpx.Client(transport=httpx.MockTransport(handler))

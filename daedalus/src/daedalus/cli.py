@@ -5,10 +5,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
 
 import httpx
+from delphi_contracts.json_tree import namespace_dict
 
 from daedalus.caps import CapsError, check_caps
 from daedalus.fetch import fetch_named_slice, fetch_openalex, fetch_patentsview
@@ -24,6 +25,70 @@ from daedalus.patents import (
 )
 
 __all__ = ["main"]
+
+
+def _text(raw: Mapping[str, object], key: str) -> str | None:
+    """Return a non-empty string flag.
+
+    Args:
+        raw: Parsed CLI namespace.
+        key: Flag name.
+
+    Returns:
+        The string, or None.
+    """
+    value = raw.get(key)
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def _flag(raw: Mapping[str, object], key: str) -> bool:
+    """Return a store_true flag.
+
+    Args:
+        raw: Parsed CLI namespace.
+        key: Flag name.
+
+    Returns:
+        True only when the flag was set.
+    """
+    return raw.get(key) is True
+
+
+def _count(raw: Mapping[str, object], key: str, default: int) -> int:
+    """Return an integer flag.
+
+    Args:
+        raw: Parsed CLI namespace.
+        key: Flag name.
+        default: Value when the flag is not an int.
+
+    Returns:
+        The integer flag.
+    """
+    value = raw.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return default
+    return value
+
+
+def _cli_path(raw: Mapping[str, object], key: str) -> Path | None:
+    """Return a path flag.
+
+    Args:
+        raw: Parsed CLI namespace.
+        key: Flag name.
+
+    Returns:
+        Path or None.
+    """
+    value = raw.get(key)
+    if isinstance(value, Path):
+        return value
+    if isinstance(value, str) and value:
+        return Path(value)
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,53 +126,63 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("DELPHI_MAILTO", "delphi-engine@localhost"),
     )
     parser.add_argument("--output", type=Path, default=None)
-    args = parser.parse_args(argv)
-    if args.openalex_url:
+    raw = namespace_dict(parser.parse_args(argv))
+    subcategory = _text(raw, "subcategory") or "two_d_codes"
+    mailto = _text(raw, "mailto") or "delphi-engine@localhost"
+    per_subcategory = _count(raw, "per_subcategory", 25)
+    output = _cli_path(raw, "output")
+    openalex_url = _text(raw, "openalex_url")
+    if openalex_url:
         with httpx.Client() as client:
-            records = fetch_openalex(args.openalex_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.patentsview_url:
+            records = fetch_openalex(openalex_url, subcategory, client)
+        return _emit(records, output)
+    patentsview_url = _text(raw, "patentsview_url")
+    if patentsview_url:
         headers = _header("X-Api-Key", os.environ.get("PATENTSVIEW_API_KEY", ""))
         with httpx.Client(headers=headers) as client:
-            records = fetch_patentsview(args.patentsview_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.epo_url:
+            records = fetch_patentsview(patentsview_url, subcategory, client)
+        return _emit(records, output)
+    epo_url = _text(raw, "epo_url")
+    if epo_url:
         headers = _epo_bearer_headers()
         with httpx.Client(headers=headers) as client:
-            records = fetch_epo(args.epo_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.wipo_url:
+            records = fetch_epo(epo_url, subcategory, client)
+        return _emit(records, output)
+    wipo_url = _text(raw, "wipo_url")
+    if wipo_url:
         headers = _header("X-API-Key", os.environ.get("WIPO_API_KEY", ""))
         with httpx.Client(headers=headers) as client:
-            records = fetch_wipo(args.wipo_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.patsnap_url:
+            records = fetch_wipo(wipo_url, subcategory, client)
+        return _emit(records, output)
+    patsnap_url = _text(raw, "patsnap_url")
+    if patsnap_url:
         headers = _bearer(os.environ.get("PATSNAP_API_KEY", ""))
         with httpx.Client(headers=headers) as client:
-            records = fetch_patsnap(args.patsnap_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.lens_url:
+            records = fetch_patsnap(patsnap_url, subcategory, client)
+        return _emit(records, output)
+    lens_url = _text(raw, "lens_url")
+    if lens_url:
         headers = _bearer(os.environ.get("LENS_API_TOKEN", ""))
         with httpx.Client(headers=headers) as client:
-            records = fetch_lens(args.lens_url, args.subcategory, client)
-        return _emit(records, args.output)
-    if args.live:
+            records = fetch_lens(lens_url, subcategory, client)
+        return _emit(records, output)
+    if _flag(raw, "live"):
         with httpx.Client(
-            headers={"User-Agent": f"delphi-engine ({args.mailto})"}
+            headers={"User-Agent": f"delphi-engine ({mailto})"}
         ) as client:
             records = fetch_named_slice(
                 client,
-                per_subcategory=args.per_subcategory,
-                mailto=args.mailto,
+                per_subcategory=per_subcategory,
+                mailto=mailto,
             )
-        return _emit(records, args.output)
-    if args.live_patents:
+        return _emit(records, output)
+    if _flag(raw, "live_patents"):
         with httpx.Client(
-            headers={"User-Agent": f"delphi-engine ({args.mailto})"}
+            headers={"User-Agent": f"delphi-engine ({mailto})"}
         ) as client:
             records = fetch_patent_slice(
                 client,
-                per_subcategory=args.per_subcategory,
+                per_subcategory=per_subcategory,
                 epo_key=os.environ.get("EPO_OPS_KEY", ""),
                 epo_secret=os.environ.get("EPO_OPS_SECRET", ""),
                 wipo_key=os.environ.get("WIPO_API_KEY", ""),
@@ -115,15 +190,15 @@ def main(argv: list[str] | None = None) -> int:
                 patsnap_key=os.environ.get("PATSNAP_API_KEY", ""),
                 lens_token=os.environ.get("LENS_API_TOKEN", ""),
             )
-        return _emit(records, args.output)
-    records = load_fixture(args.fixture)
-    print(len(records))
-    if args.dry_run:
+        return _emit(records, output)
+    fixture = load_fixture(_cli_path(raw, "fixture"))
+    print(len(fixture))
+    if _flag(raw, "dry_run"):
         return 0
     return 0
 
 
-def _emit(records: list[dict[str, Any]], output: Path | None) -> int:
+def _emit(records: Sequence[Mapping[str, object]], output: Path | None) -> int:
     """Print count and optionally write works JSON.
 
     Args:

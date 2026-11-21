@@ -1,6 +1,9 @@
 """Canonical work identifiers."""
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Annotated
+
+from annotated_types import MinLen
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from delphi_contracts.enums import IdentityKind
 
@@ -82,7 +85,7 @@ class Identity(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: IdentityKind
-    value: str = Field(min_length=1)
+    value: Annotated[str, MinLen(1)]
 
     @model_validator(mode="before")
     @classmethod

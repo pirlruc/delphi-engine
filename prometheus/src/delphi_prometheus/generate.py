@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from uuid import UUID
 
+from delphi_contracts.json_tree import as_dict, as_list, parse_json
 from delphi_contracts.llm import ChatMessage, ChatRequest, LlmProvider, build_provider
 from delphi_contracts.paths import (
     ContextLeakError,
@@ -69,8 +69,13 @@ class PathGenerator:
         response = self._llm.chat(
             ChatRequest(messages=(ChatMessage(role="user", content=prompt),))
         )
-        payload = json.loads(response.content)
-        rows = payload.get("proposals", [payload])
+        payload = as_dict(parse_json(response.content))
+        proposed = payload.get("proposals")
+        rows = (
+            [as_dict(item) for item in as_list(proposed)]
+            if proposed is not None
+            else [payload]
+        )
         allowed = {
             context.seed.id,
             *(item.work.id for item in context.neighborhood.neighbors),

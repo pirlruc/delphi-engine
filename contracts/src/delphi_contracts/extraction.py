@@ -1,9 +1,11 @@
 """PDF upload consent and extraction output."""
 
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from annotated_types import MaxLen, MinLen
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.category import Category
 from delphi_contracts.identity import Identity
@@ -24,9 +26,9 @@ class PdfUpload(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    consent_destination: str = Field(min_length=1)
-    filename: str = Field(min_length=1)
-    content_hash: str = Field(min_length=32, max_length=64)
+    consent_destination: Annotated[str, MinLen(1)]
+    filename: Annotated[str, MinLen(1)]
+    content_hash: Annotated[str, MinLen(32), MaxLen(64)]
 
 
 class BibliographyEntry(BaseModel):
@@ -42,7 +44,7 @@ class BibliographyEntry(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    raw: str = Field(min_length=1)
+    raw: Annotated[str, MinLen(1)]
     identity: Identity | None = None
     title: str | None = None
     year: int | None = None
@@ -68,8 +70,8 @@ class Extraction(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     id: UUID
-    content_hash: str = Field(min_length=32)
-    title: str = Field(min_length=1)
+    content_hash: Annotated[str, MinLen(32)]
+    title: Annotated[str, MinLen(1)]
     authors: tuple[str, ...] = ()
     keywords: tuple[str, ...] = ()
     published_on: date | None = None

@@ -72,7 +72,6 @@ class _Extractor:
         self.calls = 0
 
     def extract(self, pdf_bytes: bytes, filename: str) -> Extraction:
-        """Verify this behavior."""
         self.calls += 1
         digest = content_hash(pdf_bytes)
         return self.extraction.model_copy(update={"content_hash": digest})
@@ -83,14 +82,12 @@ class _Embedder:
         self.catalog = catalog
 
     def embed_and_link(self, work: Work, text: str) -> None:
-        """Verify this behavior."""
         self.catalog.put_embedding(work.id, hash_embed(text), "fake-hash")
         self.catalog.rebuild_similar_to(work.id)
 
 
 class _Generator:
     def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
-        """Verify this behavior."""
         return (
             PathProposal(
                 kind=context.kind,
@@ -104,7 +101,6 @@ class _Generator:
 
 
 def test_batch_check_mixed_known_unknown() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     known = _work("QR 2014", date(2014, 6, 1), "10.1/qr")
     catalog.upsert_work(known)
@@ -121,7 +117,6 @@ def test_batch_check_mixed_known_unknown() -> None:
 
 
 def test_neighborhood_modes_and_filters() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/a")
     cited = _work("QR 2012", date(2012, 1, 1), "10.1/b")
@@ -159,7 +154,6 @@ def test_neighborhood_modes_and_filters() -> None:
 
 
 def test_rebuild_similar_to_skips_missing_embedding() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     work = _work("none", date(2015, 1, 1))
     catalog.upsert_work(work)
@@ -168,7 +162,6 @@ def test_rebuild_similar_to_skips_missing_embedding() -> None:
 
 
 def test_self_loop_and_duplicate_edges_ignored() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     work = _work("loop", date(2015, 1, 1))
     catalog.upsert_work(work)
@@ -185,7 +178,6 @@ def test_self_loop_and_duplicate_edges_ignored() -> None:
 
 
 def test_upload_consent_and_bibliography_match() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     prior = _work("Prior QR", date(2012, 1, 1), "10.1/prior")
     catalog.upsert_work(prior)
@@ -236,7 +228,6 @@ def test_upload_consent_and_bibliography_match() -> None:
 
 
 def test_require_consent_rejects_other_destinations() -> None:
-    """Verify this behavior."""
     try:
         require_consent("other")
     except ConsentError:
@@ -245,7 +236,6 @@ def test_require_consent_rejects_other_destinations() -> None:
 
 
 def test_upload_and_generate_http() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/seed")
     catalog.upsert_work(seed)
@@ -338,7 +328,6 @@ def test_upload_and_generate_http() -> None:
 
 
 def test_generate_without_generator_and_upload_without_extractor() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     seed = _work("QR", date(2014, 1, 1))
     catalog.upsert_work(seed)
@@ -374,7 +363,6 @@ def test_generate_without_generator_and_upload_without_extractor() -> None:
 
 
 def test_work_from_extraction_defaults_and_helpers() -> None:
-    """Verify this behavior."""
     extraction = Extraction(
         id=uuid4(),
         content_hash="d" * 64,
@@ -391,7 +379,6 @@ def test_work_from_extraction_defaults_and_helpers() -> None:
 
 
 def test_extraction_seed_and_edge_without_other_work() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     extraction = Extraction(
         id=uuid4(), content_hash="e" * 64, title="From extract", body_text="x"
@@ -426,7 +413,6 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
 
 
 def test_identity_index_url_doi_and_stale_keys() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     work = _work("QR", date(2014, 1, 1), "10.1/qr")
     catalog.upsert_work(work)
@@ -449,7 +435,6 @@ def test_identity_index_url_doi_and_stale_keys() -> None:
 
 
 def test_rebuild_all_and_skip_foreign_identity() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     owner = _work("owner", date(2014, 1, 1), "10.1/own")
     other = _work("other", date(2014, 2, 1), "10.1/oth")
@@ -478,7 +463,6 @@ def test_rebuild_all_and_skip_foreign_identity() -> None:
 
 
 def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/s")
     held = _work("QR 2016", date(2016, 3, 1), "10.1/h")
@@ -521,14 +505,12 @@ def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
 
 
 def test_generate_context_leak_returns_422() -> None:
-    """Verify this behavior."""
     catalog = MemoryCatalog()
     seed = _work("QR", date(2014, 1, 1), "10.1/z")
     catalog.upsert_work(seed)
 
     class _Boom:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
-            """Verify this behavior."""
             raise ContextLeakError("leaked")
 
     client = TestClient(

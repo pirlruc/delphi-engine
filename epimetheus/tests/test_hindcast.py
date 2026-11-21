@@ -3,7 +3,7 @@
 import json
 from datetime import date
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from delphi_contracts.category import Category
@@ -17,6 +17,7 @@ from delphi_contracts.enums import (
     WorkKind,
 )
 from delphi_contracts.graph import Edge
+from delphi_contracts.json_tree import as_dict, parse_json
 from delphi_contracts.neighborhood import Neighbor, Neighborhood
 from delphi_contracts.paths import ContextLeakError, MaskedContext, PathProposal
 from delphi_contracts.work import Work
@@ -28,7 +29,7 @@ from epimetheus.run import run_hindcast
 from epimetheus.score import score_proposal
 
 
-def _work(title: str, published: date, work_id=None) -> Work:
+def _work(title: str, published: date, work_id: UUID | None = None) -> Work:
     return Work(
         id=work_id or uuid4(),
         kind=WorkKind.PAPER,
@@ -47,7 +48,6 @@ def _work(title: str, published: date, work_id=None) -> Work:
 
 
 def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("QR 2016-03", date(2016, 3, 1))
     future = _work("QR 2018", date(2018, 1, 1))
@@ -80,7 +80,6 @@ def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
 
 
 def test_masked_context_drops_later_content_neighbor() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     later = _work("later", date(2019, 1, 1))
     neighbor = Neighbor(
@@ -103,7 +102,6 @@ def test_masked_context_drops_later_content_neighbor() -> None:
 
 
 def test_run_hindcast_and_score(tmp_path: Path) -> None:
-    """Verify this behavior."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("Color QR watermarks", date(2020, 2, 1))
     prior = _work("QR 2012", date(2012, 1, 1))
@@ -132,9 +130,11 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
     assert scored.scores.embedding_similarity >= 0.0
     output = tmp_path / "evalrun.json"
     assert main(["--output", str(output)]) == 0
-    artifact = json.loads(output.read_text(encoding="utf-8"))
+    artifact = as_dict(parse_json(output.read_text(encoding="utf-8")))
     assert artifact["kind"] == "research_path"
-    assert artifact["scores"]["novelty"] >= 1
+    scores = as_dict(artifact["scores"])
+    novelty = scores.get("novelty")
+    assert isinstance(novelty, (int, float)) and novelty >= 1
     slice_json = tmp_path / "slice.json"
     slice_json.write_text(
         json.dumps({
@@ -187,9 +187,10 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
     )
     summary_path = tmp_path / "summary.json"
     assert main(["--works-json", str(slice_json), "--output", str(summary_path)]) == 0
-    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary = as_dict(parse_json(summary_path.read_text(encoding="utf-8")))
     assert summary["trial_count"] == 1
-    assert summary["mean_novelty"] >= 1
+    mean_novelty = summary.get("mean_novelty")
+    assert isinstance(mean_novelty, (int, float)) and mean_novelty >= 1
     one = tmp_path / "one.json"
     one.write_text(
         json.dumps({
@@ -207,11 +208,11 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
     )
     empty_path = tmp_path / "empty.json"
     assert main(["--works-json", str(one), "--output", str(empty_path)]) == 0
-    assert json.loads(empty_path.read_text(encoding="utf-8"))["trial_count"] == 0
+    empty = as_dict(parse_json(empty_path.read_text(encoding="utf-8")))
+    assert empty["trial_count"] == 0
 
 
 def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
     neighbors = (
@@ -239,13 +240,11 @@ def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
 
 
 def test_run_hindcast_rejects_empty_proposals() -> None:
-    """Verify this behavior."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
 
     class _Empty:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
-            """Verify this behavior."""
             return ()
 
     with pytest.raises(ValueError, match="no proposals"):
@@ -261,7 +260,6 @@ def test_run_hindcast_rejects_empty_proposals() -> None:
 
 
 def test_citation_descendant_cycle_safe() -> None:
-    """Verify this behavior."""
     a = uuid4()
     b = uuid4()
     edges = (

@@ -18,6 +18,7 @@ from daedalus.ingest import ingest_records, load_fixture
 from delphi.catalog import MemoryCatalog
 from delphi.services import generate_paths, upload_pdf
 from delphi_contracts.enums import NeighborhoodMode, PathKind
+from delphi_contracts.json_tree import as_dict, namespace_dict, parse_json
 from delphi_contracts.paths import PathRequest
 from delphi_prometheus import PathGenerator
 from epimetheus.trials import summarize_runs, trials_from_payload
@@ -79,7 +80,7 @@ def run_demo() -> dict[str, object]:
         / "slice.json"
     )
     summary = summarize_runs(
-        trials_from_payload(json.loads(fixture.read_text(encoding="utf-8")))
+        trials_from_payload(as_dict(parse_json(fixture.read_text(encoding="utf-8"))))
     )
     matched = sum(
         1 for row in extraction.bibliography if row.matched_work_id is not None
@@ -114,10 +115,14 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(description="Delphi prototype demo")
     parser.add_argument("--output", type=Path, default=Path("docs/prototype-demo.json"))
-    args = parser.parse_args(argv)
+    raw = namespace_dict(parser.parse_args(argv))
+    output = raw.get("output")
+    destination = (
+        output if isinstance(output, Path) else Path("docs/prototype-demo.json")
+    )
     artifact = run_demo()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(artifact, indent=2))
     return 0
 

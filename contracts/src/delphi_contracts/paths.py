@@ -1,10 +1,11 @@
 """Path generation request, context, and proposals."""
 
 from datetime import date
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from annotated_types import Ge, MinLen
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from delphi_contracts.enums import PathKind
 from delphi_contracts.neighborhood import Neighborhood
@@ -37,7 +38,7 @@ class PathRequest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: PathKind
-    subcategory: str = Field(min_length=1)
+    subcategory: Annotated[str, MinLen(1)]
     seed_work_id: UUID | None = None
     extraction_id: UUID | None = None
     as_of: date | None = None
@@ -72,11 +73,11 @@ class PathProposal(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: PathKind
-    title: str = Field(min_length=1)
-    claims: tuple[str, ...] = Field(min_length=1)
-    rationale: str = Field(min_length=1)
+    title: Annotated[str, MinLen(1)]
+    claims: Annotated[tuple[str, ...], MinLen(1)]
+    rationale: Annotated[str, MinLen(1)]
     cited_work_ids: tuple[UUID, ...] = ()
-    rank: int = Field(ge=1)
+    rank: Annotated[int, Ge(1)]
 
 
 class MaskedContext(BaseModel):

@@ -1,8 +1,10 @@
 """Batch identifier existence checks."""
 
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from annotated_types import MaxLen, MinLen
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.identity import Identity
 
@@ -18,7 +20,7 @@ class BatchCheckRequest(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    identities: tuple[Identity, ...] = Field(min_length=1, max_length=500)
+    identities: Annotated[tuple[Identity, ...], MinLen(1), MaxLen(500)]
 
 
 class BatchCheckRow(BaseModel):

@@ -6,6 +6,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+from delphi_contracts.json_tree import parse_json
+
 __all__ = ["ResultCache"]
 
 
@@ -66,5 +68,5 @@ class ResultCache:
             connection.close()
         if row is None:
             return None
-        payload: object = json.loads(str(row[0]))
+        payload = parse_json(str(row[0]))
         return payload

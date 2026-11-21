@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
 from uuid import UUID
 
 from delphi_contracts.batch import BatchCheckRequest, BatchCheckResponse, BatchCheckRow
@@ -15,6 +14,7 @@ from delphi_contracts.enums import EdgeKind, NeighborhoodMode
 from delphi_contracts.extraction import Extraction
 from delphi_contracts.graph import Edge
 from delphi_contracts.identity import Identity
+from delphi_contracts.json_tree import as_floats
 from delphi_contracts.neighborhood import Neighborhood
 from delphi_contracts.work import Work
 from psycopg import Connection, connect
@@ -100,7 +100,7 @@ class PostgresCatalog:
             conninfo: libpq DSN.
             reset: When true, drop and recreate tables (tests).
         """
-        self._conn: Connection[tuple[Any, ...]] = connect(conninfo, autocommit=True)
+        self._conn: Connection[tuple[object, ...]] = connect(conninfo, autocommit=True)
         if reset:
             for statement in _DROP:
                 self._conn.execute(statement)
@@ -185,9 +185,11 @@ class PostgresCatalog:
             """,
             (kinds, values),
         ).fetchall()
-        found = {
-            (str(kind), str(value)): work_id for kind, value, work_id in found_rows
-        }
+        found: dict[tuple[str, str], UUID] = {}
+        for kind, value, work_id in found_rows:
+            if work_id is None:
+                continue
+            found[(str(kind), str(value))] = UUID(str(work_id))
         rows = tuple(
             BatchCheckRow(
                 identity=identity,
@@ -385,7 +387,7 @@ class PostgresCatalog:
                 (ids,),
             ).fetchall()
             for work_id, vector, model_id in vectors:
-                mirror.put_embedding(work_id, _vector(vector), str(model_id))
+                mirror.put_embedding(UUID(str(work_id)), _vector(vector), str(model_id))
         return mirror.neighborhood(seed_id, mode, subcategory, as_of, excluded_ids, k)
 
     def rebuild_similar_to(self, work_id: UUID, k: int = 8) -> None:
@@ -472,7 +474,7 @@ class PostgresCatalog:
             "SELECT work_id FROM identities WHERE kind = %s AND value = %s",
             (identity.kind.value, identity.value),
         ).fetchone()
-        work_id = row[0] if row is not None else None
+        work_id = UUID(str(row[0])) if row is not None and row[0] is not None else None
         return BatchCheckRow(
             identity=identity, known=work_id is not None, work_id=work_id
         )
@@ -489,12 +491,13 @@ class PostgresCatalog:
         vectors: dict[UUID, tuple[float, ...]] = {}
         models: dict[UUID, str] = {}
         for row in result.fetchall():
-            vectors[row[0]] = _vector(row[1])
-            models[row[0]] = str(row[2])
+            key = UUID(str(row[0]))
+            vectors[key] = _vector(row[1])
+            models[key] = str(row[2])
         return vectors, models
 
 
-def _edge_from_row(row: tuple[Any, ...]) -> Edge:
+def _edge_from_row(row: tuple[object, ...]) -> Edge:
     """Build an Edge from a SQL row.
 
     Args:
@@ -504,10 +507,10 @@ def _edge_from_row(row: tuple[Any, ...]) -> Edge:
         Edge model.
     """
     return Edge(
-        from_work=row[0],
-        to_work=row[1],
+        from_work=UUID(str(row[0])),
+        to_work=UUID(str(row[1])),
         kind=EdgeKind(str(row[2])),
-        score=row[3],
+        score=None if row[3] is None else float(str(row[3])),
     )
 
 
@@ -520,6 +523,4 @@ def _vector(raw: object) -> tuple[float, ...]:
     Returns:
         Float tuple.
     """
-    if not isinstance(raw, (list, tuple)):
-        return ()
-    return tuple(float(value) for value in raw)
+    return as_floats(raw)

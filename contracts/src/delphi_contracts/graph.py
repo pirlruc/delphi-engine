@@ -1,8 +1,10 @@
 """Graph edges stored beside works."""
 
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from annotated_types import Ge, Le
+from pydantic import BaseModel, ConfigDict
 
 from delphi_contracts.enums import EdgeKind
 
@@ -24,4 +26,4 @@ class Edge(BaseModel):
     from_work: UUID
     to_work: UUID
     kind: EdgeKind
-    score: float | None = Field(default=None, ge=0.0, le=1.0)
+    score: Annotated[float | None, Ge(0.0), Le(1.0)] = None
