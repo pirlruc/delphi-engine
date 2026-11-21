@@ -6,6 +6,9 @@ services:
       POSTGRES_USER: delphi
       POSTGRES_PASSWORD: delphi
       POSTGRES_DB: delphi_test
+    # 0.0.0.0 so the quality container can use host.docker.internal.
+    # 127.0.0.1 is not reachable through the runner gateway.
+    # kics-scan ignore-block
     ports:
       - "5432:5432"
     security_opt:
