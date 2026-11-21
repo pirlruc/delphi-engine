@@ -45,6 +45,11 @@ from delphi.services import (
 
 
 def _category() -> Category:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     return Category(
         scheme=CategoryScheme.OPENALEX_TOPIC,
         code="two-d",
@@ -54,6 +59,11 @@ def _category() -> Category:
 
 
 def _work(title: str, published: date, doi: str | None = None) -> Work:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     ident = doi or title
     return Work(
         id=uuid4(),
@@ -68,10 +78,16 @@ def _work(title: str, published: date, doi: str | None = None) -> Work:
 
 class _Extractor:
     def __init__(self, extraction: Extraction) -> None:
+        """Check the behavior under test."""
         self.extraction = extraction
         self.calls = 0
 
     def extract(self, pdf_bytes: bytes, filename: str) -> Extraction:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         self.calls += 1
         digest = content_hash(pdf_bytes)
         return self.extraction.model_copy(update={"content_hash": digest})
@@ -79,15 +95,22 @@ class _Extractor:
 
 class _Embedder:
     def __init__(self, catalog: MemoryCatalog) -> None:
+        """Check the behavior under test."""
         self.catalog = catalog
 
     def embed_and_link(self, work: Work, text: str) -> None:
+        """Check the behavior under test."""
         self.catalog.put_embedding(work.id, hash_embed(text), "fake-hash")
         self.catalog.rebuild_similar_to(work.id)
 
 
 class _Generator:
     def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         return (
             PathProposal(
                 kind=context.kind,
@@ -101,6 +124,7 @@ class _Generator:
 
 
 def test_batch_check_mixed_known_unknown() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     known = _work("QR 2014", date(2014, 6, 1), "10.1/qr")
     catalog.upsert_work(known)
@@ -117,6 +141,7 @@ def test_batch_check_mixed_known_unknown() -> None:
 
 
 def test_neighborhood_modes_and_filters() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/a")
     cited = _work("QR 2012", date(2012, 1, 1), "10.1/b")
@@ -154,6 +179,7 @@ def test_neighborhood_modes_and_filters() -> None:
 
 
 def test_rebuild_similar_to_skips_missing_embedding() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     work = _work("none", date(2015, 1, 1))
     catalog.upsert_work(work)
@@ -162,6 +188,7 @@ def test_rebuild_similar_to_skips_missing_embedding() -> None:
 
 
 def test_self_loop_and_duplicate_edges_ignored() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     work = _work("loop", date(2015, 1, 1))
     catalog.upsert_work(work)
@@ -178,6 +205,7 @@ def test_self_loop_and_duplicate_edges_ignored() -> None:
 
 
 def test_upload_consent_and_bibliography_match() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     prior = _work("Prior QR", date(2012, 1, 1), "10.1/prior")
     catalog.upsert_work(prior)
@@ -228,6 +256,7 @@ def test_upload_consent_and_bibliography_match() -> None:
 
 
 def test_require_consent_rejects_other_destinations() -> None:
+    """Check the behavior under test."""
     try:
         require_consent("other")
     except ConsentError:
@@ -236,6 +265,7 @@ def test_require_consent_rejects_other_destinations() -> None:
 
 
 def test_upload_and_generate_http() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/seed")
     catalog.upsert_work(seed)
@@ -328,6 +358,7 @@ def test_upload_and_generate_http() -> None:
 
 
 def test_generate_without_generator_and_upload_without_extractor() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     seed = _work("QR", date(2014, 1, 1))
     catalog.upsert_work(seed)
@@ -363,6 +394,7 @@ def test_generate_without_generator_and_upload_without_extractor() -> None:
 
 
 def test_work_from_extraction_defaults_and_helpers() -> None:
+    """Check the behavior under test."""
     extraction = Extraction(
         id=uuid4(),
         content_hash="d" * 64,
@@ -379,6 +411,7 @@ def test_work_from_extraction_defaults_and_helpers() -> None:
 
 
 def test_extraction_seed_and_edge_without_other_work() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     extraction = Extraction(
         id=uuid4(), content_hash="e" * 64, title="From extract", body_text="x"
@@ -413,6 +446,7 @@ def test_extraction_seed_and_edge_without_other_work() -> None:
 
 
 def test_identity_index_url_doi_and_stale_keys() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     work = _work("QR", date(2014, 1, 1), "10.1/qr")
     catalog.upsert_work(work)
@@ -435,6 +469,7 @@ def test_identity_index_url_doi_and_stale_keys() -> None:
 
 
 def test_rebuild_all_and_skip_foreign_identity() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     owner = _work("owner", date(2014, 1, 1), "10.1/own")
     other = _work("other", date(2014, 2, 1), "10.1/oth")
@@ -463,6 +498,7 @@ def test_rebuild_all_and_skip_foreign_identity() -> None:
 
 
 def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     seed = _work("QR 2014", date(2014, 6, 1), "10.1/s")
     held = _work("QR 2016", date(2016, 3, 1), "10.1/h")
@@ -505,12 +541,14 @@ def test_generate_holds_out_siblings_and_placeholder_dates() -> None:
 
 
 def test_generate_context_leak_returns_422() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     seed = _work("QR", date(2014, 1, 1), "10.1/z")
     catalog.upsert_work(seed)
 
     class _Boom:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+            """Check the behavior under test."""
             raise ContextLeakError("leaked")
 
     client = TestClient(

@@ -30,6 +30,11 @@ from daedalus.ingest import ingest_records, load_fixture
 
 
 def _blank_pdf() -> bytes:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     writer = PdfWriter()
     writer.add_blank_page(width=200, height=200)
     buffer = BytesIO()
@@ -38,6 +43,7 @@ def _blank_pdf() -> bytes:
 
 
 def test_caps_and_cv_blocklist() -> None:
+    """Check the behavior under test."""
     assert allowed_text("qr codes", "two_d_codes") is True
     assert allowed_text("autonomous driving detector", "computer_vision") is False
     assert allowed_text("document images", "computer_vision") is True
@@ -50,6 +56,7 @@ def test_caps_and_cv_blocklist() -> None:
 
 
 def test_ingest_fixture_into_memory_catalog() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     count = ingest_records(catalog, load_fixture())
     assert count == 8
@@ -70,6 +77,7 @@ def test_ingest_fixture_into_memory_catalog() -> None:
 
 
 def test_ingest_hash_identity_and_caps_error() -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     records = [
         {
@@ -129,6 +137,7 @@ def test_ingest_hash_identity_and_caps_error() -> None:
 
 
 def test_connectors_map_records() -> None:
+    """Check the behavior under test."""
     paper = from_openalex(
         {
             "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -165,6 +174,7 @@ def test_connectors_map_records() -> None:
 
 
 def test_extract_embed_and_cli(tmp_path: Path) -> None:
+    """Check the behavior under test."""
     catalog = MemoryCatalog()
     ingest_records(catalog, load_fixture())
     extractor = PdfExtractor(FakeProvider())
@@ -260,6 +270,7 @@ def test_extract_embed_and_cli(tmp_path: Path) -> None:
 def test_sample_pdf_retries_and_fetch(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """Check the behavior under test."""
     from delphi_contracts.enums import ProviderKind
     from delphi_contracts.llm import ChatResponse, EmbedResponse
 
@@ -279,6 +290,11 @@ def test_sample_pdf_retries_and_fetch(
         n = 0
 
         def chat(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             self.n += 1
             if self.n == 1:
                 return ChatResponse(
@@ -291,6 +307,11 @@ def test_sample_pdf_retries_and_fetch(
             return FakeProvider().chat(request)
 
         def embed(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return FakeProvider().embed(request)
 
     recovered = PdfExtractor(llm=_Flaky()).extract(_blank_pdf(), "x.pdf")
@@ -301,6 +322,11 @@ def test_sample_pdf_retries_and_fetch(
         model_id = "payload"
 
         def chat(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             payload = {
                 "title": "From list bib",
                 "authors": "bad",
@@ -319,6 +345,11 @@ def test_sample_pdf_retries_and_fetch(
             )
 
         def embed(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return FakeProvider().embed(request)
 
     parsed = PdfExtractor(llm=_Payload()).extract(_blank_pdf(), "x.pdf")
@@ -330,11 +361,21 @@ def test_sample_pdf_retries_and_fetch(
         model_id = "dead"
 
         def chat(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return ChatResponse(
                 content="not-json", model="dead", provider=ProviderKind.FAKE
             )
 
         def embed(self, request):
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return EmbedResponse(vector=(), model="dead", provider=ProviderKind.FAKE)
 
     try:
@@ -347,6 +388,11 @@ def test_sample_pdf_retries_and_fetch(
     calls = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         if "openalex" in str(request.url):
             if calls["n"] < 2:
@@ -391,6 +437,11 @@ def test_sample_pdf_retries_and_fetch(
     assert patents[0]["patent"] == "US1"
 
     def boom(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         return httpx.Response(500)
 
     dead = httpx.Client(transport=httpx.MockTransport(boom))
@@ -403,9 +454,19 @@ def test_sample_pdf_retries_and_fetch(
 
     class _CM:
         def __enter__(self) -> object:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return object()
 
         def __exit__(self, *_args: object) -> None:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return None
 
     monkeypatch.setattr("daedalus.cli.httpx.Client", lambda **_k: _CM())
@@ -424,6 +485,7 @@ def test_sample_pdf_retries_and_fetch(
 
 
 def test_live_openalex_mapping_and_slice_pages() -> None:
+    """Check the behavior under test."""
     from daedalus.fetch import (
         fetch_named_slice,
         fetch_openalex,
@@ -445,6 +507,11 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
     pages = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         pages["n"] += 1
         url = str(request.url)
         if "patents" in url:
@@ -516,9 +583,15 @@ def test_live_openalex_mapping_and_slice_pages() -> None:
 
 
 def test_named_slice_drops_blocked_computer_vision() -> None:
+    """Check the behavior under test."""
     from daedalus.fetch import fetch_named_slice
 
     def handler(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         return httpx.Response(
             200,
             json={
@@ -540,12 +613,18 @@ def test_named_slice_drops_blocked_computer_vision() -> None:
 
 
 def test_request_json_retries_429(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check the behavior under test."""
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         if calls["n"] == 1:
             return httpx.Response(429, headers={"Retry-After": "0"})
@@ -560,12 +639,18 @@ def test_request_json_retries_429(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_request_json_does_not_retry_client_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Check the behavior under test."""
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         return httpx.Response(404, json={"missing": True})
 
@@ -578,12 +663,18 @@ def test_request_json_does_not_retry_client_errors(
 def test_request_json_retries_transport_and_server_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Check the behavior under test."""
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
     calls = {"n": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         if calls["n"] == 1:
             raise httpx.ConnectError("down", request=request)
@@ -604,11 +695,13 @@ def test_request_json_retries_transport_and_server_errors(
 def test_request_json_raises_after_retry_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Check the behavior under test."""
     from daedalus.retry import request_json
 
     monkeypatch.setattr("daedalus.retry.time.sleep", lambda _seconds: None)
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Check the behavior under test."""
         raise httpx.ConnectError("down", request=request)
 
     client = httpx.Client(transport=httpx.MockTransport(handler))

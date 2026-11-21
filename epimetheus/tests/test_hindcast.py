@@ -30,6 +30,11 @@ from epimetheus.score import score_proposal
 
 
 def _work(title: str, published: date, work_id: UUID | None = None) -> Work:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     return Work(
         id=work_id or uuid4(),
         kind=WorkKind.PAPER,
@@ -48,6 +53,7 @@ def _work(title: str, published: date, work_id: UUID | None = None) -> Work:
 
 
 def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
+    """Check the behavior under test."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("QR 2016-03", date(2016, 3, 1))
     future = _work("QR 2018", date(2018, 1, 1))
@@ -80,6 +86,7 @@ def test_leak_fixtures_future_descendant_similar_and_same_year() -> None:
 
 
 def test_masked_context_drops_later_content_neighbor() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2014, 1, 1))
     later = _work("later", date(2019, 1, 1))
     neighbor = Neighbor(
@@ -102,6 +109,7 @@ def test_masked_context_drops_later_content_neighbor() -> None:
 
 
 def test_run_hindcast_and_score(tmp_path: Path) -> None:
+    """Check the behavior under test."""
     seed = _work("QR 2014", date(2014, 6, 1))
     held = _work("Color QR watermarks", date(2020, 2, 1))
     prior = _work("QR 2012", date(2012, 1, 1))
@@ -213,6 +221,7 @@ def test_run_hindcast_and_score(tmp_path: Path) -> None:
 
 
 def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
     neighbors = (
@@ -240,11 +249,17 @@ def test_run_hindcast_fails_if_seed_neighborhood_unmasked() -> None:
 
 
 def test_run_hindcast_rejects_empty_proposals() -> None:
+    """Check the behavior under test."""
     seed = _work("seed", date(2014, 1, 1))
     held = _work("held", date(2016, 1, 1))
 
     class _Empty:
         def generate(self, context: MaskedContext) -> tuple[PathProposal, ...]:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return ()
 
     with pytest.raises(ValueError, match="no proposals"):
@@ -260,6 +275,7 @@ def test_run_hindcast_rejects_empty_proposals() -> None:
 
 
 def test_citation_descendant_cycle_safe() -> None:
+    """Check the behavior under test."""
     a = uuid4()
     b = uuid4()
     edges = (

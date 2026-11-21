@@ -25,6 +25,11 @@ from daedalus.patents import (
 
 
 def _epo_payload() -> dict[str, object]:
+    """Return the value under test.
+
+    Returns:
+        The value under test.
+    """
     return {
         "ops:world-patent-data": {
             "ops:biblio-search": {
@@ -63,8 +68,14 @@ def _epo_payload() -> dict[str, object]:
 
 
 def test_epo_token_and_biblio_mapping() -> None:
+    """Check the behavior under test."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         if request.method == "POST":
             assert b"grant_type=client_credentials" in request.content
             return httpx.Response(200, json={"access_token": "tok"})
@@ -94,8 +105,14 @@ def test_epo_token_and_biblio_mapping() -> None:
 
 
 def test_wipo_patsnap_lens_and_poison_skip() -> None:
+    """Check the behavior under test."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "wipo" in url or "patentscope" in url:
             return httpx.Response(
@@ -219,6 +236,7 @@ def test_wipo_patsnap_lens_and_poison_skip() -> None:
 
 
 def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
+    """Check the behavior under test."""
     empty = httpx.Client(
         transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={}))
     )
@@ -227,6 +245,11 @@ def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
     calls = {"n": 0}
 
     def flaky(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         calls["n"] += 1
         if request.method == "POST" and "accesstoken" in str(request.url):
             return httpx.Response(200, json={"access_token": "tok"})
@@ -270,8 +293,14 @@ def test_fetch_patent_slice_skips_missing_credentials_and_retries() -> None:
 
 
 def test_simple_payloads_token_miss_and_cv_filter() -> None:
+    """Check the behavior under test."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"token_type": "Bearer"})
@@ -324,6 +353,11 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
     assert not fetch_epo("https://ops.example/listish", "two_d_codes", client)
 
     def cv(_request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         if _request.method == "POST" and "accesstoken" in str(_request.url):
             return httpx.Response(200, json={"access_token": "t"})
         return httpx.Response(
@@ -349,6 +383,7 @@ def test_simple_payloads_token_miss_and_cv_filter() -> None:
 
 
 def test_alternate_shapes_dedupe_and_header_restore() -> None:
+    """Check the behavior under test."""
     iso_doc = {
         "document-id": [
             {
@@ -367,6 +402,11 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "accesstoken" in url:
             return httpx.Response(200, json={"access_token": "tok"})
@@ -446,8 +486,14 @@ def test_alternate_shapes_dedupe_and_header_restore() -> None:
 
 
 def test_lens_abstract_variants_and_wipo_docs() -> None:
+    """Check the behavior under test."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "abstract-str" in url:
             return httpx.Response(
@@ -526,12 +572,23 @@ def test_lens_abstract_variants_and_wipo_docs() -> None:
 
 
 def test_cli_patent_flags(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Check the behavior under test."""
 
     class _CM:
         def __enter__(self) -> object:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return object()
 
         def __exit__(self, *_args: object) -> None:
+            """Return the value under test.
+
+            Returns:
+                The value under test.
+            """
             return None
 
     monkeypatch.setattr("daedalus.cli.httpx.Client", lambda **_k: _CM())
@@ -569,8 +626,14 @@ def test_cli_patent_flags(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_remaining_payload_branches() -> None:
+    """Check the behavior under test."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Return the value under test.
+
+        Returns:
+            The value under test.
+        """
         url = str(request.url)
         if "epo-dict-id" in url:
             return httpx.Response(
