@@ -87,5 +87,8 @@ ignore-semiprivate = true
 ignore-private = true
 exclude = ["tests", "scripts", ".venv", "docs", ".github", ".devops"]
 
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", ".github", "docs/guardrails"]
+
 [tool.pylint.main]
 init-hook = "import site; from pathlib import Path; [site.addsitedir(str(p)) for p in Path('.venv/lib').glob('python*/site-packages')]"

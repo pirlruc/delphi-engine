@@ -35,7 +35,7 @@ __all__ = [
 ]
 
 _LOG = logging.getLogger("daedalus.patents")
-_EPO_TOKEN = "https://ops.epo.org/3.2/auth/accesstoken"
+_EPO_TOKEN = "https://ops.epo.org/3.2/auth/accesstoken"  # nosec B105
 _EPO_SEARCH = "https://ops.epo.org/3.2/rest-services/published-data/search/biblio"
 _LENS_SEARCH = "https://api.lens.org/patent/search"
 _PATSNAP_SEARCH = "https://connect.patsnap.com/search/patent/query-search-patent/v2"
@@ -310,7 +310,7 @@ def fetch_patent_slice(
     client: httpx.Client,
     per_subcategory: int = 25,
     epo_key: str = "",
-    epo_secret: str = "",
+    epo_secret: str = "",  # nosec B107
     wipo_key: str = "",
     wipo_url: str = _WIPO_SEARCH,
     patsnap_key: str = "",
@@ -342,7 +342,7 @@ def fetch_patent_slice(
     if wipo_key:
         assert_allowed_url(wipo_url)
     collected: list[dict[str, Any]] = []
-    epo_token = ""
+    epo_token = ""  # nosec B105
     if epo_key and epo_secret:
         epo_token = epo_access_token(client, epo_key, epo_secret, attempts=attempts)
     for subcategory, query in PATENT_SEARCH.items():
